@@ -11,6 +11,9 @@
 //                                    si la orden está pendiente/en_revision la aprueba (números + mail);
 //                                    false = "no llegó": queda marcada para reclamar, sin cambiar el estado;
 //                                    null = vuelve a "sin revisar".
+//        accion = 'carta_recibida' → vía gratuita en dos pasos: llegó la carta de una participación
+//                                    sin cargo `pendiente` → guarda carta_recibida_at, asigna la chance y manda el mail
+//        accion = 'carta_rechazada'→ la carta no llegó en el plazo (o no sirve): la participación queda `rechazada`
 import campaign from '../config/campaign.json' with { type: 'json' };
 import { json, readJson, getQuery, baseUrl, adminAutorizado } from './_lib/http.js';
 import { db, obtenerOrden, actualizarOrden, contarParticipaciones, contarPadron } from './_lib/db.js';
