@@ -252,6 +252,16 @@ p {
   border-left: 1px solid var(--line-2);
   text-transform: uppercase;
 }
+.nav-minimal {
+  height: 64px;
+}
+.nav-minimal .logo {
+  font-size: 28px;
+}
+.nav-minimal .logo svg {
+  width: 32px;
+  height: 32px;
+}
 .nav-links {
   display: none;
   gap: 26px;

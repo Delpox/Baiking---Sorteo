@@ -19,23 +19,12 @@
 <body data-page="home">
 
   <!-- ================= NAV ================= -->
-  <header class="nav">
+  <header class="nav nav-minimal">
     <div class="container">
       <a class="logo" href="#top" aria-label="Baiking, inicio">
         <svg><use href="#ico-wheel"></use></svg>
-        Baiking <small>Participá</small>
+        Baiking
       </a>
-      <nav class="nav-links" aria-label="Secciones">
-        <a href="#bicis">Las bicis</a>
-        <a href="#como-funciona">Cómo funciona</a>
-        <a href="#curso">El curso</a>
-        <a href="#packs">Packs</a>
-        <a href="#sorteo">Sorteo</a>
-        <a href="#faq">Preguntas</a>
-      </nav>
-      <div class="nav-cta">
-        <a class="btn btn-primary" href="#packs" data-open-pack=""><span class="hide-sm">Quiero participar</span><span class="show-sm">Participar</span></a>
-      </div>
     </div>
   </header>
 
@@ -47,7 +36,6 @@
         <div class="progress-strip" id="progreso" hidden>
           <div class="progress-head">
             <span><b id="prog-pct">0 %</b> de las <span data-unidad-plural>chances</span> ya están ocupadas</span>
-            <span class="progress-count"><b id="prog-ocupadas">0</b> de <span id="prog-total">0</span> · quedan <b id="prog-restantes">0</b></span>
           </div>
           <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Chances ocupadas"><b id="prog-fill" style="width:0%"></b></div>
         </div>

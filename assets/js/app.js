@@ -198,9 +198,8 @@
       const pct = Math.min(100, (ocupadas / total) * 100);
       const restantes = Math.max(0, total - ocupadas);
       $('#prog-pct').textContent = `${pct < 10 ? pct.toFixed(1).replace('.', ',') : Math.round(pct)} %`;
-      $('#prog-ocupadas').textContent = fmtEntero(ocupadas);
-      $('#prog-total').textContent = fmtEntero(total);
-      $('#prog-restantes').textContent = fmtEntero(restantes);
+      // Los números absolutos quedan disponibles (aria) pero no se muestran.
+      strip.setAttribute('title', `${fmtEntero(ocupadas)} de ${fmtEntero(total)} · quedan ${fmtEntero(restantes)}`);
       $('.progress-bar', strip).setAttribute('aria-valuenow', String(Math.round(pct)));
       strip.classList.toggle('is-hot', pct >= 80);
       strip.hidden = false;
