@@ -27,6 +27,7 @@ npm run dev            # sirve el sitio en http://localhost:3000 (modo demo, sin
 npm run check          # valida config, íconos, links y sintaxis del backend
 npm run screenshots    # capturas desktop + móvil de todas las páginas en ./screenshots (requiere Playwright)
 node scripts/build-demo.mjs   # genera ./dist con cada página en un solo archivo HTML (para compartir)
+node scripts/og-image.mjs     # genera assets/img/og.png (imagen para compartir en redes; no está en el repo)
 ```
 
 En modo `demo` el botón "Ir a pagar" simula la confirmación y muestra los números en pantalla, sin cobrar.
