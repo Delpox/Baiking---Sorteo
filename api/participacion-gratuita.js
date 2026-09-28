@@ -19,6 +19,7 @@ import { confirmarOrden } from './_lib/confirmar.js';
 import { armarMailGratuitaPendiente, enviarMail } from './_lib/notificaciones.js';
 import { validarPersona } from './_lib/validar.js';
 import { configCarta } from './_lib/carta.js';
+import { espejarOrdenEnSheet } from './_lib/sheets.js';
 
 // Cada registro dispara un mail a la dirección indicada: tope por email y edición.
 const MAX_GRATUITAS_POR_EMAIL = 5;
@@ -112,6 +113,8 @@ export default async function handler(req, res) {
 
     if (requiereCarta) {
       await mandarInstrucciones(orden, base);
+      // Espejo en Google Sheets (no lanza si la planilla no está configurada).
+      await espejarOrdenEnSheet(orden);
       return json(res, 200, respuestaPendiente(orden));
     }
 

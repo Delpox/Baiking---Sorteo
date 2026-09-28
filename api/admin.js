@@ -175,12 +175,13 @@ async function accion(req, res) {
   if (body.accion === 'carta_rechazada') {
     if (orden.origen !== 'gratuita') return json(res, 409, { error: 'Solo para participaciones sin cargo.' });
     if (orden.estado !== 'pendiente') return json(res, 409, { error: `La participación está ${orden.estado}.` });
-    await actualizarOrden(orden.id, {
+    const rechazada = await actualizarOrden(orden.id, {
       estado: 'rechazada',
       revisado_por: revisor,
       revisado_at: new Date().toISOString(),
       comprobante_datos: { ...(orden.comprobante_datos || {}), motivo_rechazo: texto(body.motivo ?? body.nota, 300) || 'La carta no llegó en el plazo' },
     });
+    await espejarOrdenEnSheet(rechazada);
     return json(res, 200, { ok: true, estado: 'rechazada' });
   }
 
