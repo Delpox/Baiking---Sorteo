@@ -145,13 +145,16 @@
   function renderShopHero(cfg) {
     const media = $('#shop-photo-media');
     if (media) {
+      // Sin foto del local todavía: se muestran las bicis (foto real si la hay, si no la ilustración).
+      const arte = (b) =>
+        b.imagen
+          ? `<img src="${esc(b.imagen)}" alt="${esc(b.imagen_alt || b.nombre)}" loading="eager">`
+          : `<svg viewBox="0 0 400 240" role="img" aria-label="${esc(b.nombre)}"><use href="#art-${esc(b.ilustracion)}"></use></svg>`;
       media.innerHTML = cfg.marca.foto_hero
         ? `<img src="${esc(cfg.marca.foto_hero)}" alt="${esc(cfg.marca.foto_hero_alt || '')}">`
         : `<div class="shop-placeholder">
-            <div class="shop-placeholder-art">
-              ${cfg.bicis.map((b) => `<svg viewBox="0 0 400 240" role="img" aria-label="${esc(b.nombre)}"><use href="#art-${esc(b.ilustracion)}"></use></svg>`).join('')}
-            </div>
-            <p><b>Acá va la foto del local</b>Gastón con las dos Polygon en la puerta de Baiking, Del Viso</p>
+            <div class="shop-placeholder-art">${cfg.bicis.map(arte).join('')}</div>
+            <p><b>Acá va la foto del local</b>Gastón con las Polygon en la puerta de Baiking, Del Viso</p>
           </div>`;
     }
     const thumbs = $('#shop-thumbs');

@@ -25,11 +25,27 @@ async function binary(rel) {
   }
   return cacheBin.get(rel);
 }
-// El logo va inline en la config empaquetada (marca.logo) para el reemplazo por JS.
-{
-  const buf = await binary(cfg.marca?.logo || '');
-  if (buf) cfg.marca.logo = `data:image/png;base64,${buf.toString('base64')}`;
+// Las imágenes que referencia la config (logo, fotos de las bicis, del local, de Gastón)
+// van inline como data URI, para que la versión autocontenida las muestre.
+const MIME = { png: 'image/png', webp: 'image/webp', jpg: 'image/jpeg', jpeg: 'image/jpeg' };
+async function dataUri(rel) {
+  const ext = (rel.match(/\.(png|webp|jpe?g)$/i) || [])[1]?.toLowerCase();
+  if (!ext) return null;
+  const buf = await binary(rel);
+  if (!buf || buf.length > 600 * 1024) return null;
+  return `data:${MIME[ext]};base64,${buf.toString('base64')}`;
 }
+async function inlinarImagenes(obj) {
+  for (const [k, v] of Object.entries(obj)) {
+    if (typeof v === 'string' && /^assets\/img\/[^\s"]+\.(png|webp|jpe?g)$/i.test(v)) {
+      const uri = await dataUri(v);
+      if (uri) obj[k] = uri;
+    } else if (v && typeof v === 'object') {
+      await inlinarImagenes(v);
+    }
+  }
+}
+await inlinarImagenes(cfg);
 
 // Evita cerrar el <script> desde datos inline.
 const safe = (s) => s.replace(/<\/script/gi, '<\\/script');
@@ -56,11 +72,11 @@ async function inline(html) {
     html = html.replace(m[0], () => `${pre}<script>\n${safe(js)}\n</script>`);
   }
   // Imágenes chicas (logo, favicons) como data URI, para que el archivo sea autocontenido.
-  const imgs = [...html.matchAll(/(src|href)="(assets\/img\/[^"]+\.png)"/g)];
+  const imgs = [...html.matchAll(/(src|href)="(assets\/img\/[^"]+\.(?:png|webp|jpe?g))"/g)];
   for (const m of imgs) {
-    const buf = await binary(m[2]);
-    if (!buf || buf.length > 400 * 1024) continue;
-    html = html.replace(m[0], () => `${m[1]}="data:image/png;base64,${buf.toString('base64')}"`);
+    const uri = await dataUri(m[2]);
+    if (!uri) continue;
+    html = html.replace(m[0], () => `${m[1]}="${uri}"`);
   }
   return html;
 }

@@ -424,8 +424,8 @@ h2 em,
   color: var(--fg);
 }
 .shop-placeholder-art svg + svg + svg,
-.thumb[data-bici='bend'] svg,
-.bike-card[data-bici='bend'] .bike-art {
+.thumb[data-bici='strattos'] svg,
+.bike-card[data-bici='strattos'] .bike-art {
   color: var(--fg-2);
 }
 .shop-placeholder p {
@@ -1966,5 +1966,36 @@ h2 em,
   }
   html {
     scroll-behavior: auto;
+  }
+}
+
+/* Fotos de las bicis en el hero (mientras no está la foto del local) */
+.shop-placeholder-art img {
+  width: 31%;
+  height: auto;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+.bike-media img,
+.thumb img {
+  mix-blend-mode: multiply;
+}
+/* Las fotos de las bicis tienen distintas proporciones: misma altura de vitrina para las tres tarjetas */
+.bike-media {
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bike-media img,
+.bike-media .bike-art {
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+@media (max-width: 560px) {
+  .bike-media {
+    height: 220px;
   }
 }

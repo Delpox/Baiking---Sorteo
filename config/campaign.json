@@ -36,7 +36,7 @@
   },
   "premio": {
     "titulo": "Una Polygon a elección",
-    "descripcion": "Quien gana elige entre tres Polygon: la Siskiu T7 (trail, doble suspensión), la Tambora (all-road / gravel) o la Bend (gravel). La bici se entrega 0 km, armada y regulada por Baiking. Gastón te la lleva personalmente, estés donde estés, y hacemos la salida para estrenarla.",
+    "descripcion": "Quien gana elige entre tres Polygon: la Siskiu T7 (trail, doble suspensión), la Tambora (gravel) o la Strattos (ruta). La bici se entrega 0 km, armada y regulada por Baiking. Gastón te la lleva personalmente, estés donde estés, y hacemos la salida para estrenarla.",
     "incluye": [
       "Bici 0 km del talle que corresponda, armada y regulada en Baiking",
       "Gastón te la lleva personalmente, estés donde estés",
@@ -53,7 +53,7 @@
       "marca": "Polygon",
       "tipo": "Trail · Doble suspensión",
       "ilustracion": "mtb",
-      "imagen": null,
+      "imagen": "assets/img/siskiu-t7.webp",
       "tagline": "La trail de doble suspensión de Polygon: cuadro ALX, 140/135 mm de recorrido y transmisión 1x12. Sube con eficiencia y baja con confianza.",
       "specs": [
         {
@@ -82,16 +82,17 @@
         }
       ],
       "valor_referencia": 3664500,
-      "color": "#eb0627"
+      "color": "#eb0627",
+      "imagen_alt": "Polygon Siskiu T7 azul, trail de doble suspensión"
     },
     {
       "id": "tambora",
       "nombre": "Polygon Tambora",
       "marca": "Polygon",
-      "tipo": "All-road · Gravel",
+      "tipo": "Gravel",
       "ilustracion": "gravel",
-      "imagen": null,
-      "tagline": "Dos bicis en una: con un cambio de posición en el cuadro (flip chips) pasás de geometría all-road a gravel en minutos. Asfalto, ripio y sendero con la misma bici.",
+      "imagen": "assets/img/tambora.webp",
+      "tagline": "La gravel de Polygon: con los flip chips pasás de geometría all-road a gravel en minutos. Asfalto, ripio y sendero con la misma bici.",
       "specs": [
         {
           "k": "Cuadro",
@@ -120,45 +121,47 @@
       ],
       "version_nota": "[A CONFIRMAR] versión a sortear: A4 (aluminio, GRX 2x11, ≈ $3.600.000) · G4 (≈ $2.320.000) · G5 (carbono, ≈ $4.460.000 – $5.775.000)",
       "valor_referencia": 3600000,
-      "color": "#1c1a1b"
+      "color": "#1c1a1b",
+      "imagen_alt": "Polygon Tambora roja, gravel"
     },
     {
-      "id": "bend",
-      "nombre": "Polygon Bend",
+      "id": "strattos",
+      "nombre": "Polygon Strattos",
       "marca": "Polygon",
-      "tipo": "Gravel",
+      "tipo": "Ruta · Carbono",
       "ilustracion": "gravel",
-      "imagen": null,
-      "tagline": "La gravel de Polygon para salir del asfalto: cuadro de aluminio, horquilla de carbono y cubiertas anchas para ripio, tierra y rutas largas.",
+      "imagen": "assets/img/strattos.webp",
+      "tagline": "La ruta de Polygon: cuadro de carbono, geometría rápida y frenos a disco para rodar largo y liviano.",
       "specs": [
         {
           "k": "Cuadro",
-          "v": "Aluminio ALX, geometría gravel (según versión)"
+          "v": "Carbono ACX (según versión)"
         },
         {
           "k": "Horquilla",
-          "v": "Carbono (según versión)"
+          "v": "Carbono"
         },
         {
           "k": "Transmisión",
-          "v": "Shimano GRX (según versión)"
+          "v": "Shimano 105 o Ultegra 2x (según versión)"
         },
         {
           "k": "Frenos",
-          "v": "Disco hidráulico, flat mount"
+          "v": "Disco hidráulico"
         },
         {
-          "k": "Cubiertas",
-          "v": "700c · gravel, paso ancho"
+          "k": "Ruedas",
+          "v": "700c · cubiertas de ruta"
         },
         {
-          "k": "Anclajes",
-          "v": "Para bikepacking y portaequipaje"
+          "k": "Manubrio",
+          "v": "Drop bar de ruta"
         }
       ],
-      "version_nota": "[A CONFIRMAR] modelo y versión de la gravel (ej. Bend R2 / R5) y su valor de referencia.",
+      "version_nota": "[A CONFIRMAR] versión de la Strattos (ej. S7 / S8) y su valor de referencia.",
       "valor_referencia": null,
-      "color": "#6e686b"
+      "color": "#1c1a1b",
+      "imagen_alt": "Polygon Strattos negra, ruta de carbono"
     }
   ],
   "curso": {
@@ -351,7 +354,7 @@
     },
     {
       "p": "¿Puedo elegir la bici?",
-      "r": "Sí. Al inscribirte nos decís cuál preferís (Siskiu T7, Tambora o Bend) y, si ganás, te la entregamos 0 km en tu talle. Podés cambiar de opinión hasta el momento de la entrega."
+      "r": "Sí. Al inscribirte nos decís cuál preferís (Siskiu T7, Tambora o Strattos) y, si ganás, te la entregamos 0 km en tu talle. Podés cambiar de opinión hasta el momento de la entrega."
     },
     {
       "p": "¿Puedo participar sin comprar?",
