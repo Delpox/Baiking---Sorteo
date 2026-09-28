@@ -30,10 +30,16 @@
     return res.json();
   }
 
+  function pillsNumeros(nums, unidad) {
+    const consecutivos = nums.length > 12 && nums.every((n, i) => i === 0 || n === nums[i - 1] + 1);
+    if (consecutivos) return `<li>${fmtNum(nums[0])} al ${fmtNum(nums[nums.length - 1])}</li><li class="count">${nums.length} ${unidad}</li>`;
+    return nums.map((n) => `<li>${fmtNum(n)}</li>`).join('');
+  }
+
   function renderOk(orden, campaign) {
     clearInterval(state.poll);
     $('#ok-nombre').textContent = orden.nombre;
-    $('#ok-numeros').innerHTML = orden.numeros.map((n) => `<li>${fmtNum(n)}</li>`).join('');
+    $('#ok-numeros').innerHTML = pillsNumeros(orden.numeros, campaign.unidad?.plural || 'chances');
     $('#ok-titulo').textContent = orden.numeros.length > 1 ? 'Tus participaciones' : 'Tu participación';
     $('#ok-bici').textContent = orden.bici?.nombre || '—';
     $('#ok-pack').textContent = orden.pack ? orden.pack.nombre : 'Participación sin cargo';

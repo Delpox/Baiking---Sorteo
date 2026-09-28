@@ -652,7 +652,7 @@
       formView.hidden = true;
       successView.hidden = false;
       $('#ok-nombre').textContent = nombre;
-      $('#ok-numeros').innerHTML = numeros.map((n) => `<li>${fmtNum(n)}</li>`).join('');
+      $('#ok-numeros').innerHTML = pillsNumeros(numeros);
       $('#ok-bici').textContent = bici?.nombre || '';
       $('#ok-pack').textContent = `${nombrePack(pack)} + curso completo`;
       const texto = `¡Ya estoy participando por una ${bici?.nombre || 'Polygon'} con Baiking! 🚵 Mirá: ${location.href.split('#')[0]}`;
@@ -687,6 +687,14 @@
       }
       successView.scrollIntoView({ block: 'nearest' });
     }
+  }
+
+
+  /* Números como píldoras; con muchos consecutivos, un solo rango ("0101 al 0200"). */
+  function pillsNumeros(nums) {
+    const consecutivos = nums.length > 12 && nums.every((n, i) => i === 0 || n === nums[i - 1] + 1);
+    if (consecutivos) return `<li>${fmtNum(nums[0])} al ${fmtNum(nums[nums.length - 1])}</li><li class="count">${nums.length} ${unidad(nums.length)}</li>`;
+    return nums.map((n) => `<li>${fmtNum(n)}</li>`).join('');
   }
 
   /* Datos de transferencia (dl) con botones de copiar. Se usa en el modal y en /gracias. */
@@ -853,7 +861,7 @@
         form.hidden = true;
         ok.hidden = false;
         $('#ok-nombre').textContent = data.nombre;
-        $('#ok-numeros').innerHTML = numeros.map((n) => `<li>${fmtNum(n)}</li>`).join('');
+        $('#ok-numeros').innerHTML = pillsNumeros(numeros);
         const carta = $('#ok-carta');
         if (carta) carta.hidden = numeros.length > 0;
         $('#ok-bici').textContent = cfg.bicis.find((b) => b.id === data.bici_preferida)?.nombre || '';

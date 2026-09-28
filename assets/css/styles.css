@@ -2034,3 +2034,12 @@ h2 em,
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.numbers li.count {
+  background: transparent;
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0;
+  padding-left: 4px;
+}

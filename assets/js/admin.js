@@ -38,6 +38,17 @@
   // Token del panel: siempre en el header Authorization (nunca en la query string).
   const authHeaders = () => ({ Authorization: `Bearer ${state.token || ''}` });
 
+  // Números de una orden para los avisos: lista si son pocos, rango si son muchos y consecutivos
+  // (los packs grandes asignan un bloque correlativo: "del 0101 al 0200").
+  const fmtNumero = (n) => String(n).padStart(4, '0');
+  function resumirNumeros(numeros) {
+    const lista = (numeros || []).map(Number);
+    if (!lista.length) return '—';
+    const consecutivos = lista.every((v, i) => i === 0 || v === lista[i - 1] + 1);
+    if (lista.length > 12 && consecutivos) return `del ${fmtNumero(lista[0])} al ${fmtNumero(lista[lista.length - 1])} (${fmtInt(lista.length)})`;
+    return lista.map(fmtNumero).join(', ');
+  }
+
   /* ---------- helpers SVG ---------- */
   const NS = 'http://www.w3.org/2000/svg';
   function svg(tag, attrs = {}, parent) {
@@ -459,7 +470,7 @@
       });
       const out = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(out.error || `HTTP ${res.status}`);
-      toast(accion === 'carta_recibida' ? `Carta recibida. Número: ${(out.numeros || []).map((n) => String(n).padStart(4, '0')).join(', ')}` : 'Participación rechazada.');
+      toast(accion === 'carta_recibida' ? `Carta recibida. Número: ${resumirNumeros(out.numeros)}` : 'Participación rechazada.');
       cargar({ silencioso: true });
     } catch (err) {
       toast(err.message);
@@ -760,7 +771,7 @@
       });
       const out = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(out.error || `HTTP ${res.status}`);
-      const numeros = (out.numeros || []).map((n) => String(n).padStart(4, '0')).join(', ');
+      const numeros = out.numeros?.length ? resumirNumeros(out.numeros) : '';
       toast(
         valor === true
           ? numeros ? `Acreditada y aprobada. Números: ${numeros}` : out.nota || 'Marcada: la plata llegó.'
@@ -791,7 +802,7 @@
       });
       const out = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(out.error || `HTTP ${res.status}`);
-      toast(accion === 'aprobar' ? `Aprobada. Números: ${(out.numeros || []).map((n) => String(n).padStart(4, '0')).join(', ')}` : 'Orden rechazada.');
+      toast(accion === 'aprobar' ? `Aprobada. Números: ${resumirNumeros(out.numeros)}` : 'Orden rechazada.');
       cargar({ silencioso: true });
     } catch (err) {
       toast(err.message);

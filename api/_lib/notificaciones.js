@@ -22,6 +22,20 @@ const fmtFecha = (iso, tz = 'America/Argentina/Buenos_Aires') =>
 
 const fmtNumero = (n) => String(n).padStart(4, '0');
 
+/**
+ * Cómo se muestran los números de una orden: pocos → lista ("0001 · 0002 · 0003");
+ * muchos y consecutivos (los packs grandes: 100, 500, 2000 chances; el RPC siempre asigna
+ * un bloque correlativo) → rango ("del 0001 al 0100"), para que el mail no lleve miles de
+ * números y el parámetro de la plantilla de WhatsApp no supere el largo que admite Meta.
+ */
+export function describirNumeros(numeros, { sep = ' · ', maxLista = 12 } = {}) {
+  const lista = (numeros || []).map(Number);
+  if (!lista.length) return '';
+  const consecutivos = lista.every((v, i) => i === 0 || v === lista[i - 1] + 1);
+  if (lista.length > maxLista && consecutivos) return `del ${fmtNumero(lista[0])} al ${fmtNumero(lista[lista.length - 1])}`;
+  return lista.map(fmtNumero).join(sep);
+}
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -54,7 +68,7 @@ export function armarMailConfirmacion({ orden, numeros, campaign, baseUrl, gratu
   const bici = campaign.bicis.find((b) => b.id === orden.bici_preferida);
   const pack = campaign.packs.find((p) => p.id === orden.pack_id);
   const fecha = fmtFecha(campaign.edicion.fecha_sorteo);
-  const lista = numeros.map(fmtNumero).join(' · ');
+  const lista = describirNumeros(numeros);
   const nombre = escapeHtml(orden.nombre);
   const plural = numeros.length > 1;
   const u = unidad(campaign, numeros.length);
@@ -328,7 +342,7 @@ export async function enviarWhatsApp({ orden, numeros, campaign, baseUrl }) {
           type: 'body',
           parameters: [
             { type: 'text', text: parametro(orden.nombre, 80) },
-            { type: 'text', text: parametro(numeros.map(fmtNumero).join(', '), 1000) },
+            { type: 'text', text: parametro(describirNumeros(numeros, { sep: ', ' }), 1000) },
             { type: 'text', text: parametro(bici?.nombre || 'Polygon', 80) },
             { type: 'text', text: parametro(`${fecha} hs`, 80) },
             { type: 'text', text: `${baseUrl}/gracias?orden=${orden.id}` },
