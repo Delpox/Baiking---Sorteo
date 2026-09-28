@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Participación sin cargo · Baiking</title>
+  <meta name="description" content="Sin obligación de compra: registrá tu participación gratuita en la promoción de Baiking por una Polygon Siskiu T7 o Tambora.">
+  <meta name="theme-color" content="#0b0f14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body data-page="gratuita">
+  <header class="nav">
+    <div class="container">
+      <a class="logo" href="index.html"><svg><use href="#ico-wheel"></use></svg> Baiking <small>Participá</small></a>
+      <div class="nav-cta"><a class="btn btn-ghost" href="index.html">Volver al inicio</a></div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="container page-narrow">
+      <span class="eyebrow">Sin obligación de compra</span>
+      <h1 class="h-section">Participación <em>sin cargo</em></h1>
+      <p class="lead" data-gratuita-texto></p>
+      <p class="lead" style="margin-top:10px">Sorteo: <b data-fecha-sorteo>—</b>, <b data-hora-sorteo>—</b>, en vivo por <b data-instagram>@baiking</b>. Inscripciones hasta el <b data-cierre>—</b>.</p>
+
+      <form class="form" id="form-gratuita" novalidate style="margin-top:28px">
+        <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+        <div class="field">
+          <label>¿Por cuál bici participás?</label>
+          <div class="bike-picker" id="bike-picker"></div>
+          <span class="err"></span>
+        </div>
+        <div class="form-row">
+          <div class="field"><label for="f-nombre">Nombre</label><input id="f-nombre" name="nombre" autocomplete="given-name" required><span class="err"></span></div>
+          <div class="field"><label for="f-apellido">Apellido</label><input id="f-apellido" name="apellido" autocomplete="family-name" required><span class="err"></span></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label for="f-dni">DNI</label><input id="f-dni" name="dni" inputmode="numeric" placeholder="Sin puntos" required><span class="err"></span></div>
+          <div class="field"><label for="f-provincia">Provincia</label><select id="f-provincia" name="provincia" required></select><span class="err"></span></div>
+        </div>
+        <div class="field"><label for="f-email">Email</label><input id="f-email" name="email" type="email" autocomplete="email" required><span class="err"></span></div>
+        <div class="field"><label for="f-whatsapp">WhatsApp</label><input id="f-whatsapp" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" placeholder="11 5728 0056" required><span class="err"></span></div>
+        <label class="check"><input type="checkbox" name="mayor_edad"><span>Soy mayor de 18 años y resido en Argentina.</span></label>
+        <label class="check"><input type="checkbox" name="acepta_bases"><span>Leí y acepto las <a href="bases-y-condiciones.html" target="_blank" rel="noopener">bases y condiciones</a> y la política de privacidad.</span></label>
+        <div class="form-error" id="form-error" role="alert"></div>
+        <div class="form-foot">
+          <button type="submit" class="btn btn-primary btn-lg btn-block">Registrar mi participación</button>
+          <span class="secure"><svg><use href="#ico-shield"></use></svg> Una participación por persona · Misma probabilidad que cualquier otra</span>
+        </div>
+      </form>
+
+      <div id="free-success" hidden>
+        <div class="ticket">
+          <div class="ticket-head">
+            <span class="eyebrow">Participación registrada</span>
+            <h2>¡Ya estás adentro, <span id="ok-nombre">—</span>!</h2>
+            <ul class="numbers" id="ok-numeros"></ul>
+          </div>
+          <div class="ticket-body">
+            <div class="ticket-meta" style="margin-top:0">
+              <span>Participás por</span><b id="ok-bici">—</b>
+              <span>Sorteo en vivo</span><b><span data-fecha-sorteo>—</span>, <span data-hora-sorteo>—</span></b>
+            </div>
+            <p style="margin-top:16px;font-size:14px;color:var(--muted)">Te mandamos la confirmación por mail. Si querés, también podés sumar participaciones llevándote el curso.</p>
+            <div class="ticket-actions">
+              <a class="btn btn-primary" href="index.html#packs">Ver el curso y los packs</a>
+              <a class="btn btn-ghost" href="index.html">Volver al inicio</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container legal" style="margin-top:0;border-top:0;padding-top:0">
+      <p data-legal-leyenda></p>
+      <p data-legal-aviso></p>
+      <p><a href="bases-y-condiciones.html">Bases y condiciones</a></p>
+    </div>
+  </footer>
+
+  <script src="assets/js/app.js" defer></script>
+</body>
+</html>

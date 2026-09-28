@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sorteo en vivo · Baiking</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0b0f14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <style>
+    /* Pantalla para transmitir en vivo: números grandes, alto contraste. */
+    .live { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
+    .live-main { display: grid; place-items: center; padding: 24px; text-align: center; }
+    .drum { font-family: var(--font-display); font-weight: 800; font-size: clamp(96px, 22vw, 260px); line-height: 1; letter-spacing: .06em; color: var(--acento); font-variant-numeric: tabular-nums; text-shadow: 0 0 60px rgba(201,243,29,.35); }
+    .drum.is-spinning { color: var(--text); text-shadow: none; }
+    .drum-label { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .18em; color: var(--muted); font-size: 18px; margin-bottom: 12px; }
+    .winner-name { font-family: var(--font-display); font-size: clamp(28px, 5vw, 56px); text-transform: uppercase; margin-top: 16px; }
+    .winner-sub { color: var(--muted); font-size: 16px; margin-top: 6px; }
+    .live-controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 20px; border-top: 1px solid var(--line); }
+    .setup { max-width: 760px; margin: 0 auto; padding: 32px 20px; }
+    .setup textarea { width: 100%; min-height: 160px; padding: 12px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); color: var(--text); font: 13px/1.4 ui-monospace, monospace; }
+    .results { display: grid; gap: 10px; max-width: 760px; margin: 20px auto 0; padding: 0 20px 40px; }
+    .results li { display: grid; grid-template-columns: 110px 1fr auto; gap: 14px; align-items: center; padding: 12px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+    .results .n { font-family: var(--font-display); font-weight: 800; font-size: 32px; color: var(--acento); }
+    .results .tag { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+    .meta-line { text-align: center; color: var(--muted); font-size: 13px; padding: 0 20px 20px; }
+    .stat { display: inline-flex; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; margin: 4px; }
+  </style>
+</head>
+<body data-page="sorteo">
+  <div class="live">
+    <header class="nav">
+      <div class="container">
+        <a class="logo" href="index.html"><svg><use href="#ico-wheel"></use></svg> Baiking <small>Sorteo en vivo</small></a>
+        <div class="nav-cta"><button type="button" class="btn btn-ghost" id="btn-full">Pantalla completa</button></div>
+      </div>
+    </header>
+
+    <main class="live-main">
+      <section class="setup" id="setup">
+        <span class="eyebrow">Padrón de participaciones</span>
+        <h1 class="h-section" style="font-size:44px">Cargar <em>el padrón</em></h1>
+        <p class="lead" style="margin-top:10px">Pegá el CSV exportado desde <code>/api/export</code> (o subilo). También podés generar un padrón de prueba para ensayar la transmisión.</p>
+        <div class="hero-actions" style="margin-top:16px">
+          <label class="btn btn-ghost" for="file-csv">Subir CSV</label>
+          <input id="file-csv" type="file" accept=".csv,text/csv" hidden>
+          <button type="button" class="btn btn-ghost" id="btn-demo">Padrón de prueba (350)</button>
+        </div>
+        <textarea id="csv" placeholder="edicion_id;numero;orden_id;nombre;apellido;dni;email;whatsapp;provincia;bici_preferida;pack_id;pagada_at" style="margin-top:14px"></textarea>
+        <div class="hero-actions" style="margin-top:14px">
+          <button type="button" class="btn btn-primary btn-lg" id="btn-cargar">Cargar padrón</button>
+        </div>
+        <p id="setup-msg" class="meta-line" style="text-align:left;padding:12px 0 0"></p>
+      </section>
+
+      <section id="stage" hidden>
+        <div class="drum-label" id="drum-label">Primer premio</div>
+        <div class="drum" id="drum">0000</div>
+        <div class="winner-name" id="winner-name">&nbsp;</div>
+        <div class="winner-sub" id="winner-sub">&nbsp;</div>
+      </section>
+    </main>
+
+    <div id="stage-controls" hidden>
+      <div class="meta-line" id="stats"></div>
+      <ol class="results" id="results"></ol>
+      <div class="live-controls">
+        <button type="button" class="btn btn-primary btn-lg" id="btn-sortear">Sortear primer premio</button>
+        <button type="button" class="btn btn-ghost" id="btn-suplente">Sortear suplente</button>
+        <button type="button" class="btn btn-ghost" id="btn-secundario">Sortear premio adicional</button>
+        <button type="button" class="btn btn-ghost" id="btn-acta">Descargar acta</button>
+        <button type="button" class="btn btn-ghost" id="btn-reset">Reiniciar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/app.js" defer></script>
+  <script>
+  (() => {
+    'use strict';
+    const $ = (s) => document.querySelector(s);
+    const fmt = (n) => String(n).padStart(4, '0');
+    let padron = [];
+    const resultados = [];
+    const excluidos = new Set(); // DNI que ya ganaron algo
+
+    function parseCsv(text) {
+      const lineas = text.replace(/^﻿/, '').split(/\r?\n/).filter((l) => l.trim());
+      if (!lineas.length) return [];
+      const sep = lineas[0].includes(';') ? ';' : ',';
+      const cols = lineas[0].split(sep).map((c) => c.trim().replace(/^"|"$/g, ''));
+      return lineas.slice(1).map((l) => {
+        const vals = l.split(sep).map((v) => v.trim().replace(/^"|"$/g, ''));
+        const o = {};
+        cols.forEach((c, i) => (o[c] = vals[i] ?? ''));
+        o.numero = Number(o.numero);
+        return o;
+      }).filter((o) => Number.isFinite(o.numero));
+    }
+
+    function randomIndex(n) {
+      // Entero uniforme en [0, n) con crypto, sin sesgo de módulo.
+      const max = Math.floor(0x100000000 / n) * n;
+      const buf = new Uint32Array(1);
+      let x;
+      do { crypto.getRandomValues(buf); x = buf[0]; } while (x >= max);
+      return x % n;
+    }
+
+    function mask(p) {
+      const nombre = `${p.nombre || ''} ${(p.apellido || '').charAt(0)}${p.apellido ? '.' : ''}`.trim();
+      const dni = String(p.dni || '');
+      return { nombre: nombre || 'Participante', dni: dni ? `DNI ***${dni.slice(-3)}` : '', prov: p.provincia || '' };
+    }
+
+    async function girar(label, tipo) {
+      const candidatos = padron.filter((p) => !excluidos.has(String(p.dni)));
+      if (!candidatos.length) return alert('No quedan participaciones elegibles.');
+      $('#drum-label').textContent = label;
+      const drum = $('#drum');
+      drum.classList.add('is-spinning');
+      $('#winner-name').innerHTML = '&nbsp;';
+      $('#winner-sub').innerHTML = '&nbsp;';
+      const dur = 4200, t0 = performance.now();
+      await new Promise((resolve) => {
+        const step = (t) => {
+          const k = (t - t0) / dur;
+          drum.textContent = fmt(candidatos[randomIndex(candidatos.length)].numero);
+          if (k < 1) setTimeout(() => requestAnimationFrame(step), 40 + k * k * 260);
+          else resolve();
+        };
+        requestAnimationFrame(step);
+      });
+      const g = candidatos[randomIndex(candidatos.length)];
+      drum.classList.remove('is-spinning');
+      drum.textContent = fmt(g.numero);
+      const m = mask(g);
+      $('#winner-name').textContent = m.nombre;
+      $('#winner-sub').textContent = [m.dni, m.prov, g.bici_preferida ? `participa por ${g.bici_preferida.replace('_', ' ')}` : ''].filter(Boolean).join(' · ');
+      excluidos.add(String(g.dni));
+      resultados.push({ tipo, label, numero: g.numero, orden_id: g.orden_id, nombre: `${g.nombre} ${g.apellido}`.trim(), dni: g.dni, at: new Date().toISOString() });
+      $('#results').insertAdjacentHTML('afterbegin', `<li><span class="n">${fmt(g.numero)}</span><div><b>${m.nombre}</b><div class="tag">${label}</div></div><span class="tag">${new Date().toLocaleTimeString('es-AR')}</span></li>`);
+      if (tipo === 'ganador') { $('#btn-sortear').disabled = true; }
+    }
+
+    function cargar(text) {
+      padron = parseCsv(text);
+      if (!padron.length) { $('#setup-msg').textContent = 'No se encontraron participaciones válidas en el CSV.'; return; }
+      const nums = new Set(padron.map((p) => p.numero));
+      const personas = new Set(padron.map((p) => String(p.dni)));
+      $('#stats').innerHTML = `<span class="stat">Participaciones: <b>${padron.length}</b></span><span class="stat">Personas: <b>${personas.size}</b></span><span class="stat">Rango: <b>${fmt(Math.min(...nums))}–${fmt(Math.max(...nums))}</b></span><span class="stat">Duplicados: <b>${padron.length - nums.size}</b></span>`;
+      $('#setup').hidden = true; $('#stage').hidden = false; $('#stage-controls').hidden = false;
+    }
+
+    $('#btn-cargar').addEventListener('click', () => cargar($('#csv').value));
+    $('#file-csv').addEventListener('change', async (e) => { const f = e.target.files[0]; if (f) $('#csv').value = await f.text(); });
+    $('#btn-demo').addEventListener('click', () => {
+      const nombres = ['Juan', 'Sofía', 'Martín', 'Lucía', 'Nicolás', 'Camila', 'Federico', 'Valentina', 'Gonzalo', 'Julieta'];
+      const apellidos = ['Pérez', 'Gómez', 'Rodríguez', 'Fernández', 'López', 'Díaz', 'Martínez', 'Sosa', 'Romero', 'Álvarez'];
+      const provs = ['Buenos Aires', 'Córdoba', 'Santa Fe', 'Mendoza', 'Tucumán'];
+      const filas = ['edicion_id;numero;orden_id;nombre;apellido;dni;email;whatsapp;provincia;bici_preferida;pack_id;pagada_at'];
+      let n = 1;
+      for (let i = 0; i < 120; i++) {
+        const cant = [1, 1, 3, 5, 5, 10][Math.floor(Math.random() * 6)];
+        const dni = 20000000 + Math.floor(Math.random() * 25000000);
+        const nom = nombres[i % 10], ape = apellidos[Math.floor(Math.random() * 10)];
+        for (let k = 0; k < cant && n <= 350; k++, n++) {
+          filas.push(`edicion-1;${n};ord-${i};${nom};${ape};${dni};${nom.toLowerCase()}@mail.com;54911${Math.floor(Math.random() * 1e8)};${provs[i % 5]};${Math.random() > 0.5 ? 'siskiu_t7' : 'tambora'};pack-${cant};2026-11-01`);
+        }
+      }
+      $('#csv').value = filas.join('\n');
+      $('#setup-msg').textContent = 'Padrón de prueba generado. Tocá “Cargar padrón”.';
+    });
+    $('#btn-sortear').addEventListener('click', () => girar('Primer premio · Polygon', 'ganador'));
+    $('#btn-suplente').addEventListener('click', () => girar(`Suplente ${resultados.filter((r) => r.tipo === 'suplente').length + 1}`, 'suplente'));
+    $('#btn-secundario').addEventListener('click', () => girar(`Premio adicional ${resultados.filter((r) => r.tipo === 'adicional').length + 2}°`, 'adicional'));
+    $('#btn-acta').addEventListener('click', () => {
+      const acta = { edicion: padron[0]?.edicion_id || '', fecha: new Date().toISOString(), participaciones: padron.length, resultados };
+      const blob = new Blob([JSON.stringify(acta, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = `acta-sorteo-${acta.fecha.slice(0, 10)}.json`; a.click();
+    });
+    $('#btn-reset').addEventListener('click', () => location.reload());
+    $('#btn-full').addEventListener('click', () => document.documentElement.requestFullscreen?.());
+  })();
+  </script>
+</body>
+</html>

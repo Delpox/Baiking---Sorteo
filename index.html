@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Baiking · Participá por una Polygon</title>
+  <meta name="description" content="Hacé el Curso Baiking de Mantenimiento y participá por una Polygon Siskiu T7 o una Tambora, a tu elección. Sorteo en vivo por Instagram, ante escribano. Sin obligación de compra.">
+  <meta name="theme-color" content="#0b0f14">
+  <meta property="og:title" content="Baiking · Participá por una Polygon">
+  <meta property="og:description" content="Aprendé a cuidar tu bici y participá por una Polygon Siskiu T7 o una Tambora. Sorteo en vivo, ante escribano. Sin obligación de compra.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/img/og.png">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c9f31d' stroke-width='2.2'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Ccircle cx='12' cy='12' r='2.2' fill='%23c9f31d' stroke='none'/%3E%3Cpath d='M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4' stroke-width='1.3'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body data-page="home">
+
+  <!-- ================= NAV ================= -->
+  <header class="nav">
+    <div class="container">
+      <a class="logo" href="#top" aria-label="Baiking, inicio">
+        <svg><use href="#ico-wheel"></use></svg>
+        Baiking <small>Participá</small>
+      </a>
+      <nav class="nav-links" aria-label="Secciones">
+        <a href="#bicis">Las bicis</a>
+        <a href="#como-funciona">Cómo funciona</a>
+        <a href="#curso">El curso</a>
+        <a href="#packs">Packs</a>
+        <a href="#sorteo">Sorteo</a>
+        <a href="#faq">Preguntas</a>
+      </nav>
+      <div class="nav-cta">
+        <a class="btn btn-primary" href="#packs" data-open-pack=""><span class="hide-sm">Quiero participar</span><span class="show-sm">Participar</span></a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <!-- ================= HERO ================= -->
+    <section class="hero" id="hero">
+      <div class="container hero-grid">
+        <div>
+          <span class="badge"><span class="dot"></span><span id="badge-text">Edición #1 · Sorteo en vivo</span></span>
+          <h1>Aprendé a cuidar tu bici. <em>Ganate una Polygon.</em></h1>
+          <p class="lead">
+            Hacé el <strong>Curso Baiking de Mantenimiento</strong> y participá por una
+            <strong>Polygon Siskiu T7</strong> o una <strong>Tambora</strong>, la que vos elijas.
+            Sorteo en vivo por Instagram, ante escribano, con envío a todo el país.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" href="#packs" data-open-pack="">Quiero participar</a>
+            <a class="btn btn-ghost btn-lg" href="#como-funciona">Ver cómo funciona</a>
+          </div>
+          <ul class="hero-trust">
+            <li><svg><use href="#ico-pin"></use></svg> Baiking · Del Viso, Pilar</li>
+            <li><svg><use href="#ico-instagram"></use></svg> <span data-seguidores>121K</span> en Instagram</li>
+            <li><svg><use href="#ico-wrench"></use></svg> Shimano Service Center</li>
+            <li><svg><use href="#ico-shield"></use></svg> Sin obligación de compra</li>
+          </ul>
+        </div>
+
+        <div class="hero-visual">
+          <div class="prize-card">
+            <div class="prize-card-top">
+              <span class="tag">El premio · a elección</span>
+              <span class="chip is-accent">0 km</span>
+            </div>
+            <div class="bike-art" id="prize-art" aria-live="polite"></div>
+            <p class="prize-card-name"><span id="prize-name">Polygon Siskiu T7</span><small id="prize-type">Trail · Doble suspensión</small></p>
+            <div class="prize-switch" id="prize-switch" role="group" aria-label="Elegí la bici"></div>
+            <div class="countdown" id="countdown" aria-label="Tiempo hasta el sorteo">
+              <div><b data-cd="d">00</b><span>días</span></div>
+              <div><b data-cd="h">00</b><span>horas</span></div>
+              <div><b data-cd="m">00</b><span>min</span></div>
+              <div><b data-cd="s">00</b><span>seg</span></div>
+            </div>
+            <p class="countdown-label">Sorteo: <b data-fecha-sorteo>—</b>, <b data-hora-sorteo>—</b> · en vivo por <b data-instagram>@baiking</b></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= STATS ================= -->
+    <section class="stats" aria-label="Lo esencial">
+      <div class="container">
+        <ul>
+          <li><svg><use href="#ico-gift"></use></svg><div><b>2 bicis a elección</b>Siskiu T7 o Tambora, 0 km</div></li>
+          <li><svg><use href="#ico-live"></use></svg><div><b>Sorteo en vivo</b>Por Instagram, ante escribano</div></li>
+          <li><svg><use href="#ico-truck"></use></svg><div><b>Envío a todo el país</b>Sin costo para quien gana</div></li>
+          <li><svg><use href="#ico-shield"></use></svg><div><b>Sin obligación de compra</b>Participación gratuita disponible</div></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================= BICIS ================= -->
+    <section class="section" id="bicis">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">El premio</span>
+          <h2 class="h-section">Elegí tu <em>Polygon</em></h2>
+          <p class="lead">Trail o gravel: cuando te inscribís, elegís por cuál participás. Si ganás, te la entregamos 0 km, armada y regulada en el taller de Baiking.</p>
+        </div>
+        <div class="bikes-grid" id="bikes-grid"></div>
+        <p class="bikes-note"><svg><use href="#ico-shield"></use></svg><span>Las imágenes son ilustrativas. Talle y color según stock del importador oficial. Podés cambiar tu elección hasta el momento de la entrega. Incluye primer service sin cargo y garantía oficial.</span></p>
+      </div>
+    </section>
+
+    <!-- ================= CÓMO FUNCIONA ================= -->
+    <section class="section section-alt" id="como-funciona">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Simple y transparente</span>
+          <h2 class="h-section">Cómo <em>funciona</em></h2>
+          <p class="lead">Cuatro pasos. Sin letra chica: cada participación tiene un número único y correlativo que te llega por mail y por WhatsApp.</p>
+        </div>
+        <ol class="steps">
+          <li class="step reveal"><svg><use href="#ico-cart"></use></svg><h3>Elegí tu pack</h3><p>Curso solo, o curso + kit / service en Baiking. Cuanto más valor te llevás, más participaciones sumás de regalo.</p></li>
+          <li class="step reveal"><svg><use href="#ico-lock"></use></svg><h3>Pagá con Mercado Pago</h3><p>Tarjeta de crédito, débito o dinero en cuenta. Todo con factura.</p></li>
+          <li class="step reveal"><svg><use href="#ico-hash"></use></svg><h3>Recibí tus participaciones</h3><p>Al instante: en pantalla, por mail y por WhatsApp. Números correlativos, sin repetir, y acceso inmediato al curso.</p></li>
+          <li class="step reveal"><svg><use href="#ico-live"></use></svg><h3>Sorteo en vivo</h3><p>El <span data-fecha-sorteo-corta>—</span> por Instagram, ante escribano público. Si ganás, te llamamos ese mismo día.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ================= EL CURSO ================= -->
+    <section class="section" id="curso">
+      <div class="container course-grid">
+        <div class="reveal">
+          <span class="eyebrow">Lo que te llevás sí o sí</span>
+          <h2 class="h-section">Cuidá tu bici <em>como en el taller</em></h2>
+          <p class="lead" data-curso-descripcion></p>
+          <ul class="course-format" id="course-format"></ul>
+          <div class="teacher">
+            <div class="avatar" aria-hidden="true">G</div>
+            <div><b data-curso-docente>Gastón y el equipo de taller de Baiking</b><span>Shimano Service Center · Del Viso, Pilar</span></div>
+          </div>
+        </div>
+        <div>
+          <ol class="modules" id="modules"></ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PACKS ================= -->
+    <section class="section section-alt" id="packs">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Elegí tu pack</span>
+          <h2 class="h-section">Más valor, <em>más participaciones</em></h2>
+          <p class="lead">Todos los packs incluyen el curso completo. Las participaciones son una bonificación sin cargo por cada compra. Elegís la bici en el siguiente paso.</p>
+        </div>
+        <div class="packs" id="packs-grid"></div>
+        <p class="packs-note" data-gratuita>¿Preferís participar sin comprar? <a href="participa-sin-cargo.html" style="color:var(--acento);text-decoration:underline">Registrá tu participación sin cargo</a> · Sin obligación de compra.</p>
+      </div>
+    </section>
+
+    <!-- ================= SORTEO ================= -->
+    <section class="section" id="sorteo">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Transparencia total</span>
+          <h2 class="h-section">Así se define <em>el ganador</em></h2>
+          <p class="lead">Nada queda a la interpretación: fecha fija, escribano público, transmisión en vivo y padrón de participaciones certificado.</p>
+        </div>
+        <div class="draw-grid">
+          <div class="draw-card reveal">
+            <div class="draw-date">
+              <div class="cal" id="draw-cal"></div>
+              <div>
+                <h3>Sorteo en vivo por Instagram</h3>
+                <p><span data-fecha-sorteo>—</span>, <span data-hora-sorteo>—</span> en <span data-instagram>@baiking</span>. Inscripciones hasta el <span data-cierre>—</span>.</p>
+              </div>
+            </div>
+            <ul class="rules" id="rules"></ul>
+          </div>
+          <div class="draw-card reveal">
+            <span class="eyebrow">Ganadores</span>
+            <ul class="winners" id="winners" style="margin-top:14px"></ul>
+            <span class="eyebrow" style="margin-top:22px">También sorteamos</span>
+            <ul class="secondary-prizes" id="secondary-prizes"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SOBRE BAIKING ================= -->
+    <section class="section section-alt" id="baiking">
+      <div class="container about-grid">
+        <div class="reveal">
+          <span class="eyebrow">Quién está detrás</span>
+          <h2 class="h-section">Somos <em>Baiking</em></h2>
+          <p class="lead">Una tienda de bicis en Del Viso, Pilar, con más de <span data-seguidores>121K</span> personas que nos siguen en Instagram, taller Shimano Service Center y salidas de MTB gratuitas todos los sábados. Vendemos Polygon, Trek, Cannondale, Giant y KTM, y arreglamos lo que haga falta.</p>
+          <ul class="about-points">
+            <li><svg><use href="#ico-pin"></use></svg><span>Tienda física en <span data-direccion>Las Camelias 3327, Del Viso</span></span></li>
+            <li><svg><use href="#ico-wrench"></use></svg><span>Taller propio, Shimano Service Center</span></li>
+            <li><svg><use href="#ico-users"></use></svg><span>Salidas de MTB gratuitas los sábados</span></li>
+            <li><svg><use href="#ico-truck"></use></svg><span>Envíos a todo el país</span></li>
+          </ul>
+          <div class="socials">
+            <a class="btn btn-ghost" data-ig href="#"><svg style="width:18px;height:18px"><use href="#ico-instagram"></use></svg> Instagram</a>
+            <a class="btn btn-wa" data-wa href="#"><svg style="width:18px;height:18px"><use href="#ico-whatsapp"></use></svg> WhatsApp</a>
+          </div>
+        </div>
+        <blockquote class="quote reveal">
+          <!-- Texto propuesto para Gastón: validar antes de publicar -->
+          Hace tiempo que le veníamos dando vueltas a esto: una forma de que la comunidad aprenda más de su bici y, de paso, alguien se lleve una Polygon nueva. Lo hacemos de frente, con escribano y en vivo.
+          <footer><b>Gastón</b> · Baiking Tienda de Bicis</footer>
+        </blockquote>
+      </div>
+    </section>
+
+    <!-- ================= FAQ ================= -->
+    <section class="section" id="faq-section">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Preguntas frecuentes</span>
+          <h2 class="h-section" id="faq-title">Lo que <em>todos preguntan</em></h2>
+        </div>
+        <div class="faq" id="faq"></div>
+      </div>
+    </section>
+
+    <!-- ================= CTA FINAL ================= -->
+    <section class="section" id="sumate" style="padding-top:0">
+      <div class="container">
+        <div class="cta-final reveal">
+          <h2>¿Listo para <em>pedalear</em>?</h2>
+          <p>Elegí tu pack, hacé el curso y quedá participando por tu Polygon. El sorteo es el <span data-fecha-sorteo>—</span>, en vivo.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" href="#packs" data-open-pack="">Quiero participar</a>
+            <a class="btn btn-wa btn-lg" data-wa href="#"><svg style="width:20px;height:20px"><use href="#ico-whatsapp"></use></svg> Hablar con Baiking</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <a class="logo" href="#top" style="font-size:22px"><svg><use href="#ico-wheel"></use></svg> Baiking</a>
+          <p style="margin-top:12px" data-direccion>Las Camelias 3327, Del Viso (Pilar), Buenos Aires</p>
+          <p data-horarios></p>
+          <p style="margin-top:8px"><a data-web href="#">baiking.com.ar</a></p>
+        </div>
+        <div>
+          <h4>La promoción</h4>
+          <ul>
+            <li><a href="#como-funciona">Cómo funciona</a></li>
+            <li><a href="#packs">Packs y precios</a></li>
+            <li><a href="#sorteo">Sorteo y transparencia</a></li>
+            <li><a href="bases-y-condiciones.html">Bases y condiciones</a></li>
+            <li data-gratuita><a href="participa-sin-cargo.html">Participación sin cargo</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Contacto</h4>
+          <ul>
+            <li><a data-wa href="#">WhatsApp</a></li>
+            <li><a data-ig href="#">Instagram</a></li>
+            <li><a data-email href="#">hola@baiking.com.ar</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="legal">
+        <p><strong data-legal-leyenda>SIN OBLIGACIÓN DE COMPRA. Consultá las bases y condiciones.</strong></p>
+        <p data-legal-aviso></p>
+        <p data-legal-organizador></p>
+        <p>© <span data-year>2026</span> Baiking Tienda de Bicis. Polygon es una marca registrada de sus titulares; se usa solo para identificar el premio.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ================= MOBILE BAR + WHATSAPP ================= -->
+  <div class="mobile-bar" id="mobile-bar">
+    <div class="info" id="mobile-bar-info">Pack · $<b>participaciones</b></div>
+    <a class="btn btn-primary" href="#packs" data-open-pack="">Participar</a>
+  </div>
+  <a class="wa-float" data-wa href="#" aria-label="Escribinos por WhatsApp"><svg><use href="#ico-whatsapp"></use></svg></a>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- ================= MODAL INSCRIPCIÓN ================= -->
+  <div class="modal" id="modal" aria-hidden="true" role="dialog" aria-labelledby="modal-title">
+    <div class="modal-panel">
+      <div id="modal-form">
+        <div class="modal-head">
+          <div>
+            <h3 id="modal-title">Sumate a la edición #1</h3>
+            <p>Elegí tu pack, decinos por qué bici participás y pagá seguro con Mercado Pago.</p>
+          </div>
+          <button type="button" class="modal-close" data-close-modal aria-label="Cerrar"><svg style="width:18px;height:18px"><use href="#ico-x"></use></svg></button>
+        </div>
+
+        <div class="pack-picker" id="pack-picker" role="group" aria-label="Elegí tu pack"></div>
+
+        <div class="summary">
+          <span class="k">Pack</span><span class="v" id="sum-pack">—</span>
+          <span class="k">Incluye</span><span class="v" id="sum-part">—</span>
+          <span class="k">Participás por</span><span class="v" id="sum-bici">—</span>
+          <span class="total"><span>Total</span><b id="sum-total">—</b></span>
+        </div>
+
+        <form class="form" id="form-inscripcion" novalidate>
+          <div class="field">
+            <label>¿Por cuál bici participás?</label>
+            <div class="bike-picker" id="bike-picker"></div>
+            <span class="err"></span>
+          </div>
+          <div class="form-row">
+            <div class="field"><label for="f-nombre">Nombre</label><input id="f-nombre" name="nombre" autocomplete="given-name" required><span class="err"></span></div>
+            <div class="field"><label for="f-apellido">Apellido</label><input id="f-apellido" name="apellido" autocomplete="family-name" required><span class="err"></span></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label for="f-dni">DNI</label><input id="f-dni" name="dni" inputmode="numeric" placeholder="Sin puntos" required><span class="err"></span></div>
+            <div class="field"><label for="f-provincia">Provincia</label><select id="f-provincia" name="provincia" required></select><span class="err"></span></div>
+          </div>
+          <div class="field"><label for="f-email">Email</label><input id="f-email" name="email" type="email" autocomplete="email" placeholder="Acá te mandamos el curso y tus participaciones" required><span class="err"></span></div>
+          <div class="field"><label for="f-whatsapp">WhatsApp</label><input id="f-whatsapp" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" placeholder="11 5728 0056" required><span class="err"></span></div>
+          <label class="check"><input type="checkbox" name="mayor_edad"><span>Soy mayor de 18 años y resido en Argentina.</span></label>
+          <label class="check"><input type="checkbox" name="acepta_bases"><span>Leí y acepto las <a href="bases-y-condiciones.html" target="_blank" rel="noopener">bases y condiciones</a> y la política de privacidad.</span></label>
+          <div class="form-error" id="form-error" role="alert"></div>
+          <div class="form-foot">
+            <button type="submit" class="btn btn-primary btn-lg btn-block" id="btn-pagar">Ir a pagar con Mercado Pago</button>
+            <span class="secure"><svg><use href="#ico-lock"></use></svg> Pago seguro procesado por Mercado Pago · Recibís factura</span>
+          </div>
+        </form>
+      </div>
+
+      <div id="modal-success" hidden>
+        <div class="modal-head">
+          <div>
+            <span class="eyebrow">Participación confirmada</span>
+            <h3 style="margin-top:8px">¡Ya estás adentro, <span id="ok-nombre">—</span>!</h3>
+            <p>Te mandamos el acceso al curso y tus participaciones por mail y WhatsApp.</p>
+          </div>
+          <button type="button" class="modal-close" data-close-modal aria-label="Cerrar"><svg style="width:18px;height:18px"><use href="#ico-x"></use></svg></button>
+        </div>
+        <div class="ticket" style="margin-top:18px">
+          <div class="ticket-head">
+            <span class="eyebrow">Tus participaciones</span>
+            <ul class="numbers" id="ok-numeros"></ul>
+          </div>
+          <div class="ticket-body">
+            <div class="ticket-meta" style="margin-top:0">
+              <span>Participás por</span><b id="ok-bici">—</b>
+              <span>Pack</span><b id="ok-pack">—</b>
+              <span>Sorteo</span><b><span data-fecha-sorteo>—</span></b>
+            </div>
+            <div class="ticket-actions">
+              <a class="btn btn-wa" id="ok-share" href="#" target="_blank" rel="noopener"><svg style="width:18px;height:18px"><use href="#ico-whatsapp"></use></svg> Compartir</a>
+              <button type="button" class="btn btn-ghost" data-close-modal>Listo</button>
+            </div>
+          </div>
+        </div>
+        <p style="margin-top:14px;font-size:12px;color:var(--muted)">Vista de demostración: en producción, esta confirmación aparece después del pago aprobado en Mercado Pago y llega también por mail y WhatsApp.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/app.js" defer></script>
+</body>
+</html>

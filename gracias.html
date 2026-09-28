@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>¡Ya estás participando! · Baiking</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0b0f14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body data-page="gracias">
+  <header class="nav">
+    <div class="container">
+      <a class="logo" href="index.html"><svg><use href="#ico-wheel"></use></svg> Baiking <small>Participá</small></a>
+      <div class="nav-cta"><a class="btn btn-ghost" href="index.html">Volver al inicio</a></div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="container page-narrow">
+      <div id="estado-cargando">
+        <span class="eyebrow">Un segundo</span>
+        <h1 class="h-section">Confirmando tu <em>participación</em></h1>
+        <div class="skeleton" style="margin-top:24px;width:60%"></div>
+        <div class="skeleton" style="margin-top:12px;width:40%"></div>
+      </div>
+
+      <div id="estado-ok" hidden>
+        <span class="eyebrow">Participación confirmada</span>
+        <h1 class="h-section">¡Ya estás adentro, <em id="ok-nombre">—</em>!</h1>
+        <p class="lead">Te mandamos por mail y por WhatsApp el acceso al curso y tus participaciones. Guardá esta página: es tu comprobante.</p>
+
+        <div class="ticket">
+          <div class="ticket-head">
+            <span class="eyebrow" id="ok-titulo">Tus participaciones</span>
+            <ul class="numbers" id="ok-numeros"></ul>
+          </div>
+          <div class="ticket-body">
+            <div class="ticket-meta" style="margin-top:0">
+              <span>Participás por</span><b id="ok-bici">—</b>
+              <span>Pack</span><b id="ok-pack">—</b>
+              <span>Sorteo en vivo</span><b id="ok-sorteo">—</b>
+              <span>Orden</span><b id="ok-orden" style="font-family:monospace;font-size:12px">—</b>
+            </div>
+            <div class="ticket-actions">
+              <a class="btn btn-primary" id="ok-curso" href="#">Entrar al curso</a>
+              <a class="btn btn-wa" id="ok-share" href="#" target="_blank" rel="noopener"><svg style="width:18px;height:18px"><use href="#ico-whatsapp"></use></svg> Compartir</a>
+            </div>
+          </div>
+        </div>
+
+        <ol class="next-steps">
+          <li><span>1</span><div><b>Revisá tu mail</b> (y la carpeta de spam la primera vez): ahí está el acceso al curso y el detalle de tus participaciones.</div></li>
+          <li><span>2</span><div><b>Seguinos en Instagram</b> <a data-ig href="#" style="color:var(--acento)"><span data-instagram>@baiking</span></a> para no perderte el sorteo en vivo.</div></li>
+          <li><span>3</span><div><b>Si ganás</b>, te contactamos por mail, WhatsApp y teléfono el mismo día. Tenés 7 días hábiles para responder y acreditar identidad.</div></li>
+        </ol>
+      </div>
+
+      <div id="estado-pendiente" hidden>
+        <span class="eyebrow">Pago pendiente</span>
+        <h1 class="h-section">Estamos esperando <em>la acreditación</em></h1>
+        <p class="lead">Mercado Pago todavía no confirmó el pago. Apenas se acredite, te asignamos tus participaciones y te avisamos por mail y WhatsApp. Podés volver a esta página cuando quieras.</p>
+        <div class="callout">Si pagaste con un medio en efectivo (Rapipago, Pago Fácil) puede demorar hasta 48 hs hábiles.</div>
+        <div class="hero-actions"><a class="btn btn-ghost" href="index.html">Volver al inicio</a><a class="btn btn-wa" data-wa href="#">Consultar por WhatsApp</a></div>
+      </div>
+
+      <div id="estado-error" hidden>
+        <span class="eyebrow">Ups</span>
+        <h1 class="h-section">No encontramos <em>esa orden</em></h1>
+        <p class="lead">Revisá el link que te llegó por mail o escribinos por WhatsApp con tu nombre y DNI y lo resolvemos.</p>
+        <div class="hero-actions"><a class="btn btn-ghost" href="index.html">Volver al inicio</a><a class="btn btn-wa" data-wa href="#">Escribir por WhatsApp</a></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container legal" style="margin-top:0;border-top:0;padding-top:0">
+      <p data-legal-leyenda></p>
+      <p data-legal-aviso></p>
+      <p><a href="bases-y-condiciones.html">Bases y condiciones</a></p>
+    </div>
+  </footer>
+
+  <script src="assets/js/app.js" defer></script>
+  <script src="assets/js/gracias.js" defer></script>
+</body>
+</html>

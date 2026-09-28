@@ -1,0 +1,22 @@
+{
+  "name": "baiking-participa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Baiking · Programa 'Curso + Participación' por una Polygon (Siskiu T7 o Tambora). Landing, checkout con Mercado Pago y automatizaciones de mail/WhatsApp.",
+  "type": "module",
+  "scripts": {
+    "dev": "npx serve -l 3000 .",
+    "check": "node scripts/check.mjs",
+    "screenshots": "node scripts/screenshots.mjs",
+    "sorteo": "node scripts/sorteo.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

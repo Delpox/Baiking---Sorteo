@@ -1,0 +1,200 @@
+{
+  "_comentario": "ÚNICA fuente de verdad de la campaña: la usan el sitio (assets/js/app.js) y el backend (api/*). Los valores marcados con [A CONFIRMAR] se definen con Gastón antes de lanzar.",
+
+  "marca": {
+    "nombre": "Baiking",
+    "claim": "Tienda de bicis",
+    "ciudad": "Del Viso, Pilar · Buenos Aires",
+    "web": "https://baiking.com.ar",
+    "seguidores_instagram": "121K"
+  },
+
+  "moneda": "ARS",
+
+  "edicion": {
+    "id": "edicion-1",
+    "numero": 1,
+    "nombre": "Edición #1",
+    "fecha_sorteo": "2026-12-04T21:00:00-03:00",
+    "cierre_ventas": "2026-12-03T23:59:00-03:00",
+    "lugar_sorteo": "En vivo por Instagram"
+  },
+
+  "premio": {
+    "titulo": "Una Polygon a elección",
+    "descripcion": "Quien gana elige entre la Polygon Siskiu T7 (trail, doble suspensión) o la Polygon Tambora (gravel). La bici se entrega 0 km, armada y regulada por Baiking, con service de cortesía.",
+    "incluye": [
+      "Bici 0 km del talle que corresponda, armada y regulada en Baiking",
+      "Primer service sin cargo a los 30 días",
+      "Envío a todo el país (o retiro en la tienda)",
+      "Garantía oficial de la marca"
+    ]
+  },
+
+  "bicis": [
+    {
+      "id": "siskiu_t7",
+      "nombre": "Polygon Siskiu T7",
+      "marca": "Polygon",
+      "tipo": "Trail · Doble suspensión",
+      "ilustracion": "mtb",
+      "imagen": null,
+      "tagline": "La trail de doble suspensión más elegida de Polygon. Cuadro ALX reforzado, 140/135 mm de recorrido y transmisión 1x12: sube con eficiencia y baja con confianza.",
+      "specs": [
+        { "k": "Cuadro", "v": "ALX Trail aluminio 6061, doble suspensión, UDH" },
+        { "k": "Suspensión", "v": "RockShox Recon Silver RL 140 mm · Deluxe Select+ 135 mm" },
+        { "k": "Transmisión", "v": "Shimano Deore 1x12, cassette 10–51T" },
+        { "k": "Frenos", "v": "Shimano MT420 hidráulicos de 4 pistones" },
+        { "k": "Ruedas", "v": "29\" · Maxxis Dissector EXO+ tubeless ready" },
+        { "k": "Tija telescópica", "v": "X-Fusion Manic 150/170 mm" }
+      ],
+      "valor_referencia": 3664500,
+      "color": "#c9f31d"
+    },
+    {
+      "id": "tambora",
+      "nombre": "Polygon Tambora",
+      "marca": "Polygon",
+      "tipo": "Gravel · All-road",
+      "ilustracion": "gravel",
+      "imagen": null,
+      "tagline": "Dos bicis en una: con los flip chips pasás de geometría all-road a gravel en minutos. Asfalto, ripio y sendero con la misma bici.",
+      "specs": [
+        { "k": "Cuadro", "v": "Serie Tambora con flip chips (all-road / gravel)" },
+        { "k": "Transmisión", "v": "Gravel específica (Shimano GRX o SRAM Apex, según versión)" },
+        { "k": "Frenos", "v": "Disco, flat mount" },
+        { "k": "Cubiertas", "v": "700c · paso hasta 45 mm" },
+        { "k": "Manubrio", "v": "Drop bar con flare para off-road" },
+        { "k": "Anclajes", "v": "14 puntos para bikepacking, portaequipaje y guardabarros" }
+      ],
+      "version_nota": "[A CONFIRMAR] versión a sortear: A4 (aluminio, GRX 2x11, ≈ $3.600.000) · G4 (≈ $2.320.000) · G5 (carbono, ≈ $4.460.000 – $5.775.000)",
+      "valor_referencia": 3600000,
+      "color": "#ff8a3d"
+    }
+  ],
+
+  "curso": {
+    "nombre": "Curso online de Mantenimiento y Puesta a Punto de tu Bici",
+    "nombre_corto": "Curso Baiking de Mantenimiento",
+    "descripcion": "Un curso corto, en video y con guía en PDF, para que cuides tu bici como en el taller: limpieza, lubricación, ajuste de frenos y cambios, y qué revisar antes de cada salida. Lo dicta el equipo de Baiking.",
+    "docente": "Gastón y el equipo de taller de Baiking",
+    "url_acceso": "",
+    "formato": [
+      "8 clases en video (≈ 2 h en total)",
+      "Guía PDF descargable con checklists",
+      "Acceso inmediato y de por vida",
+      "Consultas por WhatsApp con el taller"
+    ],
+    "modulos": [
+      { "titulo": "Anatomía de tu bici", "descripcion": "Partes, nombres y qué hace cada cosa.", "duracion": "12 min" },
+      { "titulo": "Lavado y lubricación", "descripcion": "Qué usar, qué no, y con qué frecuencia.", "duracion": "15 min" },
+      { "titulo": "Cubiertas, cámaras y tubeless", "descripcion": "Presiones, pinchaduras y sellador.", "duracion": "18 min" },
+      { "titulo": "Frenos a disco", "descripcion": "Centrado, pastillas y ruidos comunes.", "duracion": "16 min" },
+      { "titulo": "Cambios y transmisión", "descripcion": "Ajuste de indexado, cadena y desgaste.", "duracion": "20 min" },
+      { "titulo": "Suspensión básica", "descripcion": "SAG, rebote y mantenimiento.", "duracion": "14 min" },
+      { "titulo": "Posición y talle", "descripcion": "Altura de asiento, alcance y confort.", "duracion": "10 min" },
+      { "titulo": "Checklist pre-salida", "descripcion": "Los 2 minutos que evitan el 80% de los problemas.", "duracion": "8 min" }
+    ]
+  },
+
+  "_packs_nota": "Cada pack es un producto real (curso, kit, service en el taller de Baiking). Las participaciones son una bonificación proporcional al valor comprado (regla orientativa: 1 participación cada $12.000). NO vender 'packs de chances' del mismo curso: ver docs/01-investigacion.md. Precios [A CONFIRMAR] con Gastón.",
+  "packs": [
+    {
+      "id": "pack-curso",
+      "nombre": "Curso",
+      "participaciones": 1,
+      "precio": 15000,
+      "destacado": false,
+      "etiqueta": "",
+      "incluye": ["Curso online completo (8 clases + guía PDF)", "Acceso inmediato y de por vida", "Consultas por WhatsApp con el taller"],
+      "url_externa": ""
+    },
+    {
+      "id": "pack-kit",
+      "nombre": "Curso + Kit",
+      "participaciones": 3,
+      "precio": 35000,
+      "destacado": false,
+      "etiqueta": "",
+      "incluye": ["Todo lo del Curso", "Kit de limpieza y lubricación Baiking (desengrasante, lubricante y cepillo)", "Retiro en tienda o envío"],
+      "url_externa": ""
+    },
+    {
+      "id": "pack-service",
+      "nombre": "Curso + Service",
+      "participaciones": 5,
+      "precio": 60000,
+      "destacado": true,
+      "etiqueta": "Más elegido",
+      "incluye": ["Todo lo del Curso", "Service completo de tu bici en el taller Baiking (Shimano Service Center)", "Turno prioritario"],
+      "url_externa": ""
+    },
+    {
+      "id": "pack-full",
+      "nombre": "Pack Full",
+      "participaciones": 10,
+      "precio": 110000,
+      "destacado": false,
+      "etiqueta": "Máxima chance",
+      "incluye": ["Curso + Kit + Service", "Jersey Baiking edición limitada", "Salida grupal de MTB con el equipo"],
+      "url_externa": ""
+    }
+  ],
+
+  "participacion_gratuita": {
+    "habilitada": true,
+    "participaciones": 1,
+    "texto": "Sin obligación de compra: podés participar sin cargo completando el formulario. Una (1) participación por persona, con la misma probabilidad que cualquier otra."
+  },
+
+  "checkout": {
+    "modo": "demo",
+    "_modos": "demo = simula la compra (para mostrar) · api = Mercado Pago vía /api/checkout · externo = redirige a `packs[].url_externa` (ej. producto en la Tienda Nube de Baiking)"
+  },
+
+  "contacto": {
+    "whatsapp": "5491157280056",
+    "whatsapp_mensaje": "Hola Baiking! Quiero saber más sobre el curso y la participación por la Polygon.",
+    "instagram": "baikingtiendadebicis",
+    "email": "[A CONFIRMAR] hola@baiking.com.ar",
+    "direccion": "Las Camelias 3327, Del Viso (Pilar), Buenos Aires",
+    "horarios": "Lun a vie 9:30–13:30 y 15:30–19:30 · Sáb 9:00–14:00"
+  },
+
+  "sorteo": {
+    "metodo": "Sorteo en vivo por Instagram con generador de números aleatorios auditable, ante escribano público.",
+    "reglas": [
+      { "titulo": "Números correlativos", "texto": "Cada participación recibe un número único y correlativo en el momento en que se confirma el pago. Lo ves en pantalla, por mail y por WhatsApp." },
+      { "titulo": "En vivo y grabado", "texto": "El sorteo se transmite en vivo por Instagram y queda publicado. Se sortea entre todos los números asignados hasta el cierre." },
+      { "titulo": "Escribano público", "texto": "Un escribano certifica el padrón de participaciones y el resultado del sorteo." },
+      { "titulo": "Suplentes", "texto": "Se sortean dos participaciones suplentes. Si la persona ganadora no responde ni acredita identidad en 7 días hábiles, pasa a la siguiente." }
+    ],
+    "premios_secundarios": [
+      { "puesto": "2° premio", "detalle": "Casco + kit de herramientas Baiking" },
+      { "puesto": "3° premio", "detalle": "Gift card de $100.000 en Baiking" }
+    ]
+  },
+
+  "faq": [
+    { "p": "¿Qué estoy comprando exactamente?", "r": "Un producto real de Baiking: el curso online de mantenimiento (y, según el pack, el kit o el service en el taller). Cada compra incluye, como bonificación sin costo adicional, participaciones en el sorteo de la Polygon. El curso es tuyo desde el primer minuto, gane quien gane." },
+    { "p": "¿Puedo participar sin comprar?", "r": "Sí. La promoción es sin obligación de compra: completando el formulario de participación sin cargo recibís una participación por persona, con la misma probabilidad que cualquier otra. Las participaciones por compra son una bonificación por llevarte el curso." },
+    { "p": "¿Cómo sé cuáles son mis participaciones?", "r": "Apenas se confirma el pago (o el registro sin cargo) te las mostramos en pantalla y te las mandamos por mail y por WhatsApp. También podés consultarlas cuando quieras con el link de tu orden." },
+    { "p": "¿Puedo elegir la bici?", "r": "Sí. Al inscribirte nos decís cuál preferís (Siskiu T7 o Tambora) y, si ganás, te la entregamos 0 km en el talle que te corresponda. Podés cambiar de opinión hasta el momento de la entrega." },
+    { "p": "¿Cómo y cuándo es el sorteo?", "r": "En vivo por Instagram, en la fecha publicada, con un generador de números aleatorios auditable y ante escribano público. El video queda publicado y contactamos a la persona ganadora por mail, WhatsApp y teléfono." },
+    { "p": "¿Puedo comprar más de un pack?", "r": "Sí. Cada compra suma sus participaciones. Todas quedan asociadas al mismo mail y DNI." },
+    { "p": "¿Qué pasa si no vivo cerca de Baiking?", "r": "La bici viaja embalada a cualquier punto del país sin costo para quien gana, o se puede retirar en la tienda de Del Viso con armado y regulación incluidos. El kit se envía; el service se realiza en el taller." },
+    { "p": "¿Qué medios de pago aceptan?", "r": "Mercado Pago: tarjetas de crédito y débito, dinero en cuenta y otros medios disponibles en la plataforma. Todo con factura." },
+    { "p": "¿Hay requisitos para participar?", "r": "Ser mayor de 18 años, residir en Argentina y aceptar las bases y condiciones. El resto es tener ganas de andar en bici." }
+  ],
+
+  "legal": {
+    "razon_social": "[A CONFIRMAR] Razón social de Baiking",
+    "cuit": "[A CONFIRMAR] CUIT",
+    "domicilio": "Las Camelias 3327, Del Viso (1669), Pilar, Provincia de Buenos Aires",
+    "vigencia_desde": "2026-10-15",
+    "leyenda": "SIN OBLIGACIÓN DE COMPRA. Consultá las bases y condiciones en baiking.com.ar/participa/bases-y-condiciones.",
+    "aviso_corto": "Promoción organizada por Baiking. La compra del curso (y sus packs) incluye, como bonificación sin cargo, participaciones en el sorteo descripto en las bases y condiciones. Sin obligación de compra: participación gratuita disponible en el sitio. Válido para mayores de 18 años residentes en Argentina. Las imágenes son ilustrativas; la bici se entrega en el talle y color disponibles según stock del importador oficial. Esta promoción no está patrocinada, avalada ni administrada por Instagram, Meta ni Mercado Pago."
+  },
+
+  "ganadores": []
+}
