@@ -904,3 +904,29 @@
     padding: 7px 11px;
   }
 }
+
+/* Bici elegida: una barra por bici, misma escala (100 % = todas las chances del rango) */
+.meter-list {
+  display: grid;
+  gap: 10px;
+}
+.meter-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+}
+.meter-row > span {
+  color: var(--fg-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.meter-row .meter {
+  margin: 0;
+}
+.meter-val {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

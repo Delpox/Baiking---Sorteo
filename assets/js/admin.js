@@ -144,7 +144,9 @@
         const u = r();
         const pack = packs[Math.min(packs.length - 1, u < 0.35 ? 0 : u < 0.55 ? 1 : u < 0.7 ? 2 : u < 0.8 ? 3 : u < 0.92 ? 4 : u < 0.97 ? 5 : 7)];
         const gratuita = r() < 0.12;
-        const medio = gratuita ? 'gratuita' : r() < 0.78 ? 'mercadopago' : 'transferencia';
+        // Con Mercado Pago desactivado en la config, la demo muestra solo transferencias.
+        const mpOn = cfg.checkout?.mercadopago ? cfg.checkout.mercadopago.habilitada !== false : true;
+        const medio = gratuita ? 'gratuita' : mpOn && r() < 0.78 ? 'mercadopago' : 'transferencia';
         const t = new Date(fecha.getTime() - r() * 14 * 36e5 - 6 * 36e5);
         const e = r();
         let estado = 'pagada';
@@ -173,7 +175,7 @@
           pack_id: gratuita ? 'gratuita' : pack.id,
           cantidad_participaciones: gratuita ? 1 : pack.participaciones,
           monto: gratuita ? 0 : pack.precio,
-          bici_preferida: r() < 0.62 ? 'siskiu_t7' : 'tambora',
+          bici_preferida: (cfg.bicis[Math.floor(r() * cfg.bicis.length)] || cfg.bicis[0]).id,
           provincia: provs[Math.floor(r() * provs.length)],
           nombre,
           apellido,
@@ -450,34 +452,29 @@
     el.replaceChildren();
     const total = serie.reduce((s, x) => s + x.valor, 0);
     if (!total) return vacio(el, 'Sin datos en este rango.');
-    const [a, b] = serie;
-    const pa = Math.round((a.valor / total) * 100);
-    const wrap = document.createElement('div');
-    const bar = document.createElement('div');
-    bar.className = 'meter';
-    bar.setAttribute('role', 'img');
-    bar.setAttribute('aria-label', `${a.etiqueta} ${pa} %, ${b.etiqueta} ${100 - pa} %`);
-    const fill = document.createElement('b');
-    fill.style.width = `${pa}%`;
-    bar.appendChild(fill);
-    const legend = document.createElement('div');
-    legend.className = 'legend';
-    const left = document.createElement('div');
-    const ls = document.createElement('span');
-    ls.append(Object.assign(document.createElement('i'), {}), document.createTextNode(a.etiqueta));
-    const lb = document.createElement('b');
-    lb.textContent = `${pa} % · ${fmtInt(a.valor)}`;
-    left.append(ls, lb);
-    const right = document.createElement('div');
-    right.className = 'right';
-    const rs = document.createElement('span');
-    rs.append(document.createTextNode(b.etiqueta), Object.assign(document.createElement('i'), {}));
-    const rb = document.createElement('b');
-    rb.textContent = `${100 - pa} % · ${fmtInt(b.valor)}`;
-    right.append(rs, rb);
-    legend.append(left, right);
-    wrap.append(bar, legend);
-    el.appendChild(wrap);
+    // Una barra por bici (sirve para dos o más), a la misma escala (100 % = todas las chances).
+    const list = document.createElement('div');
+    list.className = 'meter-list';
+    list.setAttribute('role', 'img');
+    list.setAttribute('aria-label', serie.map((x) => `${x.etiqueta} ${Math.round((x.valor / total) * 100) } %`).join(', '));
+    for (const x of serie) {
+      const pct = Math.round((x.valor / total) * 100);
+      const row = document.createElement('div');
+      row.className = 'meter-row';
+      const label = document.createElement('span');
+      label.textContent = String(x.etiqueta).replace('Polygon ', '');
+      const bar = document.createElement('div');
+      bar.className = 'meter';
+      const fill = document.createElement('b');
+      fill.style.width = `${pct}%`;
+      bar.appendChild(fill);
+      const val = document.createElement('b');
+      val.className = 'meter-val';
+      val.textContent = `${pct} % · ${fmtInt(x.valor)}`;
+      row.append(label, bar, val);
+      list.appendChild(row);
+    }
+    el.appendChild(list);
   }
 
   function vacio(el, msg) {
