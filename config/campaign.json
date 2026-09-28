@@ -194,58 +194,13 @@
     ],
     "_modulos_nota": "Lo que vas a aprender (lista de Baiking, 28/09). duracion es opcional: si está vacía no se muestra."
   },
-  "_packs_nota": "Escalera de precios copiada de la estructura de Autoloop (decisión del cliente, 28/09): cada opción incluye el curso completo y N chances. Precios a confirmar con Gastón. Ver docs/01 §2 y docs/02 §2 sobre el riesgo legal de vender 'chances' y las mitigaciones que quedan (curso real, vía gratuita, sorteo en vivo y grabado).",
+  "_packs_nota": "Escalera de precios con la estructura de Autoloop, multiplicada por 10 en chances (decisión de Baiking, 28/09): cada opción incluye el curso completo y N chances. Ver docs/01 §2 y docs/02 §2 sobre el riesgo legal de vender \"chances\" y las mitigaciones que quedan (curso real, vía gratuita, sorteo en vivo y grabado).",
   "packs": [
-    {
-      "id": "chances-1",
-      "nombre": "1 chance",
-      "participaciones": 1,
-      "precio": 10000,
-      "destacado": false,
-      "etiqueta": "",
-      "url_externa": ""
-    },
-    {
-      "id": "chances-2",
-      "nombre": "2 chances",
-      "participaciones": 2,
-      "precio": 15000,
-      "destacado": false,
-      "etiqueta": "",
-      "url_externa": ""
-    },
-    {
-      "id": "chances-4",
-      "nombre": "4 chances",
-      "participaciones": 4,
-      "precio": 25000,
-      "destacado": false,
-      "etiqueta": "",
-      "url_externa": ""
-    },
-    {
-      "id": "chances-6",
-      "nombre": "6 chances",
-      "participaciones": 6,
-      "precio": 35000,
-      "destacado": false,
-      "etiqueta": "",
-      "url_externa": ""
-    },
     {
       "id": "chances-10",
       "nombre": "10 chances",
       "participaciones": 10,
-      "precio": 45000,
-      "destacado": true,
-      "etiqueta": "Recomendado",
-      "url_externa": ""
-    },
-    {
-      "id": "chances-15",
-      "nombre": "15 chances",
-      "participaciones": 15,
-      "precio": 70000,
+      "precio": 10000,
       "destacado": false,
       "etiqueta": "",
       "url_externa": ""
@@ -254,25 +209,43 @@
       "id": "chances-20",
       "nombre": "20 chances",
       "participaciones": 20,
-      "precio": 90000,
+      "precio": 15000,
       "destacado": false,
       "etiqueta": "",
       "url_externa": ""
     },
     {
-      "id": "chances-30",
-      "nombre": "30 chances",
-      "participaciones": 30,
-      "precio": 120000,
+      "id": "chances-40",
+      "nombre": "40 chances",
+      "participaciones": 40,
+      "precio": 25000,
       "destacado": false,
       "etiqueta": "",
       "url_externa": ""
     },
     {
-      "id": "chances-50",
-      "nombre": "50 chances",
-      "participaciones": 50,
-      "precio": 150000,
+      "id": "chances-60",
+      "nombre": "60 chances",
+      "participaciones": 60,
+      "precio": 35000,
+      "destacado": false,
+      "etiqueta": "",
+      "url_externa": ""
+    },
+    {
+      "id": "chances-100",
+      "nombre": "100 chances",
+      "participaciones": 100,
+      "precio": 45000,
+      "destacado": true,
+      "etiqueta": "Recomendado",
+      "url_externa": ""
+    },
+    {
+      "id": "chances-150",
+      "nombre": "150 chances",
+      "participaciones": 150,
+      "precio": 70000,
       "destacado": false,
       "etiqueta": "",
       "url_externa": ""
@@ -281,6 +254,33 @@
       "id": "chances-200",
       "nombre": "200 chances",
       "participaciones": 200,
+      "precio": 90000,
+      "destacado": false,
+      "etiqueta": "",
+      "url_externa": ""
+    },
+    {
+      "id": "chances-300",
+      "nombre": "300 chances",
+      "participaciones": 300,
+      "precio": 120000,
+      "destacado": false,
+      "etiqueta": "",
+      "url_externa": ""
+    },
+    {
+      "id": "chances-500",
+      "nombre": "500 chances",
+      "participaciones": 500,
+      "precio": 150000,
+      "destacado": false,
+      "etiqueta": "",
+      "url_externa": ""
+    },
+    {
+      "id": "chances-2000",
+      "nombre": "2000 chances",
+      "participaciones": 2000,
       "precio": 300000,
       "destacado": false,
       "etiqueta": "Mejor precio",
