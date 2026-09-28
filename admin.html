@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Panel · Baiking Participá</title>
   <meta name="robots" content="noindex, nofollow">
-  <meta name="theme-color" content="#0b0f14">
+  <meta name="theme-color" content="#eb0627">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
@@ -27,15 +27,15 @@
 
   <!-- Acceso -->
   <main class="page" id="login" hidden>
-    <div class="container" style="max-width:460px">
+    <div class="container login-box">
       <span class="eyebrow">Panel de administración</span>
-      <h1 class="h-section" style="font-size:44px">Entrar al <em>panel</em></h1>
-      <p class="lead" style="margin-top:8px">Ingresá el token de administración (variable <code>ADMIN_TOKEN</code> del servidor).</p>
-      <form class="form" id="form-login" style="margin-top:22px">
+      <h1 class="h-section">Entrar al <em>panel</em></h1>
+      <p class="lead">Ingresá el token de administración (variable <code>ADMIN_TOKEN</code> del servidor).</p>
+      <form class="form" id="form-login">
         <div class="field"><label for="f-token">Token</label><input id="f-token" name="token" type="password" autocomplete="current-password" required><span class="err"></span></div>
         <div class="form-error" id="login-error" role="alert"></div>
         <button type="submit" class="btn btn-primary btn-lg btn-block">Entrar</button>
-        <p class="packs-note">¿Querés verlo con datos de ejemplo? <a href="admin.html?demo=1" style="color:var(--acento);text-decoration:underline">Abrir la demo</a></p>
+        <p class="login-note">¿Querés verlo con datos de ejemplo? <a class="link" href="admin.html?demo=1">Abrir la demo</a></p>
       </form>
     </div>
   </main>
@@ -72,6 +72,7 @@
           <span class="tile-value is-hero" id="kpi-participaciones">0</span>
           <span class="tile-delta" id="kpi-participaciones-delta"></span>
           <svg class="spark" id="spark-participaciones" viewBox="0 0 120 32" aria-hidden="true"></svg>
+          <span class="spark-cap" aria-hidden="true">Últimos 14 días · hoy en rojo</span>
         </div>
         <div class="tile"><span class="tile-label">Órdenes pagadas</span><span class="tile-value" id="kpi-ordenes">0</span><span class="tile-delta" id="kpi-ordenes-delta"></span></div>
         <div class="tile"><span class="tile-label">Ingresos</span><span class="tile-value" id="kpi-ingresos">$ 0</span><span class="tile-delta" id="kpi-ticket"></span></div>
@@ -129,7 +130,7 @@
       <section class="card">
         <div class="card-head">
           <h2>Órdenes <span class="count" id="ordenes-count">0</span></h2>
-          <label class="search"><span class="sr-only">Buscar</span><input id="buscar" type="search" placeholder="Buscar por nombre, DNI, mail o código"></label>
+          <label class="search"><span class="sr-only">Buscar</span><input id="buscar" type="search" placeholder="Nombre, DNI, mail o código"></label>
         </div>
         <div class="table-wrap">
           <table class="tabla" id="tabla-ordenes">
