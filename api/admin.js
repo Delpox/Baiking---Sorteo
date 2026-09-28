@@ -21,6 +21,7 @@ import { confirmarOrden } from './_lib/confirmar.js';
 import { buscarPagosPorOrden } from './_lib/mercadopago.js';
 import { aplicarPago } from './_lib/pagos-mp.js';
 import { RE_UUID, texto } from './_lib/validar.js';
+import { configCarta } from './_lib/carta.js';
 import { espejarOrdenEnSheet } from './_lib/sheets.js';
 
 const RE_EDICION = /^[a-z0-9-]{1,40}$/;
@@ -30,8 +31,11 @@ const CAMPOS = [
   'cantidad_participaciones', 'monto', 'bici_preferida', 'provincia', 'nombre', 'apellido',
   'email', 'dni', 'whatsapp', 'codigo', 'comprobante_url', 'comprobante_datos', 'comprobante_at',
   'revisado_por', 'revisado_at', 'email_enviado_at', 'whatsapp_enviado_at', 'mp_payment_id',
-  'acreditada', 'acreditada_at', 'acreditada_nota',
+  'acreditada', 'acreditada_at', 'acreditada_nota', 'carta_recibida_at', 'instrucciones_enviado_at',
 ].join(',');
+
+// Participaciones sin cargo que esperan la carta (vía gratuita en dos pasos).
+const esCartaPendiente = (o) => o.origen === 'gratuita' && o.estado === 'pendiente';
 
 // Transferencias que entran en la conciliación diaria: con comprobante y no cerradas.
 const ESTADOS_CONCILIABLES = ['pendiente', 'en_revision', 'pagada'];
@@ -77,6 +81,12 @@ async function resumen(req, res) {
     // Conciliación contra el banco: con comprobante y todavía sin marcar / marcadas "no llegó".
     transferencias_sin_conciliar: (ordenes || []).filter((o) => esConciliable(o) && o.acreditada == null).length,
     transferencias_no_acreditadas: (ordenes || []).filter((o) => o.medio_pago === 'transferencia' && o.acreditada === false).length,
+    // Vía gratuita en dos pasos: registradas en el sitio que todavía esperan la carta.
+    gratuitas_sin_carta: (ordenes || []).filter(esCartaPendiente).length,
+    participacion_gratuita: (() => {
+      const c = configCarta(campaign);
+      return { requiere_carta: c.requiere, direccion_carta: c.direccion, plazo_carta_dias: c.plazoDias };
+    })(),
     ordenes: ordenes || [],
   });
 }
@@ -139,6 +149,39 @@ async function accion(req, res) {
     await espejarOrdenEnSheet(actual);
     const nota = valor === true && actual.estado !== 'pagada' ? `La orden está ${actual.estado}: se marcó acreditada pero no se aprueba.` : undefined;
     return json(res, 200, { ok: true, estado: actual.estado, acreditada: actual.acreditada, ...(nota ? { nota } : {}) });
+  }
+
+  if (body.accion === 'carta_recibida') {
+    if (orden.origen !== 'gratuita') return json(res, 409, { error: 'Solo para participaciones sin cargo.' });
+    if (orden.estado === 'pagada') return json(res, 409, { error: 'La participación ya está confirmada.' });
+    if (orden.estado !== 'pendiente') return json(res, 409, { error: `La participación está ${orden.estado}.` });
+    const ahora = new Date().toISOString();
+    const nota = texto(body.motivo ?? body.nota, 300);
+    const { numeros } = await confirmarOrden({
+      orden,
+      campaign,
+      baseUrl: baseUrl(req),
+      gratuita: true,
+      cambios: {
+        carta_recibida_at: ahora,
+        revisado_por: revisor,
+        revisado_at: ahora,
+        ...(nota ? { comprobante_datos: { ...(orden.comprobante_datos || {}), carta_nota: nota } } : {}),
+      },
+    });
+    return json(res, 200, { ok: true, estado: 'pagada', numeros, carta_recibida_at: ahora });
+  }
+
+  if (body.accion === 'carta_rechazada') {
+    if (orden.origen !== 'gratuita') return json(res, 409, { error: 'Solo para participaciones sin cargo.' });
+    if (orden.estado !== 'pendiente') return json(res, 409, { error: `La participación está ${orden.estado}.` });
+    await actualizarOrden(orden.id, {
+      estado: 'rechazada',
+      revisado_por: revisor,
+      revisado_at: new Date().toISOString(),
+      comprobante_datos: { ...(orden.comprobante_datos || {}), motivo_rechazo: texto(body.motivo ?? body.nota, 300) || 'La carta no llegó en el plazo' },
+    });
+    return json(res, 200, { ok: true, estado: 'rechazada' });
   }
 
   if (body.accion === 'sincronizar_mp') {

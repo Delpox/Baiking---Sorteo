@@ -150,10 +150,9 @@
         const t = new Date(fecha.getTime() - r() * 14 * 36e5 - 6 * 36e5);
         const e = r();
         let estado = 'pagada';
-        if (!gratuita) {
-          if (medio === 'transferencia') estado = d === 0 && e < 0.5 ? 'en_revision' : e < 0.08 ? 'pendiente' : 'pagada';
-          else estado = e < 0.06 ? 'pendiente' : e < 0.08 ? 'rechazada' : 'pagada';
-        }
+        if (gratuita) estado = d <= 5 && e < 0.6 ? 'pendiente' : 'pagada'; // en dos pasos: las recientes esperan la carta
+        else if (medio === 'transferencia') estado = d === 0 && e < 0.5 ? 'en_revision' : e < 0.08 ? 'pendiente' : 'pagada';
+        else estado = e < 0.06 ? 'pendiente' : e < 0.08 ? 'rechazada' : 'pagada';
         const nombre = nombres[Math.floor(r() * nombres.length)];
         const apellido = apellidos[Math.floor(r() * apellidos.length)];
         // Conciliación bancaria (solo transferencias con comprobante): null = sin revisar, true = llegó, false = no llegó.
@@ -169,6 +168,7 @@
           acreditada,
           acreditada_at: acreditada === null ? null : new Date(t.getTime() + 6 * 36e5).toISOString(),
           acreditada_nota: acreditada === false ? 'No figura en el extracto' : null,
+          carta_recibida_at: gratuita && estado === 'pagada' ? new Date(t.getTime() + 3 * DIA).toISOString() : null,
           estado,
           origen: gratuita ? 'gratuita' : 'web',
           medio_pago: medio,
@@ -201,6 +201,7 @@
       presencia: { ahora: 4 + Math.floor(r() * 9), hoy: 180 + Math.floor(r() * 120) },
       participaciones_total: asignadas,
       cupo_total: Number(cfg.edicion.cupo_total || 0),
+      participacion_gratuita: cfg.participacion_gratuita || {},
       ordenes,
     };
   }
@@ -349,8 +350,120 @@
     // Transferencias por revisar
     renderRevision(enRevision, packsPorId);
 
+    // Participaciones sin cargo que esperan la carta
+    const cartas = d.ordenes.filter(esCartaPendiente);
+    $('#kpi-cartas').textContent = fmtInt(cartas.length);
+    $('#kpi-cartas-delta').textContent = cartas.length ? `${fmtInt(cartas.filter(cartaVencida).length)} fuera de plazo` : '';
+    $('.tile-cartas').hidden = cartas.length === 0;
+    renderCartas(cartas, bicisPorId);
+
     // Tabla de órdenes
     renderTabla(filas, packsPorId, bicisPorId);
+  }
+
+  /* ---------- vía gratuita en dos pasos: cartas pendientes ---------- */
+  const esCartaPendiente = (o) => o.origen === 'gratuita' && o.estado === 'pendiente';
+  const plazoCartaDias = () => Number(state.data?.participacion_gratuita?.plazo_carta_dias) || 15;
+  const venceCarta = (o) => new Date(new Date(o.created_at).getTime() + plazoCartaDias() * DIA);
+  const cartaVencida = (o) => venceCarta(o).getTime() < Date.now();
+
+  function asegurarCardCartas() {
+    if ($('#card-cartas')) return;
+    const sec = document.createElement('section');
+    sec.className = 'card';
+    sec.id = 'card-cartas';
+    sec.hidden = true;
+    const head = document.createElement('div');
+    head.className = 'card-head';
+    const h2 = document.createElement('h2');
+    h2.textContent = 'Cartas pendientes ';
+    const count = document.createElement('span');
+    count.className = 'count';
+    count.id = 'cartas-count';
+    count.textContent = '0';
+    h2.appendChild(count);
+    const p = document.createElement('p');
+    p.textContent = 'Participaciones sin cargo registradas en el sitio que esperan la carta. Cuando llega, "Carta recibida" asigna la chance y manda el mail con el número.';
+    head.append(h2, p);
+    const ul = document.createElement('ul');
+    ul.className = 'revision-list';
+    ul.id = 'cartas-list';
+    sec.append(head, ul);
+    $('#card-revision').after(sec);
+  }
+
+  function renderCartas(lista, bicisPorId) {
+    asegurarCardCartas();
+    const card = $('#card-cartas');
+    card.hidden = lista.length === 0;
+    $('#cartas-count').textContent = fmtInt(lista.length);
+    const ul = $('#cartas-list');
+    ul.replaceChildren();
+    for (const o of lista) {
+      const li = document.createElement('li');
+      const col1 = document.createElement('div');
+      const nombre = document.createElement('b');
+      nombre.textContent = `${o.nombre} ${o.apellido}`;
+      const det = document.createElement('span');
+      const vencida = cartaVencida(o);
+      det.textContent = `DNI ${o.dni} · registrada el ${fmtFechaHora(o.created_at)} · ${vencida ? 'plazo vencido el' : 'vence el'} ${fmtDia(venceCarta(o).toISOString())}`;
+      if (vencida) det.style.color = 'var(--status-critical)';
+      col1.append(nombre, det);
+
+      const col2 = document.createElement('div');
+      col2.className = 'checks';
+      for (const txt of [o.email, o.provincia || '—', (bicisPorId[o.bici_preferida]?.nombre || '').replace('Polygon ', '')]) {
+        const s = document.createElement('span');
+        s.textContent = txt;
+        col2.appendChild(s);
+      }
+
+      const col3 = document.createElement('div');
+      col3.className = 'acciones';
+      const ok = document.createElement('button');
+      ok.type = 'button';
+      ok.className = 'btn btn-primary';
+      ok.textContent = 'Carta recibida';
+      ok.addEventListener('click', () => accionCarta(o, 'carta_recibida'));
+      const no = document.createElement('button');
+      no.type = 'button';
+      no.className = 'btn btn-ghost';
+      no.textContent = 'Rechazar';
+      no.addEventListener('click', () => accionCarta(o, 'carta_rechazada'));
+      col3.append(ok, no);
+      li.append(col1, col2, col3);
+      ul.appendChild(li);
+    }
+  }
+
+  async function accionCarta(o, accion) {
+    if (state.demo) {
+      if (accion === 'carta_recibida') {
+        o.estado = 'pagada';
+        o.pagada_at = new Date().toISOString();
+        o.carta_recibida_at = o.pagada_at;
+        state.data.participaciones_total += o.cantidad_participaciones;
+        toast(`Carta recibida: ${o.nombre} recibe su chance por mail.`);
+      } else {
+        o.estado = 'rechazada';
+        toast('Participación rechazada.');
+      }
+      render();
+      return;
+    }
+    try {
+      const res = await fetch('api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ accion, orden_id: o.id, revisor: 'panel' }),
+      });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(out.error || `HTTP ${res.status}`);
+      toast(accion === 'carta_recibida' ? `Carta recibida. Número: ${(out.numeros || []).map((n) => String(n).padStart(4, '0')).join(', ')}` : 'Participación rechazada.');
+      cargar({ silencioso: true });
+    } catch (err) {
+      toast(err.message);
+    }
   }
 
   function diasDesdePrimera(ordenes) {
@@ -851,6 +964,36 @@
       }
     });
     $('.kpis').appendChild(tile);
+    // KPI "Cartas pendientes" (vía gratuita en dos pasos): solo se muestra si hay alguna; clic = ir a la lista.
+    const tileCartas = document.createElement('div');
+    tileCartas.className = 'tile tile-cartas';
+    tileCartas.hidden = true;
+    tileCartas.setAttribute('role', 'button');
+    tileCartas.tabIndex = 0;
+    tileCartas.title = 'Ver las participaciones sin cargo que esperan la carta';
+    tileCartas.style.cursor = 'pointer';
+    tileCartas.style.gridColumn = 'span 2';
+    const cartasLabel = document.createElement('span');
+    cartasLabel.className = 'tile-label';
+    cartasLabel.textContent = 'Cartas pendientes';
+    const cartasValue = document.createElement('span');
+    cartasValue.className = 'tile-value';
+    cartasValue.id = 'kpi-cartas';
+    cartasValue.textContent = '0';
+    const cartasDelta = document.createElement('span');
+    cartasDelta.className = 'tile-delta';
+    cartasDelta.id = 'kpi-cartas-delta';
+    tileCartas.append(cartasLabel, cartasValue, cartasDelta);
+    const irACartas = () => $('#card-cartas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    tileCartas.addEventListener('click', irACartas);
+    tileCartas.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        irACartas();
+      }
+    });
+    $('.kpis').appendChild(tileCartas);
+    asegurarCardCartas();
     $('#buscar').addEventListener('input', (e) => {
       state.q = e.target.value;
       render();

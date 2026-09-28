@@ -55,6 +55,10 @@ create table if not exists ordenes (
   acreditada                boolean,
   acreditada_at             timestamptz,
   acreditada_nota           text,
+  -- Vía gratuita en dos pasos (formulario + carta a la tienda): cuándo se mandó el mail
+  -- con las instrucciones y cuándo llegó la carta (recién ahí se asigna la chance).
+  instrucciones_enviado_at  timestamptz,
+  carta_recibida_at         timestamptz,
   email_enviado_at          timestamptz,
   whatsapp_enviado_at       timestamptz,
   origen                    text not null default 'web'
@@ -206,6 +210,9 @@ create unique index if not exists ordenes_mp_payment_id_key on ordenes (mp_payme
 alter table ordenes add column if not exists acreditada      boolean;
 alter table ordenes add column if not exists acreditada_at   timestamptz;
 alter table ordenes add column if not exists acreditada_nota text;
+-- 4) Vía gratuita en dos pasos (formulario + carta): mail de instrucciones y recepción de la carta.
+alter table ordenes add column if not exists instrucciones_enviado_at timestamptz;
+alter table ordenes add column if not exists carta_recibida_at        timestamptz;
 
 -- ------------------------------------------------------------
 -- Edición inicial (ajustar fechas antes de lanzar; deben coincidir

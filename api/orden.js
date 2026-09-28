@@ -4,6 +4,7 @@
 import campaign from '../config/campaign.json' with { type: 'json' };
 import { json, getQuery } from './_lib/http.js';
 import { obtenerOrden, obtenerParticipaciones } from './_lib/db.js';
+import { configCarta, venceCarta } from './_lib/carta.js';
 
 const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -55,6 +56,18 @@ export default async function handler(req, res) {
         email_comprobantes: t.email_comprobantes,
         plazo_horas: t.plazo_horas,
         descuento_pct: t.descuento_pct,
+      };
+    }
+
+    if (orden.origen === 'gratuita') {
+      // Vía gratuita en dos pasos: /gracias muestra la dirección y el plazo mientras espera la carta.
+      const c = configCarta(campaign);
+      out.carta = {
+        requiere: c.requiere,
+        recibida_at: orden.carta_recibida_at || null,
+        direccion: c.direccion,
+        plazo_dias: c.plazoDias,
+        vence_at: venceCarta(orden, campaign),
       };
     }
 
