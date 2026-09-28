@@ -79,7 +79,7 @@
               <div><b data-cd="m">00</b><span>min</span></div>
               <div><b data-cd="s">00</b><span>seg</span></div>
             </div>
-            <p class="countdown-label">Sorteo: <b data-fecha-sorteo>—</b>, <b data-hora-sorteo>—</b> · en vivo por <b data-instagram>@baiking</b></p>
+            <p class="countdown-label">Sorteo: <b data-fecha-sorteo>—</b>, <b data-hora-sorteo>—</b> · en vivo por <b data-instagram>@baikingtiendadebicis</b></p>
           </div>
         </div>
       </div>
@@ -173,16 +173,20 @@
               <div class="cal" id="draw-cal"></div>
               <div>
                 <h3>Sorteo en vivo por Instagram</h3>
-                <p><span data-fecha-sorteo>—</span>, <span data-hora-sorteo>—</span> en <span data-instagram>@baiking</span>. Inscripciones hasta el <span data-cierre>—</span>.</p>
+                <p><span data-fecha-sorteo>—</span>, <span data-hora-sorteo>—</span> en <span data-instagram>@baikingtiendadebicis</span>. Inscripciones hasta el <span data-cierre>—</span>.</p>
               </div>
             </div>
             <ul class="rules" id="rules"></ul>
           </div>
-          <div class="draw-card reveal">
-            <span class="eyebrow">Ganadores</span>
-            <ul class="winners" id="winners" style="margin-top:14px"></ul>
-            <span class="eyebrow" style="margin-top:22px">También sorteamos</span>
-            <ul class="secondary-prizes" id="secondary-prizes"></ul>
+          <div class="draw-card reveal" id="draw-side" hidden>
+            <div id="winners-block" hidden>
+              <span class="eyebrow">Ganadores</span>
+              <ul class="winners" id="winners" style="margin-top:14px"></ul>
+            </div>
+            <div id="secondary-block" hidden>
+              <span class="eyebrow">También sorteamos</span>
+              <ul class="secondary-prizes" id="secondary-prizes"></ul>
+            </div>
           </div>
         </div>
       </div>
@@ -206,11 +210,14 @@
             <a class="btn btn-wa" data-wa href="#"><svg style="width:18px;height:18px"><use href="#ico-whatsapp"></use></svg> WhatsApp</a>
           </div>
         </div>
-        <blockquote class="quote reveal">
-          <!-- Texto propuesto para Gastón: validar antes de publicar -->
-          Hace tiempo que le veníamos dando vueltas a esto: una forma de que la comunidad aprenda más de su bici y, de paso, alguien se lleve una Polygon nueva. Lo hacemos de frente, con escribano y en vivo.
-          <footer><b>Gastón</b> · Baiking Tienda de Bicis</footer>
-        </blockquote>
+        <div class="about-media reveal">
+          <figure class="about-photo" id="about-photo" hidden></figure>
+          <blockquote class="quote">
+            <!-- Texto propuesto para Gastón: validar antes de publicar -->
+            Hace tiempo que le veníamos dando vueltas a esto: una forma de que la comunidad aprenda más de su bici y, de paso, alguien se lleve una Polygon nueva. Lo hacemos de frente, con escribano y en vivo.
+            <footer><b>Gastón</b> · Baiking Tienda de Bicis</footer>
+          </blockquote>
+        </div>
       </div>
     </section>
 
@@ -323,6 +330,11 @@
           </div>
           <div class="field"><label for="f-email">Email</label><input id="f-email" name="email" type="email" autocomplete="email" placeholder="Acá te mandamos el curso y tus participaciones" required><span class="err"></span></div>
           <div class="field"><label for="f-whatsapp">WhatsApp</label><input id="f-whatsapp" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" placeholder="11 5728 0056" required><span class="err"></span></div>
+          <div class="field" id="pago-field" hidden>
+            <label>¿Cómo querés pagar?</label>
+            <div class="pay-picker" id="pay-picker"></div>
+            <span class="err"></span>
+          </div>
           <label class="check"><input type="checkbox" name="mayor_edad"><span>Soy mayor de 18 años y resido en Argentina.</span></label>
           <label class="check"><input type="checkbox" name="acepta_bases"><span>Leí y acepto las <a href="bases-y-condiciones.html" target="_blank" rel="noopener">bases y condiciones</a> y la política de privacidad.</span></label>
           <div class="form-error" id="form-error" role="alert"></div>
@@ -342,7 +354,12 @@
           </div>
           <button type="button" class="modal-close" data-close-modal aria-label="Cerrar"><svg style="width:18px;height:18px"><use href="#ico-x"></use></svg></button>
         </div>
-        <div class="ticket" style="margin-top:18px">
+        <div class="transfer-box" id="ok-transfer" hidden>
+          <span class="eyebrow">Datos para transferir</span>
+          <dl class="transfer-data" id="ok-transfer-data"></dl>
+          <p class="transfer-note" id="ok-transfer-note"></p>
+        </div>
+        <div class="ticket" style="margin-top:18px" id="ok-ticket">
           <div class="ticket-head">
             <span class="eyebrow">Tus participaciones</span>
             <ul class="numbers" id="ok-numeros"></ul>

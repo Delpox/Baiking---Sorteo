@@ -4,8 +4,8 @@
 // probabilidad que cualquier participación por compra. Envía el mail de confirmación.
 import campaign from '../config/campaign.json' with { type: 'json' };
 import { json, readJson, baseUrl } from './_lib/http.js';
-import { crearOrden, actualizarOrden, asignarParticipaciones } from './_lib/db.js';
-import { armarMailConfirmacion, enviarMail } from './_lib/notificaciones.js';
+import { crearOrden } from './_lib/db.js';
+import { confirmarOrden } from './_lib/confirmar.js';
 
 const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -67,8 +67,8 @@ export default async function handler(req, res) {
         provincia: provincia || null,
         bici_preferida: bici,
         acepta_bases: true,
-        estado: 'pagada',
-        pagada_at: new Date().toISOString(),
+        estado: 'pendiente',
+        medio_pago: 'gratuita',
         origen: 'gratuita',
       });
     } catch (err) {
@@ -80,17 +80,7 @@ export default async function handler(req, res) {
       throw err;
     }
 
-    const numeros = await asignarParticipaciones(orden.id);
-    const base = baseUrl(req);
-
-    try {
-      const mail = armarMailConfirmacion({ orden, numeros, campaign, baseUrl: base, gratuita: true });
-      await enviarMail({ to: orden.email, ...mail });
-      await actualizarOrden(orden.id, { email_enviado_at: new Date().toISOString() });
-    } catch (err) {
-      console.error('[participacion-gratuita] mail', err);
-    }
-
+    const { numeros } = await confirmarOrden({ orden, campaign, baseUrl: baseUrl(req), gratuita: true });
     return json(res, 200, { orden_id: orden.id, numeros });
   } catch (err) {
     console.error('[participacion-gratuita]', err);

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel · Baiking Participá</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0b0f14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/admin.css">
+</head>
+<body data-page="admin" class="admin">
+  <header class="nav">
+    <div class="container">
+      <a class="logo" href="index.html"><svg><use href="#ico-wheel"></use></svg> Baiking <small>Panel</small></a>
+      <div class="nav-cta" id="nav-actions" hidden>
+        <span class="live" id="live-badge"><i></i><b id="kpi-online-nav">0</b> en el sitio</span>
+        <a class="btn btn-ghost" id="btn-export" href="#">Exportar CSV</a>
+        <a class="btn btn-ghost" href="sorteo.html">Sorteo en vivo</a>
+        <button type="button" class="btn btn-ghost" id="btn-salir">Salir</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Acceso -->
+  <main class="page" id="login" hidden>
+    <div class="container" style="max-width:460px">
+      <span class="eyebrow">Panel de administración</span>
+      <h1 class="h-section" style="font-size:44px">Entrar al <em>panel</em></h1>
+      <p class="lead" style="margin-top:8px">Ingresá el token de administración (variable <code>ADMIN_TOKEN</code> del servidor).</p>
+      <form class="form" id="form-login" style="margin-top:22px">
+        <div class="field"><label for="f-token">Token</label><input id="f-token" name="token" type="password" autocomplete="current-password" required><span class="err"></span></div>
+        <div class="form-error" id="login-error" role="alert"></div>
+        <button type="submit" class="btn btn-primary btn-lg btn-block">Entrar</button>
+        <p class="packs-note">¿Querés verlo con datos de ejemplo? <a href="admin.html?demo=1" style="color:var(--acento);text-decoration:underline">Abrir la demo</a></p>
+      </form>
+    </div>
+  </main>
+
+  <!-- Panel -->
+  <main class="page admin-page" id="panel" hidden>
+    <div class="container">
+      <div class="admin-head">
+        <div>
+          <span class="eyebrow" id="edicion-nombre">Edición #1</span>
+          <h1>Cómo viene la campaña</h1>
+          <p class="meta" id="meta-actualizado">Cargando…</p>
+        </div>
+        <div class="filters" role="group" aria-label="Filtros">
+          <div class="seg" id="filtro-rango" role="group" aria-label="Rango de fechas">
+            <button type="button" data-rango="hoy">Hoy</button>
+            <button type="button" data-rango="7">7 días</button>
+            <button type="button" data-rango="30" aria-pressed="true">30 días</button>
+            <button type="button" data-rango="todo">Todo</button>
+          </div>
+          <div class="seg" id="filtro-estado" role="group" aria-label="Estado">
+            <button type="button" data-estado="pagadas" aria-pressed="true">Pagadas</button>
+            <button type="button" data-estado="todas">Todas</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-banner" id="demo-banner" hidden>Datos de ejemplo para mostrar el panel. En producción se llena solo con las órdenes reales.</div>
+
+      <!-- KPIs -->
+      <section class="kpis" aria-label="Indicadores">
+        <div class="tile tile-hero">
+          <span class="tile-label">Participaciones asignadas</span>
+          <span class="tile-value is-hero" id="kpi-participaciones">0</span>
+          <span class="tile-delta" id="kpi-participaciones-delta"></span>
+          <svg class="spark" id="spark-participaciones" viewBox="0 0 120 32" aria-hidden="true"></svg>
+        </div>
+        <div class="tile"><span class="tile-label">Órdenes pagadas</span><span class="tile-value" id="kpi-ordenes">0</span><span class="tile-delta" id="kpi-ordenes-delta"></span></div>
+        <div class="tile"><span class="tile-label">Ingresos</span><span class="tile-value" id="kpi-ingresos">$ 0</span><span class="tile-delta" id="kpi-ticket"></span></div>
+        <div class="tile"><span class="tile-label">Pendientes de pago</span><span class="tile-value" id="kpi-pendientes">0</span><span class="tile-delta" id="kpi-revision"></span></div>
+        <div class="tile"><span class="tile-label">Participaciones sin cargo</span><span class="tile-value" id="kpi-gratuitas">0</span><span class="tile-delta" id="kpi-gratuitas-pct"></span></div>
+        <div class="tile tile-live"><span class="tile-label">En el sitio ahora</span><span class="tile-value" id="kpi-online">0</span><span class="tile-delta" id="kpi-visitas"></span></div>
+      </section>
+
+      <!-- Transferencias por revisar -->
+      <section class="card" id="card-revision" hidden>
+        <div class="card-head">
+          <h2>Transferencias por revisar <span class="count" id="revision-count">0</span></h2>
+          <p>Comprobantes recibidos. La IA leyó monto, fecha y destino; aprobás con un clic y el sistema asigna los números y manda el mail.</p>
+        </div>
+        <ul class="revision-list" id="revision-list"></ul>
+      </section>
+
+      <!-- Gráficos -->
+      <section class="charts">
+        <div class="card chart-card" id="card-dias">
+          <div class="card-head">
+            <h2>Participaciones por día</h2>
+            <button type="button" class="link" data-toggle-table="dias">Ver tabla</button>
+          </div>
+          <div class="chart" id="chart-dias"></div>
+          <div class="viz-table" id="table-dias" hidden></div>
+        </div>
+        <div class="card chart-card" id="card-packs">
+          <div class="card-head">
+            <h2>Por pack</h2>
+            <button type="button" class="link" data-toggle-table="packs">Ver tabla</button>
+          </div>
+          <div class="chart" id="chart-packs"></div>
+          <div class="viz-table" id="table-packs" hidden></div>
+        </div>
+        <div class="card chart-card" id="card-bicis">
+          <div class="card-head">
+            <h2>Bici elegida</h2>
+            <button type="button" class="link" data-toggle-table="bicis">Ver tabla</button>
+          </div>
+          <div class="chart chart-meter" id="chart-bicis"></div>
+          <div class="viz-table" id="table-bicis" hidden></div>
+        </div>
+        <div class="card chart-card" id="card-provincias">
+          <div class="card-head">
+            <h2>Provincias</h2>
+            <button type="button" class="link" data-toggle-table="provincias">Ver tabla</button>
+          </div>
+          <div class="chart" id="chart-provincias"></div>
+          <div class="viz-table" id="table-provincias" hidden></div>
+        </div>
+      </section>
+
+      <!-- Órdenes -->
+      <section class="card">
+        <div class="card-head">
+          <h2>Órdenes <span class="count" id="ordenes-count">0</span></h2>
+          <label class="search"><span class="sr-only">Buscar</span><input id="buscar" type="search" placeholder="Buscar por nombre, DNI, mail o código"></label>
+        </div>
+        <div class="table-wrap">
+          <table class="tabla" id="tabla-ordenes">
+            <thead><tr><th>Fecha</th><th>Nombre</th><th>Pack</th><th class="num">Part.</th><th>Bici</th><th>Provincia</th><th>Medio</th><th>Estado</th><th class="num">Monto</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="meta" id="tabla-meta"></p>
+      </section>
+    </div>
+  </main>
+
+  <div class="viz-tip" id="viz-tip" role="tooltip" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="assets/js/app.js" defer></script>
+  <script src="assets/js/admin.js" defer></script>
+</body>
+</html>

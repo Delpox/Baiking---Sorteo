@@ -54,9 +54,38 @@
 
         <ol class="next-steps">
           <li><span>1</span><div><b>Revisá tu mail</b> (y la carpeta de spam la primera vez): ahí está el acceso al curso y el detalle de tus participaciones.</div></li>
-          <li><span>2</span><div><b>Seguinos en Instagram</b> <a data-ig href="#" style="color:var(--acento)"><span data-instagram>@baiking</span></a> para no perderte el sorteo en vivo.</div></li>
+          <li><span>2</span><div><b>Seguinos en Instagram</b> <a data-ig href="#" style="color:var(--acento)"><span data-instagram>@baikingtiendadebicis</span></a> para no perderte el sorteo en vivo.</div></li>
           <li><span>3</span><div><b>Si ganás</b>, te contactamos por mail, WhatsApp y teléfono el mismo día. Tenés 7 días hábiles para responder y acreditar identidad.</div></li>
         </ol>
+      </div>
+
+      <div id="estado-transferencia" hidden>
+        <span class="eyebrow">Reserva confirmada</span>
+        <h1 class="h-section">Ahora, <em>la transferencia</em></h1>
+        <p class="lead">Reservamos tu lugar, <b id="tr-nombre">—</b>. Transferí el monto exacto con el código en el concepto y subí el comprobante acá. En menos de <b id="tr-plazo">48</b> hs te confirmamos por mail y te asignamos tus participaciones.</p>
+        <div class="transfer-box">
+          <span class="eyebrow">Datos para transferir</span>
+          <dl class="transfer-data" id="tr-data"></dl>
+          <p class="transfer-note" id="tr-note"></p>
+        </div>
+        <div class="upload" id="tr-upload">
+          <form id="form-comprobante" novalidate>
+            <label class="file" for="f-comprobante">
+              <span class="btn btn-ghost">Elegir comprobante</span>
+              <input id="f-comprobante" name="comprobante" type="file" accept="image/*,application/pdf">
+              <span class="hint" id="f-nombre-archivo"></span>
+            </label>
+            <p class="hint">Foto o captura del comprobante (JPG, PNG) o el PDF del banco. Máximo 8 MB.</p>
+            <div class="form-error" id="tr-error" role="alert"></div>
+            <button type="submit" class="btn btn-primary" id="btn-subir" style="margin-top:12px">Subir comprobante</button>
+            <p class="progress" id="tr-progress" hidden></p>
+          </form>
+          <div id="tr-recibido" hidden>
+            <p class="progress">✓ Recibimos tu comprobante el <b id="tr-recibido-fecha">—</b>. Lo estamos revisando y te confirmamos por mail. Si mandaste otro por error, podés subir uno nuevo.</p>
+            <ul class="checks-list" id="tr-checks"></ul>
+          </div>
+        </div>
+        <p class="meta" style="margin-top:14px;color:var(--muted);font-size:13px">También podés mandar el comprobante por mail a <b id="tr-email">—</b> con el código <b id="tr-codigo">—</b> en el asunto.</p>
       </div>
 
       <div id="estado-pendiente" hidden>

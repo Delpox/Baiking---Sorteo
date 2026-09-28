@@ -1,19 +1,12 @@
 // POST /api/webhooks/mercadopago
-// Mercado Pago avisa acá cada cambio de un pago. Si quedó aprobado:
-//   1) marcamos la orden como pagada,
-//   2) asignamos los números de participación (atómico e idempotente),
-//   3) mandamos el mail y el WhatsApp de confirmación.
+// Mercado Pago avisa acá cada cambio de un pago. Si quedó aprobado, confirmamos
+// la orden (números + mail + WhatsApp) vía api/_lib/confirmar.js.
 // Siempre respondemos 200 rápido; MP reintenta si no.
 import campaign from '../../config/campaign.json' with { type: 'json' };
 import { json, readJson, getQuery, baseUrl } from '../_lib/http.js';
-import { obtenerOrden, actualizarOrden, asignarParticipaciones } from '../_lib/db.js';
+import { obtenerOrden, actualizarOrden } from '../_lib/db.js';
 import { obtenerPago, verificarFirmaWebhook, mapearEstadoPago } from '../_lib/mercadopago.js';
-import {
-  armarMailConfirmacion,
-  enviarMail,
-  enviarWhatsApp,
-  whatsappConfigurado,
-} from '../_lib/notificaciones.js';
+import { confirmarOrden } from '../_lib/confirmar.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return json(res, 405, { error: 'Método no permitido' });
@@ -53,43 +46,23 @@ export default async function handler(req, res) {
     const estado = mapearEstadoPago(pago.status);
 
     if (estado !== 'pagada') {
-      if (orden.estado !== 'pagada') {
+      // Un reembolso o contracargo posterior deja constancia; los números ya
+      // asignados se excluyen del padrón porque la vista filtra estado = 'pagada'.
+      if (orden.estado !== estado) {
         await actualizarOrden(orden.id, { estado, mp_payment_id: String(pago.id) });
       }
       return json(res, 200, { ok: true, estado });
     }
 
-    // Pago aprobado ---------------------------------------------------------
-    let ordenActual = orden;
-    if (orden.estado !== 'pagada') {
-      ordenActual = await actualizarOrden(orden.id, {
-        estado: 'pagada',
+    const { numeros } = await confirmarOrden({
+      orden,
+      campaign,
+      baseUrl: baseUrl(req),
+      cambios: {
         mp_payment_id: String(pago.id),
         pagada_at: new Date(pago.date_approved || Date.now()).toISOString(),
-      });
-    }
-
-    const numeros = await asignarParticipaciones(orden.id);
-    const base = baseUrl(req);
-
-    if (!ordenActual.email_enviado_at) {
-      try {
-        const mail = armarMailConfirmacion({ orden: ordenActual, numeros, campaign, baseUrl: base });
-        await enviarMail({ to: ordenActual.email, ...mail });
-        await actualizarOrden(orden.id, { email_enviado_at: new Date().toISOString() });
-      } catch (err) {
-        console.error('[webhook mp] mail', err);
-      }
-    }
-
-    if (!ordenActual.whatsapp_enviado_at && whatsappConfigurado()) {
-      try {
-        await enviarWhatsApp({ orden: ordenActual, numeros, campaign, baseUrl: base });
-        await actualizarOrden(orden.id, { whatsapp_enviado_at: new Date().toISOString() });
-      } catch (err) {
-        console.error('[webhook mp] whatsapp', err);
-      }
-    }
+      },
+    });
 
     return json(res, 200, { ok: true, estado: 'pagada', numeros });
   } catch (err) {

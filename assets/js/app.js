@@ -72,8 +72,11 @@
   /* ---------- config ---------- */
   async function loadConfig() {
     if (window.__CAMPAIGN__) return window.__CAMPAIGN__;
+    if (location.protocol === 'file:') {
+      throw new Error('Este archivo necesita un servidor: corré "npm run dev" o abrí dist/index.html (versión autocontenida).');
+    }
     const res = await fetch('config/campaign.json', { cache: 'no-cache' });
-    if (!res.ok) throw new Error('No se pudo cargar la configuración');
+    if (!res.ok) throw new Error('No pudimos cargar la información de la campaña.');
     return res.json();
   }
 
@@ -267,22 +270,32 @@
         .map((r, i) => `<li>${icon(icons[i % icons.length])}<div><b>${esc(r.titulo)}.</b> ${esc(r.texto)}</div></li>`)
         .join('');
     }
+    // Ganadores y premios adicionales solo se muestran cuando existen
+    // (en la primera edición, ninguno de los dos).
+    const secundarios = sorteo.premios_secundarios || [];
+    const ganadores = cfg.ganadores || [];
     const sec = $('#secondary-prizes');
     if (sec) {
-      sec.innerHTML = (sorteo.premios_secundarios || [])
+      sec.innerHTML = secundarios
         .map((p) => `<li><b>${esc(p.puesto)}</b><span>${esc(p.detalle)}</span></li>`)
         .join('');
+      $('#secondary-block').hidden = secundarios.length === 0;
     }
     const win = $('#winners');
     if (win) {
-      win.innerHTML = cfg.ganadores?.length
-        ? cfg.ganadores
-            .map(
-              (g) =>
-                `<li class="winner"><span class="num">${esc(fmtNum(g.numero))}</span><div><b>${esc(g.nombre)}</b><span>${esc(g.localidad)} · ${esc(g.premio)}</span></div></li>`,
-            )
-            .join('')
-        : `<li class="winner-empty"><b>Primera edición</b>Acá va a estar el nombre de la primera persona que se lleve su Polygon. Podés ser vos.</li>`;
+      win.innerHTML = ganadores
+        .map(
+          (g) =>
+            `<li class="winner"><span class="num">${esc(fmtNum(g.numero))}</span><div><b>${esc(g.nombre)}</b><span>${esc(g.localidad)} · ${esc(g.premio)}</span></div></li>`,
+        )
+        .join('');
+      $('#winners-block').hidden = ganadores.length === 0;
+    }
+    const side = $('#draw-side');
+    if (side) {
+      const vacio = secundarios.length === 0 && ganadores.length === 0;
+      side.hidden = vacio;
+      $('.draw-grid')?.classList.toggle('is-single', vacio);
     }
   }
 
@@ -325,6 +338,11 @@
       (el) => (el.textContent = `${legal.razon_social} · CUIT ${legal.cuit} · ${legal.domicilio}`),
     );
     $$('[data-gratuita-texto]').forEach((el) => (el.textContent = cfg.participacion_gratuita?.texto || ''));
+    const foto = $('#about-photo');
+    if (foto && marca.foto_gaston) {
+      foto.innerHTML = `<img src="${esc(marca.foto_gaston)}" alt="${esc(marca.foto_gaston_alt || '')}" loading="lazy">`;
+      foto.hidden = false;
+    }
     $$('[data-gratuita]').forEach((el) => {
       if (!cfg.participacion_gratuita?.habilitada) el.hidden = true;
     });
@@ -370,17 +388,47 @@
       if (e.target.name === 'bici_preferida') setBici(e.target.value);
     });
 
+    // Medio de pago (transferencia opcional, configurable en checkout.transferencia)
+    const tr = cfg.checkout.transferencia;
+    const transferenciaOn = Boolean(tr && tr.habilitada) && cfg.checkout.modo !== 'externo';
+    const payPicker = $('#pay-picker');
+    if (transferenciaOn) {
+      $('#pago-field').hidden = false;
+      payPicker.innerHTML = `
+        <label><input type="radio" id="pago-mp" name="medio_pago" value="mercadopago" checked>Mercado Pago<span>Tarjeta de crédito, débito o dinero en cuenta. Confirmación al instante.</span></label>
+        <label><input type="radio" id="pago-tr" name="medio_pago" value="transferencia">Transferencia bancaria ${
+          tr.descuento_pct ? `<em>${esc(String(tr.descuento_pct))} % de descuento</em>` : ''
+        }<span>Te damos el alias y un código, subís el comprobante y lo confirmamos en menos de ${esc(String(tr.plazo_horas || 48))} hs.</span></label>`;
+      payPicker.addEventListener('change', () => setPack(state.pack));
+    }
+    const medioElegido = () => (transferenciaOn && form.elements.medio_pago?.value) || 'mercadopago';
+    const totalPack = (pack, medio) =>
+      medio === 'transferencia' && tr?.descuento_pct ? Math.round(pack.precio * (1 - tr.descuento_pct / 100)) : pack.precio;
+
     function setPack(id) {
       const pack = cfg.packs.find((p) => p.id === id) || cfg.packs.find((p) => p.destacado) || cfg.packs[0];
       state.pack = pack.id;
       $$('button[data-pack]', picker).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.pack === pack.id)));
       const bici = cfg.bicis.find((b) => b.id === state.bici);
+      const medio = medioElegido();
+      const total = totalPack(pack, medio);
       $('#sum-pack').textContent = `${pack.nombre}`;
       $('#sum-part').textContent = `${pack.participaciones} ${pack.participaciones === 1 ? 'participación' : 'participaciones'}`;
       $('#sum-bici').textContent = bici ? bici.nombre : '—';
-      $('#sum-total').textContent = fmtARS(pack.precio);
+      $('#sum-total').textContent = total === pack.precio ? fmtARS(total) : `${fmtARS(total)} (antes ${fmtARS(pack.precio)})`;
       $('#btn-pagar').textContent =
-        cfg.checkout.modo === 'externo' ? 'Comprar en la tienda' : 'Ir a pagar con Mercado Pago';
+        cfg.checkout.modo === 'externo'
+          ? 'Comprar en la tienda'
+          : medio === 'transferencia'
+            ? 'Confirmar y ver datos para transferir'
+            : 'Ir a pagar con Mercado Pago';
+      const secure = $('#modal-form .secure');
+      if (secure) {
+        secure.lastChild.textContent =
+          medio === 'transferencia'
+            ? ' Sin comisiones · Recibís factura al acreditarse la transferencia'
+            : ' Pago seguro procesado por Mercado Pago · Recibís factura';
+      }
     }
 
     function open(packId) {
@@ -417,6 +465,7 @@
       errorBox.classList.remove('is-visible');
       const data = collect(form);
       data.pack_id = state.pack;
+      data.medio_pago = medioElegido();
       const errores = validate(data, cfg);
       paintErrors(form, errores);
       if (Object.keys(errores).length) {
@@ -444,14 +493,25 @@
             if (out.errores) paintErrors(form, out.errores);
             throw new Error(out.error || 'No pudimos iniciar el pago.');
           }
-          location.href = out.init_point;
+          location.href = out.medio_pago === 'transferencia' ? `gracias.html?orden=${encodeURIComponent(out.orden_id)}` : out.init_point;
           return;
         }
-        // Modo demo: simula la confirmación de pago.
+        // Modo demo: simula la confirmación de pago (o la reserva por transferencia).
         await new Promise((r) => setTimeout(r, 700));
+        const bici = cfg.bicis.find((b) => b.id === data.bici_preferida);
+        if (data.medio_pago === 'transferencia') {
+          showSuccess({
+            nombre: data.nombre,
+            pack,
+            numeros: [],
+            bici,
+            transferencia: { ...tr, monto: totalPack(pack, 'transferencia'), codigo: `BK-${Math.random().toString(36).slice(2, 7).toUpperCase()}` },
+          });
+          return;
+        }
         const desde = 128 + Math.floor(Math.random() * 40);
         const numeros = Array.from({ length: pack.participaciones }, (_, i) => desde + i);
-        showSuccess({ nombre: data.nombre, pack, numeros, bici: cfg.bicis.find((b) => b.id === data.bici_preferida) });
+        showSuccess({ nombre: data.nombre, pack, numeros, bici });
       } catch (err) {
         errorBox.textContent = err.message || 'Algo salió mal. Probá de nuevo.';
         errorBox.classList.add('is-visible');
@@ -461,7 +521,7 @@
       }
     });
 
-    function showSuccess({ nombre, pack, numeros, bici }) {
+    function showSuccess({ nombre, pack, numeros, bici, transferencia = null }) {
       formView.hidden = true;
       successView.hidden = false;
       $('#ok-nombre').textContent = nombre;
@@ -470,9 +530,65 @@
       $('#ok-pack').textContent = `${pack.nombre} · ${pack.participaciones} ${pack.participaciones === 1 ? 'participación' : 'participaciones'}`;
       const texto = `¡Ya estoy participando por una ${bici?.nombre || 'Polygon'} con Baiking! 🚵 Mirá: ${location.href.split('#')[0]}`;
       $('#ok-share').href = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+
+      const transferBox = $('#ok-transfer');
+      const titulo = $('#modal-success .modal-head h3');
+      const sub = $('#modal-success .modal-head p');
+      const eyebrow = $('#modal-success .modal-head .eyebrow');
+      if (eyebrow) eyebrow.textContent = transferencia ? 'Reserva confirmada' : 'Participación confirmada';
+      if (transferencia) {
+        titulo.innerHTML = `¡Reservamos tu lugar, <span id="ok-nombre">${esc(nombre)}</span>!`;
+        sub.textContent = 'Te mandamos por mail los datos para transferir. Cuando subas el comprobante te asignamos tus participaciones.';
+        $('#ok-transfer-data').innerHTML = renderTransferData(transferencia);
+        $('#ok-transfer-note').textContent = `Transferí el monto exacto y poné el código en el concepto. Después subí el comprobante desde el link del mail o mandalo a ${transferencia.email_comprobantes}. Lo confirmamos en menos de ${transferencia.plazo_horas || 48} hs.`;
+        transferBox.hidden = false;
+        $('#ok-ticket').hidden = true;
+      } else {
+        titulo.innerHTML = `¡Ya estás adentro, <span id="ok-nombre">${esc(nombre)}</span>!`;
+        sub.textContent = 'Te mandamos el acceso al curso y tus participaciones por mail y WhatsApp.';
+        transferBox.hidden = true;
+        $('#ok-ticket').hidden = false;
+      }
       successView.scrollIntoView({ block: 'nearest' });
     }
   }
+
+  /* Datos de transferencia (dl) con botones de copiar. Se usa en el modal y en /gracias. */
+  function renderTransferData(t) {
+    const filas = [
+      ['Monto', fmtARS(t.monto), true],
+      ['Alias', t.alias],
+      ['CBU', t.cbu],
+      ['Titular', t.titular],
+      ['CUIT', t.cuit],
+      ['Banco', t.banco],
+      ['Código', t.codigo, true],
+    ].filter(([, v]) => v);
+    return filas
+      .map(
+        ([k, v, big]) =>
+          `<dt>${esc(k)}</dt><dd class="${big ? 'big' : ''}">${esc(v)}</dd><button type="button" class="copy" data-copy="${esc(v)}">Copiar</button>`,
+      )
+      .join('');
+  }
+  document.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-copy]');
+    if (!b) return;
+    const valor = b.dataset.copy;
+    try {
+      await navigator.clipboard.writeText(valor);
+      b.textContent = 'Copiado';
+    } catch {
+      const r = document.createRange();
+      r.selectNodeContents(b.previousElementSibling);
+      const sel = getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r);
+      b.textContent = 'Seleccionado';
+    }
+    setTimeout(() => (b.textContent = 'Copiar'), 1500);
+  });
+  window.BaikingUI = { renderTransferData, fmtARS };
 
   function collect(form) {
     const fd = new FormData(form);
@@ -495,6 +611,7 @@
     if (tel.length < 10 || tel.length > 14) e.whatsapp = 'Con código de área, sin 0 ni 15. Ej: 11 5728 0056.';
     if (!d.provincia) e.provincia = 'Elegí tu provincia.';
     if (!cfg.bicis.some((b) => b.id === d.bici_preferida)) e.bici_preferida = 'Elegí una bici.';
+    if (d.medio_pago && !['mercadopago', 'transferencia'].includes(d.medio_pago)) e.medio_pago = 'Elegí cómo querés pagar.';
     if (!d.mayor_edad) e.mayor_edad = 'Tenés que ser mayor de 18 años.';
     if (!d.acepta_bases) e.acepta_bases = 'Tenés que aceptar las bases y condiciones.';
     return e;
@@ -586,6 +703,32 @@
     io.observe(hero);
   }
 
+  /* Presencia en tiempo real (para el panel): un beacon al cargar y cada 30 s. */
+  function initPresencia(cfg) {
+    const activo = cfg.checkout?.modo === 'api' || cfg.panel?.presencia === true;
+    if (!activo || !navigator.sendBeacon) return;
+    const nuevoId = () =>
+      (crypto.randomUUID && crypto.randomUUID()) || `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+    let sid;
+    try {
+      sid = sessionStorage.getItem('bk_sid');
+      if (!sid) {
+        sid = nuevoId();
+        sessionStorage.setItem('bk_sid', sid);
+      }
+    } catch {
+      sid = nuevoId();
+    }
+    const ping = () => {
+      if (document.visibilityState === 'hidden') return;
+      const datos = new Blob([JSON.stringify({ sid, pagina: location.pathname })], { type: 'application/json' });
+      navigator.sendBeacon('api/ping', datos);
+    };
+    ping();
+    setInterval(ping, 30000);
+    document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && ping());
+  }
+
   function toast(msg) {
     const el = $('#toast');
     if (!el) return;
@@ -625,9 +768,11 @@
     }
     const sec = $('#bases-secundarios');
     if (sec) {
-      sec.innerHTML = (cfg.sorteo.premios_secundarios || [])
-        .map((p) => `<li><b>${esc(p.puesto)}:</b> ${esc(p.detalle)}.</li>`)
-        .join('');
+      const secundarios = cfg.sorteo.premios_secundarios || [];
+      sec.innerHTML = secundarios.map((p) => `<li><b>${esc(p.puesto)}:</b> ${esc(p.detalle)}.</li>`).join('');
+      $('#bases-secundarios-block').hidden = secundarios.length === 0;
+      const txt = $('#bases-adicionales-txt');
+      if (txt) txt.hidden = secundarios.length === 0;
     }
     $$('[data-vigencia-desde]').forEach(
       (el) => (el.textContent = cap(fmtFechaLarga(`${cfg.legal.vigencia_desde}T00:00:00-03:00`))),
@@ -645,7 +790,7 @@
       state.cfg = await loadConfig();
     } catch (err) {
       console.error(err);
-      toast('No pudimos cargar la información de la campaña.');
+      toast(err.message || 'No pudimos cargar la información de la campaña.');
       return;
     }
     const cfg = state.cfg;
@@ -655,6 +800,7 @@
     const page = document.body.dataset.page;
     renderContact(cfg);
     renderCommon(cfg);
+    initPresencia(cfg);
     if (page === 'home') {
       renderHero(cfg);
       renderBikes(cfg);

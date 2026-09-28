@@ -6,7 +6,10 @@
     "claim": "Tienda de bicis",
     "ciudad": "Del Viso, Pilar · Buenos Aires",
     "web": "https://baiking.com.ar",
-    "seguidores_instagram": "121K"
+    "seguidores_instagram": "121K",
+    "_fotos": "Rutas relativas a archivos en assets/img/. Con null se usan las ilustraciones. Ej: foto_gaston = \"assets/img/gaston.jpg\" (vertical, 4:5); bicis[].imagen = \"assets/img/siskiu-t7.png\" (bici de perfil, fondo transparente o oscuro).",
+    "foto_gaston": null,
+    "foto_gaston_alt": "Gastón, de Baiking, andando en bici"
   },
 
   "moneda": "ARS",
@@ -147,9 +150,26 @@
     "texto": "Sin obligación de compra: podés participar sin cargo completando el formulario. Una (1) participación por persona, con la misma probabilidad que cualquier otra."
   },
 
+  "panel": {
+    "presencia": false,
+    "_nota": "presencia=true activa el beacon de visitantes (api/ping) aunque el checkout no esté en modo api. El panel está en admin.html (token ADMIN_TOKEN) y admin.html?demo=1 muestra datos de ejemplo."
+  },
+
   "checkout": {
     "modo": "demo",
-    "_modos": "demo = simula la compra (para mostrar) · api = Mercado Pago vía /api/checkout · externo = redirige a `packs[].url_externa` (ej. producto en la Tienda Nube de Baiking)"
+    "_modos": "demo = simula la compra (para mostrar) · api = Mercado Pago vía /api/checkout · externo = redirige a `packs[].url_externa` (ej. producto en la Tienda Nube de Baiking)",
+    "transferencia": {
+      "habilitada": true,
+      "_nota": "Pago por transferencia bancaria: el participante recibe alias/CBU + un código, sube el comprobante (o lo manda por mail) y la IA lo lee; se aprueba desde el panel (o automáticamente si TRANSFERENCIAS_AUTO_APROBAR=true y todos los chequeos dan bien). Datos [A CONFIRMAR] con Gastón.",
+      "alias": "[A CONFIRMAR] baiking.curso",
+      "cbu": "[A CONFIRMAR] 0000000000000000000000",
+      "titular": "[A CONFIRMAR] Razón social de Baiking",
+      "cuit": "[A CONFIRMAR] CUIT",
+      "banco": "[A CONFIRMAR] Banco",
+      "descuento_pct": 5,
+      "email_comprobantes": "pagos@baiking.com.ar",
+      "plazo_horas": 48
+    }
   },
 
   "contacto": {
@@ -169,10 +189,8 @@
       { "titulo": "Escribano público", "texto": "Un escribano certifica el padrón de participaciones y el resultado del sorteo." },
       { "titulo": "Suplentes", "texto": "Se sortean dos participaciones suplentes. Si la persona ganadora no responde ni acredita identidad en 7 días hábiles, pasa a la siguiente." }
     ],
-    "premios_secundarios": [
-      { "puesto": "2° premio", "detalle": "Casco + kit de herramientas Baiking" },
-      { "puesto": "3° premio", "detalle": "Gift card de $100.000 en Baiking" }
-    ]
+    "_premios_secundarios_nota": "Vacío en la primera edición. Si se agregan (ej. { \"puesto\": \"2° premio\", \"detalle\": \"Casco + kit Baiking\" }), aparecen solos en el sitio y en las bases.",
+    "premios_secundarios": []
   },
 
   "faq": [

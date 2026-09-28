@@ -31,8 +31,10 @@ const pages = [
   { name: 'home', url: '/index.html' },
   { name: 'gratuita', url: '/participa-sin-cargo.html' },
   { name: 'gracias', url: '/gracias.html?demo=1' },
+  { name: 'gracias-transferencia', url: '/gracias.html?demo=1&transferencia=1' },
   { name: 'bases', url: '/bases-y-condiciones.html' },
   { name: 'sorteo', url: '/sorteo.html' },
+  { name: 'admin', url: '/admin.html?demo=1' },
 ];
 const viewports = [
   { tag: 'desktop', width: 1366, height: 860 },
@@ -75,6 +77,27 @@ for (const vp of viewports) {
       await page.waitForSelector('#modal-success:not([hidden])', { timeout: 5000 });
       await page.waitForTimeout(300);
       await page.screenshot({ path: path.join(outDir, `home-confirmacion-${vp.tag}.png`), fullPage: false });
+      // Variante: reserva por transferencia
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.addStyleTag({ content: '.reveal{animation:none!important}' });
+      await page.click('.hero [data-open-pack]');
+      await page.waitForTimeout(300);
+      if (await page.locator('#pago-tr').count()) {
+        await page.check('#pago-tr');
+        await page.fill('#f-nombre', 'Delfina');
+        await page.fill('#f-apellido', 'Nogués');
+        await page.fill('#f-dni', '35123456');
+        await page.selectOption('#f-provincia', 'Buenos Aires');
+        await page.fill('#f-email', 'delfina@ejemplo.com');
+        await page.fill('#f-whatsapp', '11 5555 5555');
+        await page.check('input[name="mayor_edad"]');
+        await page.check('input[name="acepta_bases"]');
+        await page.screenshot({ path: path.join(outDir, `home-modal-transferencia-${vp.tag}.png`), fullPage: false });
+        await page.click('#btn-pagar');
+        await page.waitForSelector('#modal-success:not([hidden])', { timeout: 5000 });
+        await page.waitForTimeout(300);
+        await page.screenshot({ path: path.join(outDir, `home-reserva-transferencia-${vp.tag}.png`), fullPage: false });
+      }
     }
     await page.close();
   }

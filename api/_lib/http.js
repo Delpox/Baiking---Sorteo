@@ -33,6 +33,22 @@ export function baseUrl(req) {
   return `${proto}://${host}`;
 }
 
+/**
+ * Autorización del panel y exportaciones: token en ?token=, en el header
+ * Authorization: Bearer <token> o en X-Admin-Token. Comparación en tiempo constante.
+ */
+export async function adminAutorizado(req) {
+  const { timingSafeEqual } = await import('node:crypto');
+  const esperado = process.env.ADMIN_TOKEN || '';
+  const q = getQuery(req);
+  const auth = String(req.headers.authorization || '');
+  const token = q.token || req.headers['x-admin-token'] || (auth.startsWith('Bearer ') ? auth.slice(7) : '');
+  if (!esperado || !token) return false;
+  const a = Buffer.from(String(token));
+  const b = Buffer.from(esperado);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 export function env(name, { required = true } = {}) {
   const value = process.env[name];
   if ((value === undefined || value === '') && required) {

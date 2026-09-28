@@ -83,6 +83,70 @@ Bases y condiciones: ${baseUrl}/bases-y-condiciones`;
   return { subject, html, text };
 }
 
+const fmtARS = (n) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
+
+function marcoMail(campaign, titulo, cuerpoHtml, baseUrl) {
+  return `<!doctype html>
+<html lang="es"><body style="margin:0;background:#0b0f14;font-family:Inter,Arial,sans-serif;color:#f4f6f8">
+  <div style="max-width:560px;margin:0 auto;padding:32px 20px">
+    <p style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#c9f31d;margin:0 0 12px">Baiking · ${escapeHtml(campaign.edicion.nombre)}</p>
+    <h1 style="font-size:28px;line-height:1.15;margin:0 0 16px">${titulo}</h1>
+    ${cuerpoHtml}
+    <p style="font-size:12px;line-height:1.6;color:#6b7784;margin:28px 0 0">${escapeHtml(campaign.legal.aviso_corto)} Bases: <a href="${escapeHtml(baseUrl)}/bases-y-condiciones" style="color:#c9f31d">${escapeHtml(baseUrl)}/bases-y-condiciones</a></p>
+  </div>
+</body></html>`;
+}
+
+/** Mail con los datos para transferir (se manda al crear la orden por transferencia). */
+export function armarMailTransferencia({ orden, campaign, baseUrl }) {
+  const t = campaign.checkout.transferencia || {};
+  const pack = campaign.packs.find((p) => p.id === orden.pack_id);
+  const link = `${baseUrl}/gracias?orden=${orden.id}`;
+  const filas = [
+    ['Monto', fmtARS(orden.monto)],
+    ['Alias', t.alias],
+    ['CBU', t.cbu],
+    ['Titular', t.titular],
+    ['CUIT', t.cuit],
+    ['Banco', t.banco],
+    ['Código', orden.codigo],
+  ].filter(([, v]) => v);
+
+  const subject = `Datos para transferir · reservamos tu lugar (${orden.codigo}) · Baiking`;
+  const html = marcoMail(
+    campaign,
+    `Reservamos tu lugar, ${escapeHtml(orden.nombre)}`,
+    `<p style="font-size:16px;line-height:1.6;margin:0 0 20px;color:#c8d0d8">Elegiste pagar <strong style="color:#fff">${escapeHtml(pack?.nombre || 'tu pack')}</strong> por transferencia. Transferí el monto exacto, poné el código en el concepto y subí el comprobante. Lo confirmamos en menos de ${escapeHtml(String(t.plazo_horas || 48))} hs y te asignamos tus participaciones.</p>
+    <table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 24px;font-size:15px;background:#121820;border:1px solid #223041;border-radius:14px">
+      ${filas.map(([k, v]) => `<tr><td style="padding:10px 14px;color:#9aa6b2">${escapeHtml(k)}</td><td style="padding:10px 14px;text-align:right;font-weight:600;color:#fff">${escapeHtml(v)}</td></tr>`).join('')}
+    </table>
+    <a href="${escapeHtml(link)}" style="display:inline-block;background:#c9f31d;color:#0b0f14;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:999px">Subir el comprobante</a>
+    <p style="font-size:14px;line-height:1.6;color:#9aa6b2;margin:20px 0 0">También podés responder este mail con el comprobante adjunto (a ${escapeHtml(t.email_comprobantes || '')}) con el código <strong style="color:#fff">${escapeHtml(orden.codigo)}</strong> en el asunto. La reserva vence si no recibimos la transferencia en ${escapeHtml(String(t.plazo_horas || 48))} hs.</p>`,
+    baseUrl,
+  );
+  const text = `Reservamos tu lugar, ${orden.nombre}.
+${filas.map(([k, v]) => `${k}: ${v}`).join('\n')}
+Subí el comprobante en ${link} o respondé este mail con el comprobante adjunto (código ${orden.codigo} en el asunto).
+La reserva vence si no recibimos la transferencia en ${t.plazo_horas || 48} hs.`;
+  return { subject, html, text };
+}
+
+/** Mail de acuse cuando llega un comprobante (por el sitio o por mail). */
+export function armarMailComprobanteRecibido({ orden, campaign, baseUrl }) {
+  const t = campaign.checkout.transferencia || {};
+  const link = `${baseUrl}/gracias?orden=${orden.id}`;
+  const subject = `Recibimos tu comprobante (${orden.codigo}) · Baiking`;
+  const html = marcoMail(
+    campaign,
+    `Recibimos tu comprobante, ${escapeHtml(orden.nombre)}`,
+    `<p style="font-size:16px;line-height:1.6;margin:0 0 20px;color:#c8d0d8">Lo estamos revisando. En cuanto se acredite la transferencia te mandamos otro mail con el acceso al curso y tus participaciones (en general, en menos de ${escapeHtml(String(t.plazo_horas || 48))} hs).</p>
+    <a href="${escapeHtml(link)}" style="display:inline-block;background:#c9f31d;color:#0b0f14;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:999px">Ver el estado de mi orden</a>`,
+    baseUrl,
+  );
+  const text = `Recibimos tu comprobante, ${orden.nombre}. Lo estamos revisando; te confirmamos por mail. Estado: ${link}`;
+  return { subject, html, text };
+}
+
 export async function enviarMail({ to, subject, html, text }) {
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',

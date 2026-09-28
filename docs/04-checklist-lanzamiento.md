@@ -57,3 +57,13 @@
 - [ ] Entrega documentada (acta, DNI, foto) y contenido de la entrega para redes.
 - [ ] Encuesta corta a compradores del curso (testimonios para la edición #2).
 - [ ] Reporte final: órdenes, ingresos, costos, conversión por canal.
+
+## G. Panel y transferencias (agregado)
+
+- [ ] `ADMIN_TOKEN` largo y aleatorio en Vercel; abrir `admin.html`, ingresar el token y verificar KPIs, gráficos y tabla con las primeras órdenes de prueba.
+- [ ] Activar el beacon de presencia (`panel.presencia: true` en la config si el checkout no está en modo `api`).
+- [ ] Decidir si se ofrece transferencia (`checkout.transferencia.habilitada`) y con qué descuento; completar alias, CBU, titular, CUIT y banco.
+- [ ] Crear el bucket privado `comprobantes` en Supabase Storage.
+- [ ] `ANTHROPIC_API_KEY` en Vercel para la lectura automática de comprobantes; `TRANSFERENCIAS_AUTO_APROBAR=false` hasta tener conciliación bancaria.
+- [ ] (Opcional) Correo entrante `pagos@baiking.com.ar` → `/api/inbound-email` con `INBOUND_SECRET` (ver `docs/03-automatizaciones.md` §7).
+- [ ] Probar el circuito completo con una transferencia real de $1 entre cuentas propias: mail de instrucciones → carga del comprobante → revisión en el panel → aprobación → mail con números.

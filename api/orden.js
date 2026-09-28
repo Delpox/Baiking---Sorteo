@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     const pack = campaign.packs.find((p) => p.id === orden.pack_id);
     const bici = campaign.bicis.find((b) => b.id === orden.bici_preferida);
 
-    return json(res, 200, {
+    const out = {
       id: orden.id,
       estado: orden.estado,
       nombre: orden.nombre,
@@ -35,8 +35,29 @@ export default async function handler(req, res) {
       bici: bici ? { id: bici.id, nombre: bici.nombre } : null,
       numeros,
       pagada_at: orden.pagada_at,
+      medio_pago: orden.medio_pago,
       edicion: campaign.edicion,
-    });
+    };
+
+    if (orden.medio_pago === 'transferencia' && orden.estado !== 'pagada') {
+      const t = campaign.checkout.transferencia || {};
+      out.codigo = orden.codigo;
+      out.monto = Number(orden.monto);
+      out.comprobante_at = orden.comprobante_at;
+      out.comprobante_checks = orden.comprobante_datos?.checks || null;
+      out.transferencia = {
+        alias: t.alias,
+        cbu: t.cbu,
+        titular: t.titular,
+        cuit: t.cuit,
+        banco: t.banco,
+        email_comprobantes: t.email_comprobantes,
+        plazo_horas: t.plazo_horas,
+        descuento_pct: t.descuento_pct,
+      };
+    }
+
+    return json(res, 200, out);
   } catch (err) {
     console.error('[orden]', err);
     return json(res, 500, { error: 'Error consultando la orden' });

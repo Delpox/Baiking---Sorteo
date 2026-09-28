@@ -37,8 +37,8 @@ if (pendientes.length) avisos.push(`config: ${pendientes.length} valores marcado
 // --- íconos ---
 const sprite = readFileSync(path.join(root, 'assets/img/sprite.svg'), 'utf8');
 const symbols = new Set([...sprite.matchAll(/<symbol id="([^"]+)"/g)].map((m) => m[1]));
-const htmls = ['index.html', 'gracias.html', 'participa-sin-cargo.html', 'bases-y-condiciones.html', 'sorteo.html'];
-const jsFiles = ['assets/js/app.js', 'assets/js/gracias.js'];
+const htmls = ['index.html', 'gracias.html', 'participa-sin-cargo.html', 'bases-y-condiciones.html', 'sorteo.html', 'admin.html'];
+const jsFiles = ['assets/js/app.js', 'assets/js/gracias.js', 'assets/js/admin.js'];
 for (const f of [...htmls, ...jsFiles]) {
   const src = readFileSync(path.join(root, f), 'utf8');
   for (const m of src.matchAll(/#(ico-[a-z-]+|art-[a-z]+)/g)) {
@@ -58,9 +58,11 @@ for (const b of cfg.bicis) if (!symbols.has(`art-${b.ilustracion}`)) errores.pus
 // --- sintaxis JS (frontend + backend) ---
 const apiFiles = [
   'api/checkout.js', 'api/orden.js', 'api/export.js', 'api/participacion-gratuita.js', 'api/webhooks/mercadopago.js',
-  'api/_lib/db.js', 'api/_lib/http.js', 'api/_lib/mercadopago.js', 'api/_lib/notificaciones.js',
+  'api/admin.js', 'api/ping.js', 'api/comprobante.js', 'api/inbound-email.js',
+  'api/_lib/db.js', 'api/_lib/http.js', 'api/_lib/mercadopago.js', 'api/_lib/notificaciones.js', 'api/_lib/confirmar.js',
+  'api/_lib/comprobante.js',
 ];
-for (const f of [...apiFiles, ...jsFiles, 'scripts/sorteo.mjs', 'scripts/build-demo.mjs', 'scripts/screenshots.mjs']) {
+for (const f of [...apiFiles, ...jsFiles, 'scripts/sorteo.mjs', 'scripts/build-demo.mjs', 'scripts/screenshots.mjs', 'scripts/og-image.mjs']) {
   try {
     execFileSync(process.execPath, ['--check', path.join(root, f)], { stdio: 'pipe' });
   } catch (e) {

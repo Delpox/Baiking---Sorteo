@@ -34,11 +34,20 @@ create table if not exists ordenes (
   provincia                 text,
   bici_preferida            text not null check (bici_preferida in ('siskiu_t7', 'tambora')),
   acepta_bases              boolean not null default false,
+  -- pendiente: creada y sin pago · en_revision: transferencia con comprobante a aprobar
   estado                    text not null default 'pendiente'
-                            check (estado in ('pendiente', 'pagada', 'rechazada', 'reembolsada', 'anulada')),
+                            check (estado in ('pendiente', 'en_revision', 'pagada', 'rechazada', 'reembolsada', 'anulada')),
+  medio_pago                text not null default 'mercadopago'
+                            check (medio_pago in ('mercadopago', 'transferencia', 'gratuita')),
+  codigo                    text unique,          -- referencia corta para transferencias (ej: BK-7Q4M2)
   mp_preference_id          text,
   mp_payment_id             text unique,
   pagada_at                 timestamptz,
+  comprobante_url           text,                 -- ruta en Supabase Storage (bucket "comprobantes")
+  comprobante_datos         jsonb,                -- lo que la IA leyó del comprobante + checks
+  comprobante_at            timestamptz,
+  revisado_por              text,                 -- 'auto' o el nombre de quien aprobó en el panel
+  revisado_at               timestamptz,
   email_enviado_at          timestamptz,
   whatsapp_enviado_at       timestamptz,
   origen                    text not null default 'web'
@@ -113,6 +122,23 @@ end;
 $$;
 
 -- ------------------------------------------------------------
+-- Presencia: visitantes en el sitio en tiempo real (beacon cada 30 s)
+-- ------------------------------------------------------------
+create table if not exists presencia (
+  session_id  text primary key,
+  pagina      text,
+  first_seen  timestamptz not null default now(),
+  last_seen   timestamptz not null default now()
+);
+create index if not exists presencia_last_seen_idx on presencia (last_seen);
+create index if not exists presencia_first_seen_idx on presencia (first_seen);
+alter table presencia enable row level security;
+
+-- Comprobantes de transferencia: crear el bucket privado "comprobantes" en
+-- Storage (Supabase > Storage > New bucket, público: NO). El backend sube y
+-- lee con la service_role key.
+
+-- ------------------------------------------------------------
 -- Vista para el padrón del sorteo (exportar CSV / escribano)
 -- ------------------------------------------------------------
 create or replace view padron_sorteo as
@@ -127,6 +153,7 @@ select p.edicion_id,
        o.provincia,
        o.bici_preferida,
        o.pack_id,
+       o.medio_pago,
        o.pagada_at
   from participaciones p
   join ordenes o on o.id = p.orden_id

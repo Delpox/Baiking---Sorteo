@@ -12,10 +12,12 @@ participa-sin-cargo.html    Vía gratuita de participación (obligatoria por Lea
 gracias.html                Confirmación con los números de participación (post-pago)
 bases-y-condiciones.html    Bases y condiciones (borrador para revisión legal)
 sorteo.html                 Herramienta para el sorteo en vivo (carga el padrón, sortea con crypto, exporta acta)
-config/campaign.json        ÚNICA fuente de verdad: fechas, bicis, curso, packs, precios, contacto, textos legales
+admin.html                  Panel en tiempo real: KPIs, gráficos, transferencias por revisar, órdenes (admin.html?demo=1 = datos de ejemplo)
+config/campaign.json        ÚNICA fuente de verdad: fechas, bicis, curso, packs, precios, contacto, textos legales, datos de transferencia
 assets/                     CSS, JS y sprite de íconos/ilustraciones (sin build)
-api/                        Funciones serverless (Vercel): checkout, webhook de Mercado Pago, orden, export, vía gratuita
-supabase/schema.sql         Base de datos Postgres: ediciones, órdenes, participaciones y asignación atómica de números
+api/                        Funciones serverless (Vercel): checkout (Mercado Pago o transferencia), webhook de MP, orden, export,
+                            vía gratuita, panel (admin), presencia (ping), comprobantes leídos con Claude, mails entrantes
+supabase/schema.sql         Base de datos Postgres: ediciones, órdenes, participaciones, presencia y asignación atómica de números
 scripts/                    check (validaciones), screenshots (Playwright), build-demo (HTML autocontenido), sorteo (CLI)
 docs/                       Investigación legal y de mercado, mecánica y decisiones, automatizaciones, checklist
 ```
@@ -40,12 +42,16 @@ En modo `demo` el botón "Ir a pagar" simula la confirmación y muestra los núm
 | `api` | Crea la orden, cobra con Mercado Pago Checkout Pro, asigna números por webhook y notifica por mail/WhatsApp | Producción recomendada |
 | `externo` | Redirige cada pack a `packs[].url_externa` (por ejemplo, un producto en la Tienda Nube de Baiking) | Si se prefiere cobrar desde la tienda existente |
 
+## Transferencia bancaria + comprobante leído por IA (opcional)
+
+Si `checkout.transferencia.habilitada` está en `true`, el participante puede pagar por transferencia (con el descuento configurado): recibe alias/CBU y un código `BK-XXXXX`, sube el comprobante en `/gracias` (o lo manda por mail a `pagos@...`), Claude lo lee y la orden queda "por revisar" en el panel con los chequeos (monto, cuenta destino, código, fecha). Aprobar desde el panel asigna los números y manda el mail del curso. Detalle y riesgos en `docs/03-automatizaciones.md` §7.
+
 ## Puesta en producción (resumen)
 
-1. Supabase: ejecutar `supabase/schema.sql`.
+1. Supabase: ejecutar `supabase/schema.sql` y crear el bucket privado `comprobantes` (si se usan transferencias).
 2. Mercado Pago: credenciales de producción + webhook a `/api/webhooks/mercadopago`.
 3. Resend: dominio verificado + API key. (WhatsApp Cloud API opcional.)
-4. Vercel: importar el repo, cargar las variables de `.env.example`, dominio.
+4. Vercel: importar el repo, cargar las variables de `.env.example` (incluye `ADMIN_TOKEN` para el panel y `ANTHROPIC_API_KEY` para leer comprobantes), dominio.
 5. `checkout.modo: "api"` y desplegar. Probar de punta a punta con credenciales de prueba.
 
 Detalle completo en `docs/04-checklist-lanzamiento.md`.
