@@ -290,7 +290,11 @@
   "participacion_gratuita": {
     "habilitada": true,
     "participaciones": 1,
-    "texto": "Sin obligación de compra: podés participar sin cargo completando el formulario. Una (1) chance por persona, con la misma probabilidad que cualquier otra."
+    "requiere_carta": true,
+    "direccion_carta": "Las Camelias 3327, Del Viso (1669), Pilar, Buenos Aires",
+    "plazo_carta_dias": 15,
+    "texto": "Sin obligación de compra: completá el formulario y mandanos una carta a Las Camelias 3327, Del Viso (Pilar), contándonos por qué deberías ganar la bici. Una (1) chance por persona, que se asigna cuando recibimos la carta.",
+    "_nota": "Decisión de Baiking (28/09): la vía gratuita exige el formulario + una carta a la tienda; la chance se asigna desde el panel al marcar \"Carta recibida\". Máximo 1 chance por DNI."
   },
   "panel": {
     "presencia": false,
@@ -358,7 +362,7 @@
     },
     {
       "p": "¿Puedo participar sin comprar?",
-      "r": "Sí. La promoción es sin obligación de compra: completando el formulario de participación sin cargo recibís una chance por persona, con la misma probabilidad que cualquier otra."
+      "r": "Sí. Completás el formulario de participación sin cargo y nos mandás una carta a Las Camelias 3327, Del Viso (Pilar), contándonos por qué deberías ganar la bici. Cuando la recibimos te confirmamos por mail tu chance: una (1) por persona."
     },
     {
       "p": "¿Cómo sé cuáles son mis chances?",

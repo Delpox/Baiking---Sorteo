@@ -4,8 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Participación sin cargo · Baiking</title>
-  <meta name="description" content="Sin obligación de compra: registrá tu participación gratuita en la promoción de Baiking por una Polygon Siskiu T7, Tambora o Strattos.">
-  <meta name="theme-color" content="#0b0f14">
+  <meta name="description" content="Sin obligación de compra: completá el formulario y mandá una carta a Baiking para participar del sorteo de una Polygon Siskiu T7, Tambora o Strattos.">
+  <meta name="theme-color" content="#eb0627">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
@@ -24,7 +26,12 @@
       <span class="eyebrow">Sin obligación de compra</span>
       <h1 class="h-section">Participación <em>sin cargo</em></h1>
       <p class="lead" data-gratuita-texto></p>
-      <p class="lead" style="margin-top:10px">Sorteo: <b data-fecha-sorteo>—</b>, <b data-hora-sorteo>—</b>, en vivo por <b data-instagram>@baikingtiendadebicis</b>. Inscripciones hasta el <b data-cierre>—</b>.</p>
+
+      <ol class="next-steps" style="margin-top:22px">
+        <li><span>1</span><div><b>Completá el formulario</b> de esta página con tus datos y la bici que preferís.</div></li>
+        <li><span>2</span><div><b>Mandanos una carta</b> a <b data-gratuita-direccion>Las Camelias 3327, Del Viso (1669), Pilar, Buenos Aires</b> (o dejala en la tienda) con tu nombre, DNI, mail y por qué deberías ganar la bici. Tenés <b data-gratuita-plazo>15</b> días desde que completás el formulario.</div></li>
+        <li><span>3</span><div><b>Cuando recibimos la carta</b> te confirmamos por mail tu chance, con su número. Una (1) por persona. Sorteo: <b data-fecha-sorteo>—</b>, <b data-hora-sorteo>—</b>, en vivo por <b data-instagram>@baikingtiendadebicis</b>.</div></li>
+      </ol>
 
       <form class="form" id="form-gratuita" novalidate style="margin-top:28px">
         <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
@@ -34,11 +41,11 @@
           <span class="err"></span>
         </div>
         <div class="form-row">
-          <div class="field"><label for="f-nombre">Nombre</label><input id="f-nombre" name="nombre" autocomplete="given-name" required><span class="err"></span></div>
-          <div class="field"><label for="f-apellido">Apellido</label><input id="f-apellido" name="apellido" autocomplete="family-name" required><span class="err"></span></div>
+          <div class="field"><label for="f-nombre">Nombre</label><input id="f-nombre" name="nombre" autocomplete="given-name" maxlength="80" required><span class="err"></span></div>
+          <div class="field"><label for="f-apellido">Apellido</label><input id="f-apellido" name="apellido" autocomplete="family-name" maxlength="80" required><span class="err"></span></div>
         </div>
         <div class="form-row">
-          <div class="field"><label for="f-dni">DNI</label><input id="f-dni" name="dni" inputmode="numeric" placeholder="Sin puntos" required><span class="err"></span></div>
+          <div class="field"><label for="f-dni">DNI</label><input id="f-dni" name="dni" inputmode="numeric" placeholder="Sin puntos" maxlength="10" required><span class="err"></span></div>
           <div class="field"><label for="f-provincia">Provincia</label><select id="f-provincia" name="provincia" required></select><span class="err"></span></div>
         </div>
         <div class="field"><label for="f-email">Email <small>Acá te llega la confirmación</small></label><input id="f-email" name="email" type="email" autocomplete="email" maxlength="120" required><span class="err"></span></div>
@@ -47,24 +54,25 @@
         <label class="check"><input type="checkbox" name="acepta_bases"><span>Leí y acepto las <a href="bases-y-condiciones.html" target="_blank" rel="noopener">bases y condiciones</a> y el <a href="bases-y-condiciones.html#datos" target="_blank" rel="noopener">tratamiento de mis datos</a>.</span></label>
         <div class="form-error" id="form-error" role="alert"></div>
         <div class="form-foot">
-          <button type="submit" class="btn btn-primary btn-lg btn-block">Registrar mi participación</button>
-          <span class="secure"><svg><use href="#ico-shield"></use></svg> Una participación por persona · Misma probabilidad que cualquier otra</span>
+          <button type="submit" class="btn btn-primary btn-lg btn-block">Registrar mis datos</button>
+          <span class="secure"><svg><use href="#ico-shield"></use></svg> Una chance por persona · La chance se asigna cuando llega tu carta</span>
         </div>
       </form>
 
       <div id="free-success" hidden>
         <div class="ticket">
           <div class="ticket-head">
-            <span class="eyebrow">Participación registrada</span>
-            <h2>¡Ya estás adentro, <span id="ok-nombre">—</span>!</h2>
+            <span class="eyebrow">Datos registrados</span>
+            <h2>¡Gracias, <span id="ok-nombre">—</span>!</h2>
             <ul class="numbers" id="ok-numeros"></ul>
           </div>
           <div class="ticket-body">
-            <div class="ticket-meta" style="margin-top:0">
+            <p id="ok-carta" style="font-size:15px;color:var(--fg-2)">Ahora mandanos la carta a <b data-gratuita-direccion>Las Camelias 3327, Del Viso (1669), Pilar, Buenos Aires</b> (o dejala en la tienda), con tu nombre, DNI, mail y por qué deberías ganar la bici. Cuando la recibamos te confirmamos tu chance por mail.</p>
+            <div class="ticket-meta" style="margin-top:16px">
               <span>Participás por</span><b id="ok-bici">—</b>
               <span>Sorteo en vivo</span><b><span data-fecha-sorteo>—</span>, <span data-hora-sorteo>—</span></b>
             </div>
-            <p style="margin-top:16px;font-size:14px;color:var(--muted)">Te mandamos la confirmación por mail. Guardá esta página: es tu comprobante.</p>
+            <p style="margin-top:16px;font-size:14px;color:var(--muted)">Te mandamos estas instrucciones por mail. Guardá esta página.</p>
             <div class="ticket-actions">
               <a class="btn btn-primary" href="index.html#curso">Conocer el curso</a>
               <a class="btn btn-ghost" href="index.html">Volver al inicio</a>

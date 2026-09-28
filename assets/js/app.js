@@ -431,6 +431,9 @@
     $$('[data-legal-cuit]').forEach((el) => marcar(el, legal.cuit, '[CUIT]'));
     $$('[data-legal-domicilio]').forEach((el) => (el.textContent = legal.domicilio));
     $$('[data-gratuita-texto]').forEach((el) => (el.textContent = cfg.participacion_gratuita?.texto || ''));
+    const gratuita = cfg.participacion_gratuita || {};
+    if (gratuita.direccion_carta) $$('[data-gratuita-direccion]').forEach((el) => (el.textContent = gratuita.direccion_carta));
+    if (gratuita.plazo_carta_dias) $$('[data-gratuita-plazo]').forEach((el) => (el.textContent = String(gratuita.plazo_carta_dias)));
     // Logo real de Baiking (marca.logo) en los headers que todavía muestran el nombre en tipografía.
     if (marca.logo) {
       $$('.logo').forEach((a) => {
@@ -828,7 +831,9 @@
       const btn = $('button[type="submit"]', form);
       btn.disabled = true;
       try {
-        let numeros;
+        // Con requiere_carta, la chance se asigna cuando llega la carta: acá solo se registran los datos.
+        const requiereCarta = cfg.participacion_gratuita?.requiere_carta === true;
+        let numeros = [];
         if (cfg.checkout.modo === 'api') {
           const res = await fetch('api/participacion-gratuita', {
             method: 'POST',
@@ -840,15 +845,17 @@
             if (out.errores) paintErrors(form, out.errores);
             throw new Error(out.error || 'No pudimos registrar tu participación.');
           }
-          numeros = out.numeros;
+          numeros = out.numeros || [];
         } else {
           await new Promise((r) => setTimeout(r, 600));
-          numeros = [301 + Math.floor(Math.random() * 60)];
+          numeros = requiereCarta ? [] : [301 + Math.floor(Math.random() * 60)];
         }
         form.hidden = true;
         ok.hidden = false;
         $('#ok-nombre').textContent = data.nombre;
         $('#ok-numeros').innerHTML = numeros.map((n) => `<li>${fmtNum(n)}</li>`).join('');
+        const carta = $('#ok-carta');
+        if (carta) carta.hidden = numeros.length > 0;
         $('#ok-bici').textContent = cfg.bicis.find((b) => b.id === data.bici_preferida)?.nombre || '';
         ok.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch (err) {
