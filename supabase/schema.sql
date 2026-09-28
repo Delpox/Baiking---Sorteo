@@ -32,7 +32,9 @@ create table if not exists ordenes (
   email                     text not null,
   whatsapp                  text not null,
   provincia                 text,
-  bici_preferida            text not null check (bici_preferida in ('siskiu_t7', 'tambora')),
+  -- id de config/campaign.json > bicis[]; la API valida contra la config (sin check acá,
+  -- para que renombrar o agregar una bici no rompa las órdenes).
+  bici_preferida            text not null,
   acepta_bases              boolean not null default false,
   -- pendiente: creada y sin pago · en_revision: transferencia con comprobante a aprobar
   estado                    text not null default 'pendiente'
@@ -48,6 +50,11 @@ create table if not exists ordenes (
   comprobante_at            timestamptz,
   revisado_por              text,                 -- 'auto' o el nombre de quien aprobó en el panel
   revisado_at               timestamptz,
+  -- Conciliación manual contra el home banking (transferencias): null = sin revisar,
+  -- true = la plata llegó (aprueba la orden), false = no llegó (queda marcada para reclamar).
+  acreditada                boolean,
+  acreditada_at             timestamptz,
+  acreditada_nota           text,
   email_enviado_at          timestamptz,
   whatsapp_enviado_at       timestamptz,
   origen                    text not null default 'web'
@@ -140,8 +147,10 @@ alter table presencia enable row level security;
 
 -- ------------------------------------------------------------
 -- Vista para el padrón del sorteo (exportar CSV / escribano)
+-- security_invoker: la vista corre con los permisos de quien consulta (y por lo
+-- tanto respeta el RLS de ordenes/participaciones) en vez de los del dueño.
 -- ------------------------------------------------------------
-create or replace view padron_sorteo as
+create or replace view padron_sorteo with (security_invoker = on) as
 select p.edicion_id,
        p.numero,
        o.id           as orden_id,
@@ -163,10 +172,40 @@ select p.edicion_id,
 -- ------------------------------------------------------------
 -- Seguridad: RLS activado y sin políticas => solo la service_role
 -- key (usada únicamente en el backend) puede leer/escribir.
+-- Las vistas y funciones se cierran explícitamente para anon/authenticated:
+-- Supabase les da SELECT/EXECUTE por defecto sobre todo lo de `public`, y una
+-- vista sin security_invoker saltea el RLS (expondría nombre, DNI, mail y
+-- WhatsApp de todo el padrón con la anon key, que es pública por diseño).
 -- ------------------------------------------------------------
 alter table ediciones       enable row level security;
 alter table ordenes         enable row level security;
 alter table participaciones enable row level security;
+
+alter view padron_sorteo set (security_invoker = on);
+revoke all on padron_sorteo from public, anon, authenticated;
+grant select on padron_sorteo to service_role;
+
+revoke execute on function asignar_participaciones(uuid) from public, anon, authenticated;
+grant execute on function asignar_participaciones(uuid) to service_role;
+
+-- ------------------------------------------------------------
+-- Migraciones idempotentes para instalaciones existentes (el resto del
+-- archivo usa `if not exists` / `or replace`, así que se puede correr
+-- completo tanto para instalar de cero como para actualizar).
+-- ------------------------------------------------------------
+-- 1) La bici se valida contra config/campaign.json; se quita el check duplicado.
+alter table ordenes drop constraint if exists ordenes_bici_preferida_check;
+-- 2) Columnas usadas por el backend (por si el esquema se creó con una versión anterior).
+alter table ordenes add column if not exists mp_payment_id       text;
+alter table ordenes add column if not exists mp_preference_id    text;
+alter table ordenes add column if not exists email_enviado_at    timestamptz;
+alter table ordenes add column if not exists whatsapp_enviado_at timestamptz;
+alter table ordenes add column if not exists comprobante_datos   jsonb;
+create unique index if not exists ordenes_mp_payment_id_key on ordenes (mp_payment_id);
+-- 3) Conciliación manual de transferencias contra el banco (panel: "Llegó" / "No llegó").
+alter table ordenes add column if not exists acreditada      boolean;
+alter table ordenes add column if not exists acreditada_at   timestamptz;
+alter table ordenes add column if not exists acreditada_nota text;
 
 -- ------------------------------------------------------------
 -- Edición inicial (ajustar fechas antes de lanzar; deben coincidir

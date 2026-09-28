@@ -1,54 +1,86 @@
 // POST /api/checkout
-// Crea la orden (estado pendiente) y la preferencia de Mercado Pago.
-// Responde { orden_id, init_point } para redirigir al usuario a pagar.
+// Crea la orden (estado pendiente) y, según el medio de pago:
+//  - transferencia (flujo principal): el participante ve los datos bancarios y ADJUNTA el
+//    comprobante en el mismo formulario. El body trae `comprobante: { tipo, nombre,
+//    contenido_base64 }`; se guarda, se lee con Claude y se evalúa igual que en
+//    api/comprobante.js. Responde { orden_id, medio_pago, estado, numeros }:
+//    estado 'pagada' (auto-aprobada, con números), 'en_revision' (lo revisa el panel) o
+//    'pendiente' (el adjunto no se pudo procesar; puede volver a subirlo en /gracias).
+//    Sin `comprobante` (fallback) manda el mail con los datos para transferir.
+//  - mercadopago (si checkout.mercadopago.habilitada): crea la preferencia y responde
+//    { orden_id, init_point } para redirigir al usuario a pagar.
 import { randomInt } from 'node:crypto';
 import campaign from '../config/campaign.json' with { type: 'json' };
 import { json, readJson, baseUrl } from './_lib/http.js';
-import { crearOrden, actualizarOrden, contarParticipaciones } from './_lib/db.js';
+import { crearOrden, actualizarOrden, actualizarOrdenSiEstado, obtenerOrden, contarParticipaciones, contarOrdenes } from './_lib/db.js';
 import { crearPreferencia } from './_lib/mercadopago.js';
 import { armarMailTransferencia, enviarMail } from './_lib/notificaciones.js';
+import { procesarComprobante, validarArchivo, enviarAcuseComprobante } from './_lib/comprobante.js';
+import { validarPersona, texto } from './_lib/validar.js';
 
-const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
-// Código corto para identificar la transferencia (sin 0/O/1/I para evitar confusiones).
+// Código interno para identificar la transferencia (sin 0/O/1/I). Ya no se le muestra al
+// participante; queda para el panel y para matchear mails con comprobantes.
 const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const nuevoCodigo = () => `BK-${Array.from({ length: 5 }, () => ALFABETO[randomInt(ALFABETO.length)]).join('')}`;
 
-function limpiarTelefono(v) {
-  let d = String(v || '').replace(/\D/g, '');
-  if (d.startsWith('0')) d = d.slice(1);
-  if (!d.startsWith('54')) d = `54${d}`;
-  // Argentina móvil: el formato internacional de WhatsApp lleva "9" después del 54.
-  if (!d.startsWith('549')) d = `549${d.slice(2)}`;
-  return d;
-}
+// Anti-spam del POST público por transferencia: no más de N reservas sin pagar por email en 24 h.
+const MAX_TRANSFERENCIAS_PENDIENTES_POR_EMAIL = 3;
+
+// `origen` viene del sitio (analítica); 'gratuita' está reservado para la vía sin cargo
+// porque el índice único por DNI filtra por ese valor.
+const RE_ORIGEN = /^[a-z0-9_-]{1,40}$/;
+const origenDe = (v) => (typeof v === 'string' && RE_ORIGEN.test(v) && v !== 'gratuita' ? v : 'web');
+
+// Medios habilitados en la config (misma regla que assets/js/app.js: Mercado Pago está
+// habilitado salvo que checkout.mercadopago.habilitada sea false).
+const mercadopagoHabilitado = () => (campaign.checkout.mercadopago ? campaign.checkout.mercadopago.habilitada !== false : true);
+const transferenciaHabilitada = () => Boolean(campaign.checkout.transferencia?.habilitada);
 
 function validar(body) {
-  const errores = {};
-  const nombre = String(body.nombre || '').trim();
-  const apellido = String(body.apellido || '').trim();
-  const dni = String(body.dni || '').replace(/\D/g, '');
-  const email = String(body.email || '').trim().toLowerCase();
-  const whatsapp = limpiarTelefono(body.whatsapp);
-  const provincia = String(body.provincia || '').trim();
-  const bici = String(body.bici_preferida || '');
+  const { errores, datos: persona } = validarPersona(body, campaign);
   const pack = campaign.packs.find((p) => p.id === body.pack_id);
-  const medio = String(body.medio_pago || 'mercadopago');
+  const porDefecto = mercadopagoHabilitado() ? 'mercadopago' : 'transferencia';
+  const medio = typeof body.medio_pago === 'string' && body.medio_pago ? body.medio_pago : porDefecto;
   const transferencia = campaign.checkout.transferencia || {};
 
   if (!['mercadopago', 'transferencia'].includes(medio)) errores.medio_pago = 'Elegí cómo querés pagar.';
-  if (medio === 'transferencia' && !transferencia.habilitada) errores.medio_pago = 'La transferencia no está habilitada.';
-  if (nombre.length < 2) errores.nombre = 'Ingresá tu nombre.';
-  if (apellido.length < 2) errores.apellido = 'Ingresá tu apellido.';
-  if (dni.length < 7 || dni.length > 8) errores.dni = 'DNI inválido (7 u 8 dígitos).';
-  if (!RE_EMAIL.test(email)) errores.email = 'Ingresá un email válido.';
-  if (whatsapp.length < 12 || whatsapp.length > 14) errores.whatsapp = 'Ingresá tu WhatsApp con código de área.';
-  if (!campaign.bicis.some((b) => b.id === bici)) errores.bici_preferida = 'Elegí la bici por la que querés participar.';
+  if (medio === 'transferencia' && !transferenciaHabilitada()) errores.medio_pago = 'La transferencia no está habilitada.';
+  if (medio === 'mercadopago' && !mercadopagoHabilitado()) errores.medio_pago = 'El pago con Mercado Pago no está habilitado; elegí transferencia.';
   if (!pack) errores.pack_id = 'Elegí un pack.';
-  if (body.acepta_bases !== true) errores.acepta_bases = 'Tenés que aceptar las bases y condiciones.';
-  if (body.mayor_edad !== true) errores.mayor_edad = 'Tenés que ser mayor de 18 años.';
 
-  return { errores, datos: { nombre, apellido, dni, email, whatsapp, provincia, bici, pack, medio, transferencia } };
+  // Comprobante adjunto (opcional en la API; el sitio lo exige para transferencias).
+  let archivo = null;
+  const adjunto = body.comprobante;
+  if (medio === 'transferencia' && adjunto && typeof adjunto === 'object') {
+    const v = validarArchivo(adjunto);
+    if (v.error) errores.comprobante = v.error;
+    else archivo = { buffer: v.buffer, tipo: v.tipo, nombre: texto(adjunto.nombre, 120) || 'comprobante' };
+  }
+
+  return { errores, datos: { ...persona, pack, medio, transferencia, archivo } };
+}
+
+/**
+ * Si procesar el adjunto falló (storage caído, base, etc.), deja la orden en un estado
+ * coherente y devuelve el estado real: en_revision si el archivo llegó a guardarse,
+ * pendiente (con nota y el mail con los datos + link para volver a subirlo) si no.
+ */
+async function recuperarTrasFallo({ orden, err, base }) {
+  const nota = `No se pudo procesar el comprobante adjunto en la inscripción: ${String(err?.message || err).slice(0, 200)}`;
+  try {
+    await actualizarOrdenSiEstado(orden.id, { comprobante_datos: { ...(orden.comprobante_datos || {}), nota, origen: 'web' } }, ['pendiente']);
+    const actual = (await obtenerOrden(orden.id)) || orden;
+    if (actual.estado === 'pendiente') {
+      const mail = armarMailTransferencia({ orden: actual, campaign, baseUrl: base });
+      await enviarMail({ to: actual.email, ...mail }).catch((e) => console.error(`[checkout] mail transferencia de la orden ${orden.id}:`, e.message || e));
+    } else if (actual.estado === 'en_revision') {
+      await enviarAcuseComprobante({ orden: actual, campaign, baseUrl: base }).catch((e) => console.error(`[checkout] acuse de la orden ${orden.id}:`, e.message || e));
+    }
+    return { estado: actual.estado, checks: actual.comprobante_datos?.checks || null, nota };
+  } catch (e2) {
+    console.error(`[checkout] recuperando la orden ${orden.id}:`, e2.message || e2);
+    return { estado: orden.estado, checks: null, nota };
+  }
 }
 
 export default async function handler(req, res) {
@@ -78,6 +110,20 @@ export default async function handler(req, res) {
     }
 
     const esTransferencia = datos.medio === 'transferencia';
+    if (esTransferencia) {
+      const pendientes = await contarOrdenes({
+        email: datos.email,
+        medioPago: 'transferencia',
+        estados: ['pendiente'],
+        desde: new Date(Date.now() - 24 * 36e5).toISOString(),
+      });
+      if (pendientes >= MAX_TRANSFERENCIAS_PENDIENTES_POR_EMAIL) {
+        return json(res, 429, {
+          error: 'Ya tenés varias reservas por transferencia sin pagar. Subí el comprobante desde el link que te mandamos por mail o escribinos por WhatsApp.',
+        });
+      }
+    }
+
     const descuento = esTransferencia ? Number(datos.transferencia.descuento_pct || 0) : 0;
     const monto = Math.round(datos.pack.precio * (1 - descuento / 100));
     const base = {
@@ -91,12 +137,12 @@ export default async function handler(req, res) {
       dni: datos.dni,
       email: datos.email,
       whatsapp: datos.whatsapp,
-      provincia: datos.provincia || null,
+      provincia: datos.provincia,
       bici_preferida: datos.bici,
       acepta_bases: true,
       estado: 'pendiente',
       medio_pago: datos.medio,
-      origen: String(body.origen || 'web').slice(0, 40),
+      origen: origenDe(body.origen),
     };
 
     if (esTransferencia) {
@@ -109,22 +155,53 @@ export default async function handler(req, res) {
           if (!/duplicate key|ordenes_codigo_key/i.test(String(err.message)) || intento === 2) throw err;
         }
       }
+      const urlBase = baseUrl(req);
+
+      if (datos.archivo) {
+        // Flujo principal: comprobante adjunto → storage + lectura + checks; auto-aprobación
+        // si TRANSFERENCIAS_AUTO_APROBAR=true y todo cierra, si no queda en revisión (acuse por mail).
+        let out;
+        try {
+          out = await procesarComprobante({
+            orden,
+            buffer: datos.archivo.buffer,
+            tipo: datos.archivo.tipo,
+            nombre: datos.archivo.nombre,
+            campaign,
+            baseUrl: urlBase,
+            origen: 'web',
+          });
+        } catch (err) {
+          console.error(`[checkout] comprobante de la orden ${orden.id}:`, err.message || err);
+          out = await recuperarTrasFallo({ orden, err, base: urlBase });
+        }
+        return json(res, 200, {
+          orden_id: orden.id,
+          medio_pago: 'transferencia',
+          estado: out.estado,
+          numeros: out.numeros || [],
+          checks: out.checks || null,
+          ...(out.nota ? { nota: out.nota } : {}),
+        });
+      }
+
+      // Fallback sin comprobante: mail con los datos para transferir y el link para subirlo.
       try {
-        const mail = armarMailTransferencia({ orden, campaign, baseUrl: baseUrl(req) });
+        const mail = armarMailTransferencia({ orden, campaign, baseUrl: urlBase });
         await enviarMail({ to: orden.email, ...mail });
       } catch (err) {
-        console.error('[checkout] mail transferencia', err);
+        console.error(`[checkout] mail transferencia de la orden ${orden.id}:`, err.message || err);
       }
-      return json(res, 200, { orden_id: orden.id, medio_pago: 'transferencia', codigo: orden.codigo });
+      return json(res, 200, { orden_id: orden.id, medio_pago: 'transferencia', estado: 'pendiente', numeros: [] });
     }
 
     const orden = await crearOrden(base);
     const pref = await crearPreferencia({ orden, pack: datos.pack, campaign, baseUrl: baseUrl(req) });
     await actualizarOrden(orden.id, { mp_preference_id: pref.id });
 
-    return json(res, 200, { orden_id: orden.id, medio_pago: 'mercadopago', init_point: pref.init_point });
+    return json(res, 200, { orden_id: orden.id, medio_pago: 'mercadopago', estado: 'pendiente', init_point: pref.init_point });
   } catch (err) {
-    console.error('[checkout]', err);
-    return json(res, 500, { error: 'No pudimos iniciar el pago. Probá de nuevo en unos minutos.' });
+    console.error('[checkout]', err.message || err);
+    return json(res, 500, { error: 'No pudimos registrar tu inscripción. Probá de nuevo en unos minutos.' });
   }
 }

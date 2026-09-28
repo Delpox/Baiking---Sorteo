@@ -1,22 +1,25 @@
 // /api/comprobante
 //   POST { orden_id, tipo, nombre, contenido_base64 }  → sube y lee el comprobante (desde /gracias)
-//   GET  ?token=<ADMIN_TOKEN>&id=<orden>             → redirige a una URL firmada para verlo (panel)
+//   GET  ?id=<orden>[&json=1]                         → panel (Authorization: Bearer <ADMIN_TOKEN>):
+//        redirige a una URL firmada para verlo; con json=1 responde { url } (el panel abre
+//        la URL firmada sin poner el token en la barra de direcciones)
 import campaign from '../config/campaign.json' with { type: 'json' };
 import { json, readJson, getQuery, baseUrl, adminAutorizado } from './_lib/http.js';
 import { obtenerOrden } from './_lib/db.js';
-import { procesarComprobante, urlFirmada, TIPOS } from './_lib/comprobante.js';
+import { procesarComprobante, urlFirmada, validarArchivo } from './_lib/comprobante.js';
+import { RE_UUID, texto } from './_lib/validar.js';
 
-const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const MAX_BASE64 = 3.6 * 1024 * 1024; // el cuerpo de una función de Vercel admite ~4,5 MB
+const URL_FIRMADA_SEG = 300;
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     if (!(await adminAutorizado(req))) return json(res, 401, { error: 'No autorizado' });
-    const { id } = getQuery(req);
+    const { id, json: comoJson } = getQuery(req);
     const orden = RE_UUID.test(String(id || '')) ? await obtenerOrden(id) : null;
     if (!orden?.comprobante_url) return json(res, 404, { error: 'Sin comprobante' });
     try {
-      const url = await urlFirmada(orden.comprobante_url);
+      const url = await urlFirmada(orden.comprobante_url, URL_FIRMADA_SEG);
+      if (String(comoJson || '') === '1') return json(res, 200, { url, expira_en: URL_FIRMADA_SEG });
       res.statusCode = 302;
       res.setHeader('Location', url);
       res.setHeader('Cache-Control', 'no-store');
@@ -31,12 +34,11 @@ export default async function handler(req, res) {
 
   const body = readJson(req);
   const ordenId = String(body.orden_id || '');
-  const tipo = String(body.tipo || '');
-  const contenido = String(body.contenido_base64 || '');
-
   if (!RE_UUID.test(ordenId)) return json(res, 400, { error: 'Orden inválida' });
-  if (!TIPOS[tipo] || tipo === 'text/plain') return json(res, 400, { error: 'Subí una imagen (JPG, PNG) o un PDF.' });
-  if (!contenido || contenido.length > MAX_BASE64) return json(res, 413, { error: 'El archivo es muy pesado. Probá con una captura de pantalla.' });
+
+  // Misma validación (tipo, tamaño, firma del archivo) que el comprobante adjunto en el checkout.
+  const archivo = validarArchivo({ tipo: body.tipo, contenido_base64: body.contenido_base64 });
+  if (archivo.error) return json(res, 422, { error: archivo.error });
 
   try {
     const orden = await obtenerOrden(ordenId);
@@ -44,14 +46,11 @@ export default async function handler(req, res) {
     if (orden.medio_pago !== 'transferencia') return json(res, 400, { error: 'Esta orden no se paga por transferencia.' });
     if (!['pendiente', 'en_revision'].includes(orden.estado)) return json(res, 409, { error: `La orden ya está ${orden.estado}.` });
 
-    const buffer = Buffer.from(contenido, 'base64');
-    if (!buffer.length) return json(res, 400, { error: 'Archivo vacío' });
-
     const out = await procesarComprobante({
       orden,
-      buffer,
-      tipo,
-      nombre: String(body.nombre || 'comprobante'),
+      buffer: archivo.buffer,
+      tipo: archivo.tipo,
+      nombre: texto(body.nombre, 120) || 'comprobante',
       campaign,
       baseUrl: baseUrl(req),
       origen: 'web',

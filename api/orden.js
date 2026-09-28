@@ -40,8 +40,9 @@ export default async function handler(req, res) {
     };
 
     if (orden.medio_pago === 'transferencia' && orden.estado !== 'pagada') {
+      // Datos para /gracias: estado, monto, comprobante recibido (fecha + checks) y la cuenta.
+      // El código interno (BK-…) ya no se le muestra al participante.
       const t = campaign.checkout.transferencia || {};
-      out.codigo = orden.codigo;
       out.monto = Number(orden.monto);
       out.comprobante_at = orden.comprobante_at;
       out.comprobante_checks = orden.comprobante_datos?.checks || null;

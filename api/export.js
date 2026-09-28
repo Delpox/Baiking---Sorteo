@@ -1,9 +1,12 @@
-// GET /api/export?token=<ADMIN_TOKEN>[&edicion=edicion-1]
+// GET /api/export[?edicion=edicion-1]   (header Authorization: Bearer <ADMIN_TOKEN>)
 // Exporta el padrón de participaciones (solo órdenes pagadas) en CSV.
 // Se usa para el sorteo en vivo, el escribano y la planilla de Gastón.
 import campaign from '../config/campaign.json' with { type: 'json' };
 import { json, getQuery, adminAutorizado } from './_lib/http.js';
 import { obtenerPadron } from './_lib/db.js';
+
+// `edicion` va al nombre del archivo (Content-Disposition): solo minúsculas, dígitos y guiones.
+const RE_EDICION = /^[a-z0-9-]{1,40}$/;
 
 // Escapa comillas y evita "CSV injection" (celdas que empiezan con = + - @).
 const csvCell = (v) => {
@@ -14,8 +17,9 @@ const csvCell = (v) => {
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return json(res, 405, { error: 'Método no permitido' });
-  const { edicion } = getQuery(req);
   if (!(await adminAutorizado(req))) return json(res, 401, { error: 'No autorizado' });
+  const { edicion } = getQuery(req);
+  if (edicion && !RE_EDICION.test(String(edicion))) return json(res, 400, { error: 'edicion inválida' });
 
   try {
     const filas = await obtenerPadron(edicion || campaign.edicion.id);

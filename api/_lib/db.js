@@ -33,6 +33,65 @@ export async function actualizarOrden(id, cambios) {
   return unwrap(await db().from('ordenes').update(cambios).eq('id', id).select('*').single());
 }
 
+/**
+ * Actualiza la orden SOLO si está en alguno de los estados dados (update condicional,
+ * atómico en la base). Devuelve la orden actualizada o null si el estado ya cambió.
+ */
+export async function actualizarOrdenSiEstado(id, cambios, estados) {
+  const { data, error } = await db().from('ordenes').update(cambios).eq('id', id).in('estado', estados).select('*');
+  if (error) throw new Error(`[db] ${error.message}`);
+  return data?.[0] || null;
+}
+
+/**
+ * Reclama una marca de "ya enviado" (email_enviado_at / whatsapp_enviado_at) de forma
+ * atómica: `update ... where id = $1 and <columna> is null`. Devuelve true solo para la
+ * primera llamada; dos invocaciones concurrentes no pueden ganar las dos.
+ */
+export async function reclamarMarca(id, columna) {
+  const { data, error } = await db()
+    .from('ordenes')
+    .update({ [columna]: new Date().toISOString() })
+    .eq('id', id)
+    .is(columna, null)
+    .select('id');
+  if (error) throw new Error(`[db] ${error.message}`);
+  return Boolean(data && data.length);
+}
+
+/** Libera una marca reclamada (cuando el envío falló) para que un reintento pueda mandar. */
+export async function liberarMarca(id, columna) {
+  const { error } = await db().from('ordenes').update({ [columna]: null }).eq('id', id);
+  if (error) throw new Error(`[db] ${error.message}`);
+}
+
+/** Orden de la vía gratuita de un DNI en una edición (la más reciente), o null. */
+export async function obtenerOrdenGratuita(edicionId, dni) {
+  const { data, error } = await db()
+    .from('ordenes')
+    .select('*')
+    .eq('edicion_id', edicionId)
+    .eq('dni', String(dni))
+    .eq('origen', 'gratuita')
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (error) throw new Error(`[db] ${error.message}`);
+  return data?.[0] || null;
+}
+
+/** Cantidad de órdenes de un email con los filtros dados (anti-spam de los POST públicos). */
+export async function contarOrdenes({ email, edicionId, medioPago, origen, estados, desde }) {
+  let query = db().from('ordenes').select('id', { count: 'exact', head: true }).eq('email', String(email).toLowerCase());
+  if (edicionId) query = query.eq('edicion_id', edicionId);
+  if (medioPago) query = query.eq('medio_pago', medioPago);
+  if (origen) query = query.eq('origen', origen);
+  if (estados?.length) query = query.in('estado', estados);
+  if (desde) query = query.gte('created_at', desde);
+  const { count, error } = await query;
+  if (error) throw new Error(`[db] ${error.message}`);
+  return count ?? 0;
+}
+
 export async function obtenerOrdenPorPago(mpPaymentId) {
   const { data, error } = await db()
     .from('ordenes')
@@ -62,6 +121,8 @@ export async function obtenerPadron(edicionId) {
   return unwrap(await query) || [];
 }
 
+// Números EMITIDOS en la edición (contador correlativo; incluye órdenes luego
+// reembolsadas o rechazadas). Es lo que se usa para el cupo y la barra de progreso.
 export async function contarParticipaciones(edicionId) {
   const { data, error } = await db()
     .from('ediciones')
@@ -70,4 +131,15 @@ export async function contarParticipaciones(edicionId) {
     .maybeSingle();
   if (error) throw new Error(`[db] ${error.message}`);
   return data?.ultimo_numero ?? 0;
+}
+
+// Participaciones EN EL PADRÓN (solo órdenes pagadas): coincide con el CSV que
+// certifica el escribano. Es lo que muestra el panel.
+export async function contarPadron(edicionId) {
+  const { count, error } = await db()
+    .from('padron_sorteo')
+    .select('*', { count: 'exact', head: true })
+    .eq('edicion_id', edicionId);
+  if (error) throw new Error(`[db] ${error.message}`);
+  return count ?? 0;
 }

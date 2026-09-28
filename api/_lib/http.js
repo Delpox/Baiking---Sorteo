@@ -26,23 +26,35 @@ export function getQuery(req) {
   return Object.fromEntries(url.searchParams.entries());
 }
 
+/**
+ * URL pública del sitio, para links que viajan por mail y para las back_urls /
+ * notification_url de Mercado Pago. Orden: BASE_URL (obligatoria en producción) →
+ * VERCEL_PROJECT_PRODUCTION_URL (dominio de producción que inyecta Vercel) → host de la
+ * request (solo desarrollo; se loguea una advertencia porque el header Host lo controla
+ * quien hace la request y en un preview apunta a *.vercel.app).
+ */
 export function baseUrl(req) {
-  if (process.env.BASE_URL) return process.env.BASE_URL.replace(/\/$/, '');
-  const proto = req.headers['x-forwarded-proto'] || 'https';
-  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  const configurada = String(process.env.BASE_URL || '').trim();
+  if (configurada) return configurada.replace(/\/$/, '');
+  const produccion = String(process.env.VERCEL_PROJECT_PRODUCTION_URL || '').trim();
+  if (produccion) return `https://${produccion.replace(/^https?:\/\//, '').replace(/\/$/, '')}`;
+  const proto = String(req?.headers?.['x-forwarded-proto'] || 'https').split(',')[0].trim();
+  const host = String(req?.headers?.['x-forwarded-host'] || req?.headers?.host || 'localhost:3000').split(',')[0].trim();
+  console.warn(`[http] BASE_URL no configurada: se usa el host de la request (${host}). Configurá BASE_URL en producción.`);
   return `${proto}://${host}`;
 }
 
 /**
- * Autorización del panel y exportaciones: token en ?token=, en el header
- * Authorization: Bearer <token> o en X-Admin-Token. Comparación en tiempo constante.
+ * Autorización del panel y exportaciones: token en el header Authorization: Bearer <token>
+ * (o X-Admin-Token). Se mantiene ?token= solo como fallback (queda en logs e historial;
+ * el panel ya no lo usa). Comparación en tiempo constante.
  */
 export async function adminAutorizado(req) {
   const { timingSafeEqual } = await import('node:crypto');
   const esperado = process.env.ADMIN_TOKEN || '';
-  const q = getQuery(req);
   const auth = String(req.headers.authorization || '');
-  const token = q.token || req.headers['x-admin-token'] || (auth.startsWith('Bearer ') ? auth.slice(7) : '');
+  const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+  const token = bearer || req.headers['x-admin-token'] || getQuery(req).token || '';
   if (!esperado || !token) return false;
   const a = Buffer.from(String(token));
   const b = Buffer.from(esperado);

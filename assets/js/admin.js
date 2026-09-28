@@ -1,6 +1,8 @@
 /* ============================================================
    Panel de administración — lógica
-   Fuente de datos: GET api/admin?token=...  (o datos de ejemplo con ?demo=1)
+   Fuente de datos: GET api/admin con el token en el header
+   Authorization: Bearer <token> (nunca en la URL: quedaría en logs e
+   historial). Datos de ejemplo con ?demo=1.
    Filtros (rango, estado) recortan todo lo que está debajo.
    Gráficos en SVG con tooltip y tabla gemela.
    ============================================================ */
@@ -32,6 +34,9 @@
   };
 
   const state = { token: null, demo: false, data: null, rango: '30', estado: 'pagadas', q: '', timer: null };
+
+  // Token del panel: siempre en el header Authorization (nunca en la query string).
+  const authHeaders = () => ({ Authorization: `Bearer ${state.token || ''}` });
 
   /* ---------- helpers SVG ---------- */
   const NS = 'http://www.w3.org/2000/svg';
@@ -149,10 +154,19 @@
         }
         const nombre = nombres[Math.floor(r() * nombres.length)];
         const apellido = apellidos[Math.floor(r() * apellidos.length)];
+        // Conciliación bancaria (solo transferencias con comprobante): null = sin revisar, true = llegó, false = no llegó.
+        const conComprobante = medio === 'transferencia' && estado !== 'pendiente';
+        const a = r();
+        const acreditada = !conComprobante ? null : estado === 'pagada' ? (a < 0.7 ? true : a < 0.92 ? null : false) : a < 0.15 ? false : null;
         ordenes.push({
           id: `demo-${String(n).padStart(4, '0')}`,
           created_at: t.toISOString(),
           pagada_at: estado === 'pagada' ? new Date(t.getTime() + 5 * 6e4).toISOString() : null,
+          comprobante_at: conComprobante ? new Date(t.getTime() + 2 * 6e4).toISOString() : null,
+          comprobante_url: conComprobante ? `demo/${n}.jpg` : null,
+          acreditada,
+          acreditada_at: acreditada === null ? null : new Date(t.getTime() + 6 * 36e5).toISOString(),
+          acreditada_nota: acreditada === false ? 'No figura en el extracto' : null,
           estado,
           origen: gratuita ? 'gratuita' : 'web',
           medio_pago: medio,
@@ -200,7 +214,7 @@
     }
     if (!silencioso) root.classList.add('is-refreshing');
     try {
-      const res = await fetch(`api/admin?token=${encodeURIComponent(state.token)}`, { cache: 'no-store' });
+      const res = await fetch('api/admin', { cache: 'no-store', headers: authHeaders() });
       if (res.status === 401) {
         store.del('bk_admin_token');
         state.token = null;
@@ -227,14 +241,26 @@
     if (state.rango === '30') return inicioHoy - 29 * DIA;
     return 0;
   }
+  // Transferencias que entran en la conciliación diaria contra el banco: con comprobante y no cerradas.
+  const ESTADOS_CONCILIABLES = ['pendiente', 'en_revision', 'pagada'];
+  const esConciliable = (o) => o.medio_pago === 'transferencia' && Boolean(o.comprobante_at) && ESTADOS_CONCILIABLES.includes(o.estado);
+  const sinConciliar = (o) => esConciliable(o) && o.acreditada == null;
+
   function filtradas() {
     const desde = desdeRango();
     return state.data.ordenes.filter((o) => {
       const t = new Date(o.created_at).getTime();
       if (t < desde) return false;
       if (state.estado === 'pagadas' && o.estado !== 'pagada') return false;
+      if (state.estado === 'sin_conciliar' && !sinConciliar(o)) return false;
       return true;
     });
+  }
+
+  function setEstadoFiltro(valor) {
+    state.estado = valor;
+    $$('#filtro-estado button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.estado === valor)));
+    if (state.data) render();
   }
 
   /* ---------- render ---------- */
@@ -283,6 +309,12 @@
     $('#kpi-online').textContent = fmtInt(d.presencia.ahora);
     $('#kpi-online-nav').textContent = fmtInt(d.presencia.ahora);
     $('#kpi-visitas').textContent = `${fmtInt(d.presencia.hoy)} visitas hoy`;
+
+    // Conciliación contra el banco (misma regla que el backend; se recalcula acá para la demo).
+    const sinConc = d.ordenes.filter(sinConciliar).length;
+    const noLlego = d.ordenes.filter((o) => o.medio_pago === 'transferencia' && o.acreditada === false).length;
+    $('#kpi-conciliar').textContent = fmtInt(sinConc);
+    $('#kpi-conciliar-delta').textContent = noLlego ? `${fmtInt(noLlego)} marcadas "no llegó"` : sinConc ? 'transferencias por revisar en el banco' : 'todo conciliado';
 
     // Sparkline: últimos 14 días de participaciones (de-énfasis; hoy en acento)
     sparkline($('#spark-participaciones'), porDia(todasPagadas, 14));
@@ -511,15 +543,19 @@
       if (cd.fecha_leida) col2.append(check(true, `fecha ${cd.fecha_leida}`));
       if (o.comprobante_url) {
         const a = document.createElement('a');
-        a.href = state.demo ? '#' : `api/comprobante?token=${encodeURIComponent(state.token)}&id=${encodeURIComponent(o.id)}`;
-        a.target = '_blank';
-        a.rel = 'noopener';
+        a.href = '#';
         a.textContent = 'ver comprobante';
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (!state.demo) abrirComprobante(o.id);
+        });
         col2.append(a);
       }
 
       const col3 = document.createElement('div');
       col3.className = 'acciones';
+      col3.style.flexWrap = 'wrap';
+      col3.style.alignItems = 'center';
       const ok = document.createElement('button');
       ok.type = 'button';
       ok.className = 'btn btn-primary';
@@ -530,9 +566,71 @@
       no.className = 'btn btn-ghost';
       no.textContent = 'Rechazar';
       no.addEventListener('click', () => accionOrden(o, 'rechazar'));
-      col3.append(ok, no);
+      col3.append(ok, no, controlAcreditada(o));
       li.append(col1, col2, col3);
       ul.appendChild(li);
+    }
+  }
+
+  /* ---------- conciliación bancaria (transferencias) ---------- */
+  // Control de tres estados: "Sin revisar" · "Llegó" · "No llegó". Marcar "Llegó" sobre una
+  // orden pendiente / en revisión la aprueba (números + mail); "No llegó" solo la marca.
+  function controlAcreditada(o) {
+    const seg = document.createElement('div');
+    seg.className = 'seg seg-acreditada';
+    seg.setAttribute('role', 'group');
+    seg.setAttribute('aria-label', `¿Llegó la transferencia de ${o.nombre} ${o.apellido} al banco?`);
+    seg.style.padding = '2px';
+    seg.style.whiteSpace = 'nowrap';
+    if (o.acreditada_at) seg.title = `Marcada el ${fmtFechaHora(o.acreditada_at)}${o.acreditada_nota ? ` · ${o.acreditada_nota}` : ''}`;
+    const actual = o.acreditada ?? null;
+    for (const [valor, etiqueta, color] of [[null, 'Sin revisar', ''], [true, 'Llegó', 'var(--status-good)'], [false, 'No llegó', 'var(--status-critical)']]) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = etiqueta;
+      b.style.padding = '5px 9px';
+      b.style.fontSize = '12px';
+      b.setAttribute('aria-pressed', String(actual === valor));
+      if (actual === valor && color) b.style.color = color;
+      b.addEventListener('click', () => {
+        if (actual !== valor) acreditarOrden(o, valor);
+      });
+      seg.appendChild(b);
+    }
+    return seg;
+  }
+
+  async function acreditarOrden(o, valor) {
+    const aprueba = valor === true && ['pendiente', 'en_revision'].includes(o.estado);
+    if (state.demo) {
+      o.acreditada = valor;
+      o.acreditada_at = valor === null ? null : new Date().toISOString();
+      if (aprueba) {
+        o.estado = 'pagada';
+        o.pagada_at = new Date().toISOString();
+        state.data.participaciones_total += o.cantidad_participaciones;
+      }
+      toast(valor === true ? (aprueba ? `Acreditada y aprobada: ${o.nombre} recibe sus ${o.cantidad_participaciones} participaciones por mail.` : 'Marcada: la plata llegó.') : valor === false ? 'Marcada: la plata no llegó (queda para reclamar).' : 'Vuelve a "sin revisar".');
+      render();
+      return;
+    }
+    try {
+      const res = await fetch('api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ accion: 'acreditar', orden_id: o.id, acreditada: valor, revisor: 'panel' }),
+      });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(out.error || `HTTP ${res.status}`);
+      const numeros = (out.numeros || []).map((n) => String(n).padStart(4, '0')).join(', ');
+      toast(
+        valor === true
+          ? numeros ? `Acreditada y aprobada. Números: ${numeros}` : out.nota || 'Marcada: la plata llegó.'
+          : valor === false ? 'Marcada: la plata no llegó (queda para reclamar).' : 'Vuelve a "sin revisar".',
+      );
+      cargar({ silencioso: true });
+    } catch (err) {
+      toast(err.message);
     }
   }
 
@@ -548,9 +646,9 @@
       return;
     }
     try {
-      const res = await fetch(`api/admin?token=${encodeURIComponent(state.token)}`, {
+      const res = await fetch('api/admin', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ accion, orden_id: o.id, revisor: 'panel' }),
       });
       const out = await res.json().catch(() => ({}));
@@ -559,6 +657,49 @@
       cargar({ silencioso: true });
     } catch (err) {
       toast(err.message);
+    }
+  }
+
+  // Abre el comprobante en una pestaña nueva: se pide la URL firmada con el token en el
+  // header y recién después se navega (la pestaña se abre en el click para que el
+  // navegador no la bloquee como popup).
+  async function abrirComprobante(ordenId) {
+    const ventana = window.open('', '_blank');
+    try {
+      const res = await fetch(`api/comprobante?id=${encodeURIComponent(ordenId)}&json=1`, { cache: 'no-store', headers: authHeaders() });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok || !out.url) throw new Error(out.error || `HTTP ${res.status}`);
+      if (ventana) ventana.location.href = out.url;
+      else location.href = out.url;
+    } catch (err) {
+      if (ventana) ventana.close();
+      toast(`No pudimos abrir el comprobante: ${err.message}`);
+    }
+  }
+
+  // Descarga del padrón: fetch con el token en el header + Blob (nada de tokens en la URL).
+  async function exportarCsv() {
+    if (state.demo) return toast('La exportación no está disponible con datos de ejemplo.');
+    const btn = $('#btn-export');
+    btn.setAttribute('aria-busy', 'true');
+    try {
+      const res = await fetch('api/export', { cache: 'no-store', headers: authHeaders() });
+      if (!res.ok) {
+        const out = await res.json().catch(() => ({}));
+        throw new Error(out.error || `HTTP ${res.status}`);
+      }
+      const url = URL.createObjectURL(await res.blob());
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `padron-${state.data?.edicion?.id || 'edicion'}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (err) {
+      toast(`No pudimos exportar el padrón: ${err.message}`);
+    } finally {
+      btn.removeAttribute('aria-busy');
     }
   }
 
@@ -597,6 +738,10 @@
       const tdM = tr.insertCell();
       tdM.className = 'num';
       tdM.textContent = o.medio_pago === 'gratuita' ? '—' : fmtARS(o.monto);
+      // Banco: conciliación manual para cada transferencia abierta o pagada.
+      const tdB = tr.insertCell();
+      if (o.medio_pago === 'transferencia' && ESTADOS_CONCILIABLES.includes(o.estado)) tdB.appendChild(controlAcreditada(o));
+      else tdB.textContent = '—';
     }
     $('#tabla-meta').textContent = lista.length ? `Mostrando ${fmtInt(lista.length)} de ${fmtInt(q ? lista.length : filas.length)}${q ? ` resultados para “${state.q.trim()}”` : ''}` : 'Sin órdenes para mostrar.';
   }
@@ -621,7 +766,6 @@
     $('#panel').hidden = false;
     $('#nav-actions').hidden = false;
     $('#demo-banner').hidden = !state.demo;
-    $('#btn-export').href = state.demo ? '#' : `api/export?token=${encodeURIComponent(state.token)}`;
   }
 
   function initUI() {
@@ -632,13 +776,50 @@
       $$('#filtro-rango button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
       render();
     });
+    // Filtro rápido "Sin conciliar" (transferencias con comprobante sin marcar en el banco).
+    const btnConciliar = document.createElement('button');
+    btnConciliar.type = 'button';
+    btnConciliar.dataset.estado = 'sin_conciliar';
+    btnConciliar.textContent = 'Sin conciliar';
+    $('#filtro-estado').appendChild(btnConciliar);
     $('#filtro-estado').addEventListener('click', (e) => {
       const b = e.target.closest('button[data-estado]');
       if (!b) return;
-      state.estado = b.dataset.estado;
-      $$('#filtro-estado button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-      render();
+      setEstadoFiltro(b.dataset.estado);
     });
+    // Columna "Banco" en la tabla de órdenes y KPI de conciliación (clic = aplica el filtro).
+    const th = document.createElement('th');
+    th.textContent = 'Banco';
+    $('#tabla-ordenes thead tr').appendChild(th);
+    const tile = document.createElement('div');
+    tile.className = 'tile tile-conciliar';
+    tile.setAttribute('role', 'button');
+    tile.tabIndex = 0;
+    tile.title = 'Ver las transferencias sin conciliar';
+    tile.style.cursor = 'pointer';
+    const tileLabel = document.createElement('span');
+    tileLabel.className = 'tile-label';
+    tileLabel.textContent = 'Transferencias sin conciliar';
+    const tileValue = document.createElement('span');
+    tileValue.className = 'tile-value';
+    tileValue.id = 'kpi-conciliar';
+    tileValue.textContent = '0';
+    const tileDelta = document.createElement('span');
+    tileDelta.className = 'tile-delta';
+    tileDelta.id = 'kpi-conciliar-delta';
+    tile.append(tileLabel, tileValue, tileDelta);
+    const irASinConciliar = () => {
+      setEstadoFiltro('sin_conciliar');
+      $('#tabla-ordenes').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    tile.addEventListener('click', irASinConciliar);
+    tile.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        irASinConciliar();
+      }
+    });
+    $('.kpis').appendChild(tile);
     $('#buscar').addEventListener('input', (e) => {
       state.q = e.target.value;
       render();
@@ -649,6 +830,10 @@
       const t = $(`#table-${b.dataset.toggleTable}`);
       t.hidden = !t.hidden;
       b.textContent = t.hidden ? 'Ver tabla' : 'Ver gráfico';
+    });
+    $('#btn-export').addEventListener('click', (e) => {
+      e.preventDefault();
+      exportarCsv();
     });
     $('#btn-salir').addEventListener('click', () => {
       store.del('bk_admin_token');
