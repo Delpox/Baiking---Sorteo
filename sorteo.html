@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#0b0f14">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/styles.css">
   <style>
     /* Pantalla para transmitir en vivo: números grandes, alto contraste. */
@@ -17,17 +17,27 @@
     .drum { font-family: var(--font-display); font-weight: 800; font-size: clamp(96px, 22vw, 260px); line-height: 1; letter-spacing: .06em; color: var(--acento); font-variant-numeric: tabular-nums; text-shadow: 0 0 60px rgba(201,243,29,.35); }
     .drum.is-spinning { color: var(--text); text-shadow: none; }
     .drum-label { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .18em; color: var(--muted); font-size: 18px; margin-bottom: 12px; }
-    .winner-name { font-family: var(--font-display); font-size: clamp(28px, 5vw, 56px); text-transform: uppercase; margin-top: 16px; }
-    .winner-sub { color: var(--muted); font-size: 16px; margin-top: 6px; }
-    .live-controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 20px; border-top: 1px solid var(--line); }
+    .winner-name { font-family: var(--font-display); font-size: clamp(28px, 5vw, 56px); text-transform: uppercase; margin-top: 16px; overflow-wrap: anywhere; }
+    .winner-sub { color: var(--muted); font-size: 16px; margin-top: 6px; overflow-wrap: anywhere; }
+    .live-controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 20px 20px 8px; border-top: 1px solid var(--line); }
     .setup { max-width: 760px; margin: 0 auto; padding: 32px 20px; }
     .setup textarea { width: 100%; min-height: 160px; padding: 12px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); color: var(--text); font: 13px/1.4 ui-monospace, monospace; }
-    .results { display: grid; gap: 10px; max-width: 760px; margin: 20px auto 0; padding: 0 20px 40px; }
-    .results li { display: grid; grid-template-columns: 110px 1fr auto; gap: 14px; align-items: center; padding: 12px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
-    .results .n { font-family: var(--font-display); font-weight: 800; font-size: 32px; color: var(--acento); }
+    .results { display: grid; gap: 10px; max-width: 760px; margin: 20px auto 0; padding: 0 20px 24px; }
+    .results li { display: grid; grid-template-columns: 110px 1fr auto; gap: 14px; align-items: center; padding: 12px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); text-align: left; }
+    .results .n { font-family: var(--font-display); font-weight: 800; font-size: 32px; color: var(--acento); font-variant-numeric: tabular-nums; }
+    .results .who { min-width: 0; overflow-wrap: anywhere; }
     .results .tag { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
     .meta-line { text-align: center; color: var(--muted); font-size: 13px; padding: 0 20px 20px; }
+    .meta-line.is-error { color: var(--error); }
     .stat { display: inline-flex; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; margin: 4px; }
+    .stat.is-warn { border-color: var(--gravel); color: var(--gravel); }
+    .rule { max-width: 760px; margin: 0 auto; padding: 0 20px 12px; text-align: center; color: var(--text-2); font-size: 14px; }
+    /* Los botones de esta pantalla llevan textos largos ("Suplentes completos (2 de 2)"): que partan línea en el celular. */
+    .live-controls .btn { white-space: normal; text-align: center; max-width: 100%; line-height: 1.2; }
+    @media (max-width: 480px) {
+      .results li { grid-template-columns: 76px 1fr auto; gap: 10px; padding: 10px 12px; }
+      .results .n { font-size: 26px; }
+    }
   </style>
 </head>
 <body data-page="sorteo">
@@ -49,31 +59,33 @@
           <input id="file-csv" type="file" accept=".csv,text/csv" hidden>
           <button type="button" class="btn btn-ghost" id="btn-demo">Padrón de prueba (350)</button>
         </div>
-        <textarea id="csv" placeholder="edicion_id;numero;orden_id;nombre;apellido;dni;email;whatsapp;provincia;bici_preferida;pack_id;pagada_at" style="margin-top:14px"></textarea>
+        <textarea id="csv" placeholder="edicion_id;numero;orden_id;nombre;apellido;dni;email;whatsapp;provincia;bici_preferida;pack_id;medio_pago;pagada_at" style="margin-top:14px" aria-label="CSV del padrón"></textarea>
         <div class="hero-actions" style="margin-top:14px">
           <button type="button" class="btn btn-primary btn-lg" id="btn-cargar">Cargar padrón</button>
         </div>
-        <p id="setup-msg" class="meta-line" style="text-align:left;padding:12px 0 0"></p>
+        <p id="setup-msg" class="meta-line" style="text-align:left;padding:12px 0 0" aria-live="polite"></p>
       </section>
 
       <section id="stage" hidden>
-        <div class="drum-label" id="drum-label">Primer premio</div>
+        <div class="drum-label" id="drum-label">1.º premio</div>
         <div class="drum" id="drum">0000</div>
-        <div class="winner-name" id="winner-name">&nbsp;</div>
+        <div class="winner-name" id="winner-name" aria-live="polite">&nbsp;</div>
         <div class="winner-sub" id="winner-sub">&nbsp;</div>
       </section>
     </main>
 
     <div id="stage-controls" hidden>
       <div class="meta-line" id="stats"></div>
-      <ol class="results" id="results"></ol>
+      <p class="rule" id="regla-exclusion">Una persona no puede salir dos veces: quien ya salió sorteada queda excluida (por DNI) de los sorteos siguientes.</p>
+      <ol class="results" id="results" aria-label="Resultados del sorteo"></ol>
       <div class="live-controls">
-        <button type="button" class="btn btn-primary btn-lg" id="btn-sortear">Sortear primer premio</button>
-        <button type="button" class="btn btn-ghost" id="btn-suplente">Sortear suplente</button>
-        <button type="button" class="btn btn-ghost" id="btn-secundario">Sortear premio adicional</button>
-        <button type="button" class="btn btn-ghost" id="btn-acta">Descargar acta</button>
+        <button type="button" class="btn btn-primary btn-lg" id="btn-sortear">Sortear 1.º premio</button>
+        <button type="button" class="btn btn-ghost" id="btn-suplente">Sortear 1.º suplente</button>
+        <button type="button" class="btn btn-ghost" id="btn-secundario" hidden>Sortear premio adicional</button>
+        <button type="button" class="btn btn-ghost" id="btn-registro">Descargar registro del sorteo (JSON)</button>
         <button type="button" class="btn btn-ghost" id="btn-reset">Reiniciar</button>
       </div>
+      <p class="meta-line" id="registro-help">El registro JSON es el respaldo técnico del sorteo (números, nombres, DNI y hora de cada extracción). Guardalo junto con el video de la transmisión.</p>
     </div>
   </div>
 
@@ -82,25 +94,115 @@
   (() => {
     'use strict';
     const $ = (s) => document.querySelector(s);
-    const fmt = (n) => String(n).padStart(4, '0');
-    let padron = [];
-    const resultados = [];
-    const excluidos = new Set(); // DNI que ya ganaron algo
+    // Ordinal en castellano: 1.º, 2.º (no "1°", que es el signo de grados).
+    const ord = (n) => `${n}.º`;
+    const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
-    function parseCsv(text) {
-      const lineas = text.replace(/^﻿/, '').split(/\r?\n/).filter((l) => l.trim());
-      if (!lineas.length) return [];
-      const sep = lineas[0].includes(';') ? ';' : ',';
-      const cols = lineas[0].split(sep).map((c) => c.trim().replace(/^"|"$/g, ''));
-      return lineas.slice(1).map((l) => {
-        const vals = l.split(sep).map((v) => v.trim().replace(/^"|"$/g, ''));
-        const o = {};
-        cols.forEach((c, i) => (o[c] = vals[i] ?? ''));
-        o.numero = Number(o.numero);
-        return o;
-      }).filter((o) => Number.isFinite(o.numero));
+    // Cantidad de suplentes cuando config/campaign.json no trae `sorteo.suplentes`.
+    // Las bases (§7) y la regla "Suplentes" de `sorteo.reglas` fijan DOS participaciones
+    // suplentes para el primer premio. Si algún día cambia, agregar `"suplentes": N`
+    // dentro de `sorteo` en la config y esta pantalla lo toma sola.
+    const SUPLENTES_DEFAULT = 2;
+
+    // Columnas tal como las produce api/export.js (mismo orden). Mantener en sincronía.
+    const COLUMNAS_EXPORT = [
+      'edicion_id', 'numero', 'orden_id', 'nombre', 'apellido', 'dni', 'email',
+      'whatsapp', 'provincia', 'bici_preferida', 'pack_id', 'medio_pago', 'pagada_at',
+    ];
+    const COLUMNAS_REQUERIDAS = ['numero', 'nombre', 'apellido', 'dni'];
+
+    let cfg = null;
+    let padron = [];
+    let padLen = 4;
+    let girando = false;
+    const resultados = [];
+    const excluidos = new Set(); // clave de DNI de quienes ya salieron sorteados
+
+    const fmt = (n) => String(n).padStart(padLen, '0');
+    // Misma normalización que api/checkout.js (solo dígitos) para que "35.123.456" y "35123456" sean la misma persona.
+    const claveDni = (dni) => { const d = String(dni ?? '').replace(/\D/g, ''); return d || String(dni ?? '').trim(); };
+    const unidad = (n) => {
+      const u = cfg?.unidad || { singular: 'participación', plural: 'participaciones' };
+      return n === 1 ? u.singular : u.plural;
+    };
+    const nombreBici = (id) => (cfg?.bicis || []).find((b) => b.id === id)?.nombre || id || '';
+    const cantSuplentes = () => {
+      const n = Number(cfg?.sorteo?.suplentes);
+      return Number.isInteger(n) && n >= 0 ? n : SUPLENTES_DEFAULT;
+    };
+    const premiosSecundarios = () => (Array.isArray(cfg?.sorteo?.premios_secundarios) ? cfg.sorteo.premios_secundarios : []);
+    const cuenta = (tipo) => resultados.filter((r) => r.tipo === tipo).length;
+    const candidatos = () => padron.filter((p) => !excluidos.has(claveDni(p.dni)));
+
+    /* ---------- config (misma lógica que loadConfig en assets/js/app.js) ---------- */
+    async function loadConfig() {
+      if (window.__CAMPAIGN__) return window.__CAMPAIGN__;
+      const res = await fetch('config/campaign.json', { cache: 'no-cache' });
+      if (!res.ok) throw new Error('No se pudo cargar config/campaign.json');
+      return res.json();
+    }
+    const cfgReady = loadConfig()
+      .then((c) => { cfg = c; })
+      .catch(() => {
+        cfg = null;
+        $('#setup-msg').textContent = 'No se pudo leer config/campaign.json (abrí la página desde un servidor: npm run dev). Se sortea igual con valores por defecto: 2 suplentes, sin premios adicionales.';
+      })
+      .then(() => { aplicarConfig(); actualizarControles(); });
+
+    function aplicarConfig() {
+      $('#btn-demo').textContent = `Padrón de prueba (350 ${unidad(350)})`;
+      const n = cantSuplentes();
+      const sup = n === 0 ? 'No se sortean suplentes.' : n === 1 ? 'Se sortea 1 suplente para el 1.º premio.' : `Se sortean ${n} suplentes para el 1.º premio.`;
+      $('#regla-exclusion').textContent = `Una persona no puede salir dos veces: quien ya salió sorteada queda excluida (por DNI) de los sorteos siguientes. ${sup}`;
     }
 
+    /* ---------- CSV ---------- */
+    // Parser CSV (RFC 4180): campos entre comillas, comillas dobles escapadas como "" y
+    // saltos de línea dentro de comillas. Espeja el formato de api/export.js: separador ";",
+    // BOM inicial y prefijo ' anti-inyección en celdas que empiezan con = + - @ \t \r.
+    // La misma función vive en scripts/sorteo.mjs: mantener las dos copias iguales.
+    function parseCsv(text) {
+      const src = String(text ?? '').replace(/^﻿/, '');
+      const primera = src.slice(0, src.search(/\r|\n|$/));
+      const sep = primera.includes(';') ? ';' : ',';
+      const filas = [];
+      let fila = [], celda = '', enComillas = false, inicio = true;
+      const cerrarFila = () => {
+        fila.push(celda);
+        if (fila.some((c) => c !== '')) filas.push(fila);
+        fila = []; celda = ''; inicio = true;
+      };
+      for (let i = 0; i < src.length; i++) {
+        const ch = src[i];
+        if (enComillas) {
+          if (ch === '"') {
+            if (src[i + 1] === '"') { celda += '"'; i++; } else enComillas = false;
+          } else celda += ch;
+          continue;
+        }
+        if (ch === '"' && inicio) { enComillas = true; inicio = false; continue; }
+        if (ch === sep) { fila.push(celda); celda = ''; inicio = true; continue; }
+        if (ch === '\n' || ch === '\r') {
+          if (ch === '\r' && src[i + 1] === '\n') i++;
+          cerrarFila();
+          continue;
+        }
+        celda += ch; inicio = false;
+      }
+      if (celda !== '' || fila.length) cerrarFila();
+      if (!filas.length) return { columnas: [], filas: [] };
+      const columnas = filas[0].map((c) => c.trim().toLowerCase());
+      // Deshace el prefijo ' que agrega export.js solo delante de = + - @ \t \r (un apellido que empiece con ' se conserva).
+      const limpiar = (v) => String(v ?? '').replace(/^'(?=[=+\-@\t\r])/, '').trim();
+      const registros = filas.slice(1).map((vals) => {
+        const o = {};
+        columnas.forEach((c, i) => { o[c] = limpiar(vals[i]); });
+        return o;
+      });
+      return { columnas, filas: registros };
+    }
+
+    /* ---------- sorteo ---------- */
     function randomIndex(n) {
       // Entero uniforme en [0, n) con crypto, sin sesgo de módulo.
       const max = Math.floor(0x100000000 / n) * n;
@@ -116,75 +218,253 @@
       return { nombre: nombre || 'Participante', dni: dni ? `DNI ***${dni.slice(-3)}` : '', prov: p.provincia || '' };
     }
 
-    async function girar(label, tipo) {
-      const candidatos = padron.filter((p) => !excluidos.has(String(p.dni)));
-      if (!candidatos.length) return alert('No quedan participaciones elegibles.');
+    // Todo lo que viene del padrón se inserta como texto (textContent), nunca como HTML.
+    function itemResultado(r, nombreMostrar) {
+      const li = document.createElement('li');
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = fmt(r.numero);
+      const who = document.createElement('div'); who.className = 'who';
+      const b = document.createElement('b'); b.textContent = nombreMostrar;
+      const tag = document.createElement('div'); tag.className = 'tag';
+      tag.textContent = [r.label, r.bici ? `Bici preferida: ${r.bici}` : ''].filter(Boolean).join(' · ');
+      who.append(b, tag);
+      const hora = document.createElement('span'); hora.className = 'tag';
+      hora.textContent = new Date(r.at).toLocaleTimeString('es-AR');
+      li.append(n, who, hora);
+      return li;
+    }
+
+    function actualizarControles() {
+      const nGanador = cuenta('ganador'), nSup = cuenta('suplente'), nAd = cuenta('adicional');
+      const maxSup = cantSuplentes();
+      const sec = premiosSecundarios();
+      const hay = candidatos().length > 0;
+      const sinCandidatos = `Sin ${unidad(2)} elegibles`;
+      const bG = $('#btn-sortear'), bS = $('#btn-suplente'), bA = $('#btn-secundario');
+
+      if (nGanador) { bG.disabled = true; bG.textContent = '1.º premio sorteado'; }
+      else { bG.disabled = girando || !hay; bG.textContent = hay ? 'Sortear 1.º premio' : sinCandidatos; }
+
+      if (nSup >= maxSup) {
+        bS.disabled = true;
+        bS.textContent = maxSup ? `Suplentes completos (${maxSup} de ${maxSup})` : 'Sin suplentes en esta edición';
+      } else if (!nGanador) {
+        bS.disabled = true; bS.textContent = `${ord(nSup + 1)} suplente (primero el 1.º premio)`;
+      } else {
+        bS.disabled = girando || !hay;
+        bS.textContent = hay ? `Sortear ${ord(nSup + 1)} suplente (de ${maxSup})` : sinCandidatos;
+      }
+
+      // Premios adicionales: solo si la config los define (vacío en la 1.ª edición).
+      bA.hidden = !sec.length;
+      if (sec.length) {
+        if (nAd >= sec.length) { bA.disabled = true; bA.textContent = `Premios adicionales completos (${sec.length} de ${sec.length})`; }
+        else if (!nGanador || nSup < maxSup) { bA.disabled = true; bA.textContent = `${ord(nAd + 2)} premio (después de los suplentes)`; }
+        else { bA.disabled = girando || !hay; bA.textContent = hay ? `Sortear ${ord(nAd + 2)} premio` : sinCandidatos; }
+      }
+
+      $('#btn-registro').disabled = girando || !resultados.length;
+      $('#btn-reset').disabled = girando;
+    }
+
+    async function girar(tipo, label, extra = {}) {
+      if (girando) return;
+      const cands = candidatos();
+      if (!cands.length) { alert(`No quedan ${unidad(2)} elegibles: todas las personas del padrón ya salieron sorteadas.`); return; }
+      girando = true;
+      actualizarControles();
       $('#drum-label').textContent = label;
       const drum = $('#drum');
       drum.classList.add('is-spinning');
-      $('#winner-name').innerHTML = '&nbsp;';
-      $('#winner-sub').innerHTML = '&nbsp;';
+      $('#winner-name').textContent = ' ';
+      $('#winner-sub').textContent = ' ';
       const dur = 4200, t0 = performance.now();
       await new Promise((resolve) => {
         const step = (t) => {
           const k = (t - t0) / dur;
-          drum.textContent = fmt(candidatos[randomIndex(candidatos.length)].numero);
+          drum.textContent = fmt(cands[randomIndex(cands.length)].numero);
           if (k < 1) setTimeout(() => requestAnimationFrame(step), 40 + k * k * 260);
           else resolve();
         };
         requestAnimationFrame(step);
       });
-      const g = candidatos[randomIndex(candidatos.length)];
+      const g = cands[randomIndex(cands.length)];
       drum.classList.remove('is-spinning');
       drum.textContent = fmt(g.numero);
       const m = mask(g);
+      const bici = nombreBici(g.bici_preferida);
       $('#winner-name').textContent = m.nombre;
-      $('#winner-sub').textContent = [m.dni, m.prov, g.bici_preferida ? `participa por ${g.bici_preferida.replace('_', ' ')}` : ''].filter(Boolean).join(' · ');
-      excluidos.add(String(g.dni));
-      resultados.push({ tipo, label, numero: g.numero, orden_id: g.orden_id, nombre: `${g.nombre} ${g.apellido}`.trim(), dni: g.dni, at: new Date().toISOString() });
-      $('#results').insertAdjacentHTML('afterbegin', `<li><span class="n">${fmt(g.numero)}</span><div><b>${m.nombre}</b><div class="tag">${label}</div></div><span class="tag">${new Date().toLocaleTimeString('es-AR')}</span></li>`);
-      if (tipo === 'ganador') { $('#btn-sortear').disabled = true; }
+      $('#winner-sub').textContent = [m.dni, m.prov, bici ? `Bici preferida: ${bici}` : ''].filter(Boolean).join(' · ');
+      excluidos.add(claveDni(g.dni));
+      const r = {
+        tipo, label, ...extra,
+        numero: g.numero, orden_id: g.orden_id, nombre: `${g.nombre} ${g.apellido}`.trim(), dni: g.dni,
+        provincia: g.provincia, bici_preferida: g.bici_preferida, bici, pack_id: g.pack_id, at: new Date().toISOString(),
+      };
+      resultados.push(r);
+      $('#results').prepend(itemResultado(r, m.nombre));
+      girando = false;
+      actualizarControles();
     }
 
-    function cargar(text) {
-      padron = parseCsv(text);
-      if (!padron.length) { $('#setup-msg').textContent = 'No se encontraron participaciones válidas en el CSV.'; return; }
-      const nums = new Set(padron.map((p) => p.numero));
-      const personas = new Set(padron.map((p) => String(p.dni)));
-      $('#stats').innerHTML = `<span class="stat">Participaciones: <b>${padron.length}</b></span><span class="stat">Personas: <b>${personas.size}</b></span><span class="stat">Rango: <b>${fmt(Math.min(...nums))}–${fmt(Math.max(...nums))}</b></span><span class="stat">Duplicados: <b>${padron.length - nums.size}</b></span>`;
+    /* ---------- carga del padrón ---------- */
+    function chip(label, valor, warn = false) {
+      const s = document.createElement('span');
+      s.className = `stat${warn ? ' is-warn' : ''}`;
+      s.append(`${label}: `);
+      const b = document.createElement('b'); b.textContent = String(valor);
+      s.append(b);
+      return s;
+    }
+
+    async function cargar(text) {
+      await cfgReady;
+      const msg = $('#setup-msg');
+      msg.classList.add('is-error');
+      const { columnas, filas } = parseCsv(text);
+      if (!columnas.length) { msg.textContent = 'El CSV está vacío.'; return; }
+      const faltan = COLUMNAS_REQUERIDAS.filter((c) => !columnas.includes(c));
+      if (faltan.length) {
+        msg.textContent = `Faltan columnas en el CSV: ${faltan.join(', ')}. Encabezado esperado: ${COLUMNAS_EXPORT.join(';')}`;
+        return;
+      }
+      let ignoradas = 0;
+      padron = filas
+        .filter((o) => { const ok = /^\d+$/.test(o.numero); if (!ok) ignoradas++; return ok; })
+        .map((o) => ({ ...o, numero: Number(o.numero) }));
+      if (!padron.length) { msg.textContent = 'No se encontraron participaciones válidas (columna "numero") en el CSV.'; return; }
+      msg.classList.remove('is-error');
+
+      const nums = new Set(), ediciones = new Set(), personas = new Set();
+      let min = Infinity, max = -Infinity;
+      for (const p of padron) {
+        nums.add(p.numero); personas.add(claveDni(p.dni)); ediciones.add(p.edicion_id || '');
+        if (p.numero < min) min = p.numero;
+        if (p.numero > max) max = p.numero;
+      }
+      padLen = Math.max(4, String(max).length);
+      const duplicados = padron.length - nums.size;
+      const huecos = max - min + 1 - nums.size;
+      const desconocidas = columnas.filter((c) => !COLUMNAS_EXPORT.includes(c));
+
+      const stats = $('#stats');
+      stats.replaceChildren(
+        chip(cap(unidad(padron.length)), padron.length),
+        chip('Personas', personas.size),
+        chip('Rango', `${fmt(min)}–${fmt(max)}`),
+        chip('Edición', [...ediciones].join(', ') || '—', ediciones.size > 1),
+      );
+      if (duplicados) stats.append(chip('Números duplicados', duplicados, true));
+      if (huecos) stats.append(chip('Huecos en la numeración', huecos));
+      if (ignoradas) stats.append(chip('Filas ignoradas sin número', ignoradas, true));
+      if (desconocidas.length) stats.append(chip('Columnas no reconocidas', desconocidas.join(', '), true));
+
+      $('#drum').textContent = '0'.repeat(padLen);
       $('#setup').hidden = true; $('#stage').hidden = false; $('#stage-controls').hidden = false;
+      actualizarControles();
     }
 
-    $('#btn-cargar').addEventListener('click', () => cargar($('#csv').value));
-    $('#file-csv').addEventListener('change', async (e) => { const f = e.target.files[0]; if (f) $('#csv').value = await f.text(); });
-    $('#btn-demo').addEventListener('click', () => {
+    /* ---------- padrón de prueba ---------- */
+    // Copia de csvCell de api/export.js para que el padrón de prueba pase por el mismo formato que el real.
+    const csvCell = (v) => {
+      let s = v == null ? '' : String(v);
+      if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+
+    async function generarDemo() {
+      await cfgReady;
+      const msg = $('#setup-msg');
+      if (!cfg) {
+        msg.classList.add('is-error');
+        msg.textContent = 'El padrón de prueba necesita config/campaign.json (abrí la página desde un servidor: npm run dev).';
+        return;
+      }
+      const packs = cfg.packs.filter((p) => Number.isInteger(p.participaciones) && p.participaciones > 0);
+      const chicos = packs.filter((p) => p.participaciones <= 10);
+      const gratis = cfg.participacion_gratuita?.habilitada ? Number(cfg.participacion_gratuita.participaciones || 1) : 0;
+      const bicis = cfg.bicis.map((b) => b.id);
       const nombres = ['Juan', 'Sofía', 'Martín', 'Lucía', 'Nicolás', 'Camila', 'Federico', 'Valentina', 'Gonzalo', 'Julieta'];
       const apellidos = ['Pérez', 'Gómez', 'Rodríguez', 'Fernández', 'López', 'Díaz', 'Martínez', 'Sosa', 'Romero', 'Álvarez'];
       const provs = ['Buenos Aires', 'Córdoba', 'Santa Fe', 'Mendoza', 'Tucumán'];
-      const filas = ['edicion_id;numero;orden_id;nombre;apellido;dni;email;whatsapp;provincia;bici_preferida;pack_id;pagada_at'];
-      let n = 1;
-      for (let i = 0; i < 120; i++) {
-        const cant = [1, 1, 3, 5, 5, 10][Math.floor(Math.random() * 6)];
-        const dni = 20000000 + Math.floor(Math.random() * 25000000);
-        const nom = nombres[i % 10], ape = apellidos[Math.floor(Math.random() * 10)];
-        for (let k = 0; k < cant && n <= 350; k++, n++) {
-          filas.push(`edicion-1;${n};ord-${i};${nom};${ape};${dni};${nom.toLowerCase()}@mail.com;54911${Math.floor(Math.random() * 1e8)};${provs[i % 5]};${Math.random() > 0.5 ? 'siskiu_t7' : 'tambora'};pack-${cant};2026-11-01`);
+      const TOTAL = 350;
+      const lineas = [COLUMNAS_EXPORT.join(';')];
+      let n = 1, i = 0;
+      while (n <= TOTAL) {
+        const sinCargo = gratis > 0 && i % 9 === 0;
+        // Mayoría de packs chicos para que el padrón de prueba tenga muchas personas distintas.
+        const pool = Math.random() < 0.85 && chicos.length ? chicos : packs;
+        const pack = sinCargo ? null : pool[Math.floor(Math.random() * pool.length)];
+        const cant = sinCargo ? gratis : pack.participaciones;
+        const fila = {
+          edicion_id: cfg.edicion.id,
+          orden_id: `ord-${String(i + 1).padStart(4, '0')}`,
+          nombre: nombres[i % nombres.length],
+          apellido: apellidos[Math.floor(Math.random() * apellidos.length)],
+          dni: 20000000 + Math.floor(Math.random() * 25000000),
+          email: `${nombres[i % nombres.length].toLowerCase()}${i}@mail.com`,
+          whatsapp: `54911${String(Math.floor(Math.random() * 1e8)).padStart(8, '0')}`,
+          provincia: provs[i % provs.length],
+          bici_preferida: bicis[Math.floor(Math.random() * bicis.length)],
+          pack_id: sinCargo ? 'gratuita' : pack.id,
+          medio_pago: sinCargo ? 'gratuita' : (Math.random() < 0.25 ? 'transferencia' : 'mercadopago'),
+          pagada_at: new Date(Date.now() - Math.floor(Math.random() * 30 * 864e5)).toISOString(),
+        };
+        for (let k = 0; k < cant && n <= TOTAL; k++, n++) {
+          lineas.push(COLUMNAS_EXPORT.map((c) => csvCell(c === 'numero' ? n : fila[c])).join(';'));
         }
+        i++;
       }
-      $('#csv').value = filas.join('\n');
-      $('#setup-msg').textContent = 'Padrón de prueba generado. Tocá “Cargar padrón”.';
-    });
-    $('#btn-sortear').addEventListener('click', () => girar('Primer premio · Polygon', 'ganador'));
-    $('#btn-suplente').addEventListener('click', () => girar(`Suplente ${resultados.filter((r) => r.tipo === 'suplente').length + 1}`, 'suplente'));
-    $('#btn-secundario').addEventListener('click', () => girar(`Premio adicional ${resultados.filter((r) => r.tipo === 'adicional').length + 2}°`, 'adicional'));
-    $('#btn-acta').addEventListener('click', () => {
-      const acta = { edicion: padron[0]?.edicion_id || '', fecha: new Date().toISOString(), participaciones: padron.length, resultados };
-      const blob = new Blob([JSON.stringify(acta, null, 2)], { type: 'application/json' });
+      $('#csv').value = `﻿${lineas.join('\n')}`;
+      msg.classList.remove('is-error');
+      msg.textContent = `Padrón de prueba generado: ${TOTAL} ${unidad(TOTAL)} de ${i} personas, con los packs reales (${packs.map((p) => p.id).join(', ')}). Tocá “Cargar padrón”.`;
+    }
+
+    /* ---------- registro JSON ---------- */
+    function descargarRegistro() {
+      const registro = {
+        _nota: 'Registro técnico del sorteo generado por sorteo.html. Guardalo junto con el video de la transmisión.',
+        edicion: padron[0]?.edicion_id || cfg?.edicion?.id || '',
+        fecha: new Date().toISOString(),
+        metodo: 'crypto.getRandomValues (entero uniforme, sin sesgo de módulo) sobre las participaciones elegibles',
+        regla_exclusion: 'Una persona (DNI) no puede salir sorteada dos veces: quien sale queda excluida de los sorteos siguientes.',
+        participaciones: padron.length,
+        personas: new Set(padron.map((p) => claveDni(p.dni))).size,
+        suplentes_previstos: cantSuplentes(),
+        premios_adicionales_previstos: premiosSecundarios().length,
+        resultados,
+      };
+      const blob = new Blob([JSON.stringify(registro, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob); a.download = `acta-sorteo-${acta.fecha.slice(0, 10)}.json`; a.click();
+      a.href = URL.createObjectURL(blob);
+      a.download = `registro-sorteo-${registro.edicion || 'edicion'}-${registro.fecha.slice(0, 10)}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    }
+
+    /* ---------- eventos ---------- */
+    $('#btn-cargar').addEventListener('click', () => cargar($('#csv').value));
+    $('#file-csv').addEventListener('change', async (e) => { const f = e.target.files[0]; if (f) $('#csv').value = await f.text(); });
+    $('#btn-demo').addEventListener('click', generarDemo);
+    $('#btn-sortear').addEventListener('click', () => girar('ganador', `1.º premio · ${cfg?.premio?.titulo || 'Polygon'}`));
+    $('#btn-suplente').addEventListener('click', () => {
+      const i = cuenta('suplente') + 1;
+      if (i > cantSuplentes()) return;
+      girar('suplente', `${ord(i)} suplente`, { orden: i });
     });
-    $('#btn-reset').addEventListener('click', () => location.reload());
+    $('#btn-secundario').addEventListener('click', () => {
+      const sec = premiosSecundarios();
+      const i = cuenta('adicional');
+      if (i >= sec.length) return;
+      const premio = sec[i] || {};
+      girar('adicional', [`${ord(i + 2)} premio`, premio.detalle].filter(Boolean).join(' · '), { orden: i + 1, premio: premio.detalle || '' });
+    });
+    $('#btn-registro').addEventListener('click', descargarRegistro);
+    $('#btn-reset').addEventListener('click', () => {
+      if (resultados.length && !confirm('Se van a borrar los resultados de esta pantalla. ¿Descargaste el registro JSON?')) return;
+      location.reload();
+    });
     $('#btn-full').addEventListener('click', () => document.documentElement.requestFullscreen?.());
+    actualizarControles();
   })();
   </script>
 </body>

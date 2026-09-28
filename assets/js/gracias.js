@@ -41,8 +41,7 @@
     $('#ok-orden').textContent = orden.id;
     const curso = $('#ok-curso');
     if (orden.pack && campaign.curso.url_acceso) curso.href = campaign.curso.url_acceso;
-    else if (!orden.pack) curso.hidden = true;
-    else curso.href = campaign.marca.web;
+    else curso.hidden = true; // sin cargo, o el acceso al curso todavía no tiene URL: llega por mail
     const texto = `¡Ya estoy participando por una ${orden.bici?.nombre || 'Polygon'} con Baiking! 🚵 Mirá: ${location.origin}${location.pathname.replace(/gracias(\.html)?$/, '')}`;
     $('#ok-share').href = `https://wa.me/?text=${encodeURIComponent(texto)}`;
     show('ok');
@@ -54,7 +53,7 @@
     $('#tr-nombre').textContent = orden.nombre;
     $('#tr-plazo').textContent = String(t.plazo_horas || 48);
     $('#tr-data').innerHTML = window.BaikingUI.renderTransferData(t);
-    $('#tr-note').textContent = `Poné el código ${t.codigo} en el concepto o referencia de la transferencia si tu banco lo permite. El monto tiene que ser exacto: ${window.BaikingUI.fmtARS(t.monto)}.`;
+    $('#tr-note').textContent = `El monto tiene que ser exacto: ${window.BaikingUI.fmtARS(t.monto)}. Si tu banco pide un concepto, poné tu nombre y apellido.`;
     $('#tr-email').textContent = t.email_comprobantes || '';
     $('#tr-codigo').textContent = t.codigo || '';
     if (orden.estado === 'en_revision' && orden.comprobante_at) {
@@ -85,7 +84,9 @@
   async function archivoABase64(file) {
     if (file.type.startsWith('image/')) {
       // Reduce la imagen a 1600 px (JPEG) para que el envío pese menos de 1,5 MB.
-      const bitmap = await createImageBitmap(file);
+      const bitmap = await createImageBitmap(file).catch(() => {
+        throw new Error('No pudimos abrir esa imagen. Probá con una captura de pantalla (JPG o PNG) o con el PDF del banco.');
+      });
       const escala = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
       const canvas = document.createElement('canvas');
       canvas.width = Math.round(bitmap.width * escala);
@@ -180,7 +181,12 @@
 
   async function main() {
     const q = new URLSearchParams(location.search);
-    const campaign = await cfg();
+    let campaign;
+    try {
+      campaign = await cfg();
+    } catch {
+      return show('error');
+    }
     state.campaign = campaign;
     state.demo = q.get('demo') === '1';
     initUpload(campaign);

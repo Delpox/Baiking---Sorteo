@@ -14,6 +14,23 @@ await mkdir(path.join(dist, 'artifact'), { recursive: true });
 const sprite = await readFile(path.join(root, 'assets/img/sprite.svg'), 'utf8');
 const cfg = JSON.parse(await readFile(path.join(root, 'config/campaign.json'), 'utf8'));
 
+const cacheBin = new Map();
+async function binary(rel) {
+  if (!cacheBin.has(rel)) {
+    try {
+      cacheBin.set(rel, await readFile(path.join(root, rel)));
+    } catch {
+      cacheBin.set(rel, null);
+    }
+  }
+  return cacheBin.get(rel);
+}
+// El logo va inline en la config empaquetada (marca.logo) para el reemplazo por JS.
+{
+  const buf = await binary(cfg.marca?.logo || '');
+  if (buf) cfg.marca.logo = `data:image/png;base64,${buf.toString('base64')}`;
+}
+
 // Evita cerrar el <script> desde datos inline.
 const safe = (s) => s.replace(/<\/script/gi, '<\\/script');
 const preload = `<script>window.__CAMPAIGN__=${safe(JSON.stringify(cfg))};window.__SPRITE__=${safe(JSON.stringify(sprite))};</script>`;
@@ -37,6 +54,13 @@ async function inline(html) {
     const js = await asset(m[1]);
     const pre = m[1].endsWith('/app.js') ? `${preload}\n` : '';
     html = html.replace(m[0], () => `${pre}<script>\n${safe(js)}\n</script>`);
+  }
+  // Imágenes chicas (logo, favicons) como data URI, para que el archivo sea autocontenido.
+  const imgs = [...html.matchAll(/(src|href)="(assets\/img\/[^"]+\.png)"/g)];
+  for (const m of imgs) {
+    const buf = await binary(m[2]);
+    if (!buf || buf.length > 400 * 1024) continue;
+    html = html.replace(m[0], () => `${m[1]}="data:image/png;base64,${buf.toString('base64')}"`);
   }
   return html;
 }

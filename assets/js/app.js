@@ -24,6 +24,13 @@
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   const esc = (s) =>
     String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  // Valores de la config marcados "[A CONFIRMAR]": nunca se muestran tal cual en el sitio.
+  const pendiente = (s) => /\[A CONFIRMAR\]/i.test(String(s ?? ''));
+  const valor = (s) => String(s ?? '').replace(/\[A CONFIRMAR\]\s*/gi, '').trim();
+  const marcar = (el, v, placeholder) => {
+    if (pendiente(v)) el.innerHTML = `<mark>${esc(placeholder)}</mark>`;
+    else el.textContent = v;
+  };
 
   const store = {
     get(k) {
@@ -171,67 +178,74 @@
   /* Textos comunes a todas las páginas (fechas, Instagram, seguidores). */
   function renderCommon(cfg) {
     const { edicion } = cfg;
-    const fecha = cap(fmtFechaLarga(edicion.fecha_sorteo));
-    $$('[data-fecha-sorteo]').forEach((el) => (el.textContent = fecha));
+    // Fechas en minúscula y sin coma ("viernes 4 de diciembre"): van en medio de oraciones.
+    $$('[data-fecha-sorteo]').forEach((el) => (el.textContent = fmtFechaTexto(edicion.fecha_sorteo)));
+    $$('[data-fecha-sorteo-completa]').forEach((el) => (el.textContent = fmtFechaTexto(edicion.fecha_sorteo, true)));
     $$('[data-fecha-sorteo-corta]').forEach((el) => (el.textContent = fmtCorta(edicion.fecha_sorteo)));
     $$('[data-hora-sorteo]').forEach((el) => (el.textContent = `${fmtHora(edicion.fecha_sorteo)} hs`));
     $$('[data-cierre]').forEach(
-      (el) => (el.textContent = `${fmtFechaLarga(edicion.cierre_ventas)} a las ${fmtHora(edicion.cierre_ventas)} hs`),
+      (el) => (el.textContent = `${fmtFechaTexto(edicion.cierre_ventas, true)} a las ${fmtHora(edicion.cierre_ventas)} hs`),
     );
+    $$('[data-edicion-nombre]').forEach((el) => (el.textContent = edicion.nombre));
+    $$('[data-curso-nombre]').forEach((el) => (el.textContent = cfg.curso.nombre));
     $$('[data-instagram]').forEach((el) => (el.textContent = `@${cfg.contacto.instagram}`));
     $$('[data-seguidores]').forEach((el) => (el.textContent = cfg.marca.seguidores_instagram || ''));
     $$('[data-unidad-plural]').forEach((el) => (el.textContent = unidad(2)));
     $$('[data-unidad-plural-cap]').forEach((el) => (el.textContent = cap(unidad(2))));
     $$('[data-unidad-singular]').forEach((el) => (el.textContent = unidad(1)));
-    const badge = $('#badge-text');
-    if (badge) {
-      badge.textContent = `${edicion.nombre} · Sorteo en vivo el ${fmtFechaLarga(edicion.fecha_sorteo).replace(/^\w+,?\s*/, '')}`;
-    }
   }
+  const fmtFechaTexto = (iso, conAnio = false) =>
+    new Intl.DateTimeFormat('es-AR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      ...(conAnio ? { year: 'numeric' } : {}),
+      timeZone: TZ,
+    })
+      .format(new Date(iso))
+      .replace(',', '');
 
-  /* Barra de progreso: chances ocupadas sobre el cupo total (contador real o valor demo). */
+  /* Barra de progreso: lineal en el tiempo. 0 % al inicio de la edición y 100 % el día
+     del sorteo (no depende de cuántas chances se vendieron: no hay tope de chances). */
   function initProgreso(cfg) {
     const strip = $('#progreso');
-    const total = Number(cfg.edicion.cupo_total || 0);
-    if (!strip || !total) return;
-    const pintar = (ocupadas) => {
-      const pct = Math.min(100, (ocupadas / total) * 100);
-      const restantes = Math.max(0, total - ocupadas);
-      $('#prog-pct').textContent = `${pct < 10 ? pct.toFixed(1).replace('.', ',') : Math.round(pct)} %`;
-      // Los números absolutos quedan disponibles (aria) pero no se muestran.
-      strip.setAttribute('title', `${fmtEntero(ocupadas)} de ${fmtEntero(total)} · quedan ${fmtEntero(restantes)}`);
+    if (!strip) return;
+    const { edicion } = cfg;
+    const inicio = new Date(edicion.inicio || `${cfg.legal.vigencia_desde}T00:00:00-03:00`).getTime();
+    const fin = new Date(edicion.fecha_sorteo).getTime();
+    const pintar = (pct) => {
+      pct = Math.max(0, Math.min(100, pct));
+      $('#prog-pct').textContent = `${pct < 10 && pct > 0 ? pct.toFixed(1).replace('.', ',') : Math.round(pct)} %`;
+      strip.setAttribute('title', `Del ${fmtCorta(inicio)} al ${fmtCorta(fin)}`);
       $('.progress-bar', strip).setAttribute('aria-valuenow', String(Math.round(pct)));
       strip.classList.toggle('is-hot', pct >= 80);
       strip.hidden = false;
       requestAnimationFrame(() => ($('#prog-fill').style.width = `${pct}%`));
     };
-    if (cfg.checkout.modo !== 'api') {
-      pintar(Number(cfg.edicion.ocupado_demo || 0));
+    const calcular = () => (fin > inicio ? ((Date.now() - inicio) / (fin - inicio)) * 100 : 0);
+    // En modo demo (antes de lanzar) se muestra un valor de ejemplo para que la barra se vea.
+    if (cfg.checkout.modo === 'demo' && typeof edicion.progreso_demo_pct === 'number' && Date.now() < inicio) {
+      pintar(edicion.progreso_demo_pct);
       return;
     }
-    const cargar = async () => {
-      try {
-        const res = await fetch('api/progreso', { cache: 'no-store' });
-        if (!res.ok) return;
-        const d = await res.json();
-        pintar(Number(d.ocupadas || 0));
-      } catch {
-        /* sin red: la barra queda como estaba */
-      }
-    };
-    cargar();
-    setInterval(() => document.visibilityState === 'visible' && cargar(), 60000);
+    pintar(calcular());
+    setInterval(() => pintar(calcular()), 60000);
   }
-  const fmtEntero = (n) => new Intl.NumberFormat('es-AR').format(Math.round(n));
 
   /* Cuenta regresiva en una línea: "66 días 04:21:53" (hasta el cierre de inscripciones). */
   function initCountdown(iso) {
     const el = $('#countdown-inline');
     if (!el) return;
+    const label = $('#countdown-label');
     const target = new Date(iso).getTime();
     const dos = (n) => String(n).padStart(2, '0');
     const tick = () => {
       let diff = Math.max(0, target - Date.now());
+      if (diff === 0) {
+        if (label) label.textContent = 'Las inscripciones ya cerraron';
+        el.textContent = '';
+        return true;
+      }
       const d = Math.floor(diff / 864e5);
       diff -= d * 864e5;
       const h = Math.floor(diff / 36e5);
@@ -239,9 +253,11 @@
       const m = Math.floor(diff / 6e4);
       const s = Math.floor((diff - m * 6e4) / 1e3);
       el.textContent = `${d} ${d === 1 ? 'día' : 'días'} ${dos(h)}:${dos(m)}:${dos(s)}`;
+      return false;
     };
-    tick();
-    setInterval(tick, 1000);
+    if (!tick()) {
+      const timer = setInterval(() => tick() && clearInterval(timer), 1000);
+    }
   }
 
   /* ---------- bicis ---------- */
@@ -295,11 +311,10 @@
   /* ---------- curso ---------- */
   function renderCourse(cfg) {
     const { curso } = cfg;
-    $$('[data-curso-nombre]').forEach((el) => (el.textContent = curso.nombre));
     $$('[data-curso-descripcion]').forEach((el) => (el.textContent = curso.descripcion));
     $$('[data-curso-docente]').forEach((el) => (el.textContent = curso.docente));
     const fmt = $('#course-format');
-    if (fmt) {
+    if (fmt && Array.isArray(curso.formato)) {
       const icons = ['ico-video', 'ico-doc', 'ico-infinity', 'ico-chat'];
       fmt.innerHTML = curso.formato.map((f, i) => `<li>${icon(icons[i % icons.length])}${esc(f)}</li>`).join('');
     }
@@ -310,8 +325,8 @@
           (m, i) => `
         <li class="module reveal">
           <span class="n">${String(i + 1).padStart(2, '0')}</span>
-          <div><h4>${esc(m.titulo)}</h4><p>${esc(m.descripcion)}</p></div>
-          <span class="dur">${esc(m.duracion)}</span>
+          <div><h4>${esc(m.titulo)}</h4>${m.descripcion ? `<p>${esc(m.descripcion)}</p>` : ''}</div>
+          ${m.duracion ? `<span class="dur">${esc(m.duracion)}</span>` : ''}
         </li>`,
         )
         .join('');
@@ -393,9 +408,10 @@
     });
     $$('[data-direccion]').forEach((el) => (el.textContent = contacto.direccion));
     $$('[data-horarios]').forEach((el) => (el.textContent = contacto.horarios || ''));
+    const email = valor(contacto.email);
     $$('[data-email]').forEach((el) => {
-      el.textContent = contacto.email;
-      if (el.tagName === 'A') el.href = `mailto:${contacto.email}`;
+      el.textContent = email;
+      if (el.tagName === 'A') el.href = `mailto:${email}`;
     });
     $$('[data-web]').forEach((el) => {
       el.textContent = marca.web.replace(/^https?:\/\//, '');
@@ -403,13 +419,19 @@
     });
     $$('[data-legal-leyenda]').forEach((el) => (el.textContent = legal.leyenda));
     $$('[data-legal-aviso]').forEach((el) => (el.textContent = legal.aviso_corto));
-    $$('[data-legal-organizador]').forEach(
-      (el) => (el.textContent = `${legal.razon_social} · CUIT ${legal.cuit} · ${legal.domicilio}`),
-    );
+    // Razón social y CUIT solo cuando están confirmados; mientras tanto, el nombre comercial.
+    const organizador = pendiente(legal.razon_social) || pendiente(legal.cuit)
+      ? 'Organiza Baiking Tienda de Bicis'
+      : `Organiza ${legal.razon_social} · CUIT ${legal.cuit}`;
+    $$('[data-legal-organizador]').forEach((el) => (el.textContent = organizador));
+    $$('[data-legal-razon-social]').forEach((el) => marcar(el, legal.razon_social, '[razón social]'));
+    $$('[data-legal-cuit]').forEach((el) => marcar(el, legal.cuit, '[CUIT]'));
+    $$('[data-legal-domicilio]').forEach((el) => (el.textContent = legal.domicilio));
     $$('[data-gratuita-texto]').forEach((el) => (el.textContent = cfg.participacion_gratuita?.texto || ''));
-    // Logo real de Baiking (marca.logo) en todos los headers; si no está, queda el nombre en tipografía.
+    // Logo real de Baiking (marca.logo) en los headers que todavía muestran el nombre en tipografía.
     if (marca.logo) {
       $$('.logo').forEach((a) => {
+        if (a.querySelector('img')) return;
         const small = a.querySelector('small');
         a.innerHTML = `<img src="${esc(marca.logo)}" alt="Baiking">${small ? small.outerHTML : ''}`;
       });
@@ -417,6 +439,7 @@
     const foto = $('#about-photo');
     if (foto && marca.foto_gaston) {
       foto.innerHTML = `<img src="${esc(marca.foto_gaston)}" alt="${esc(marca.foto_gaston_alt || '')}" loading="lazy">`;
+      foto.classList.add('has-photo');
       foto.hidden = false;
     }
     $$('[data-gratuita]').forEach((el) => {
@@ -456,11 +479,14 @@
       if (e.target.name === 'bici_preferida') setBici(e.target.value);
     });
 
-    // Medio de pago (transferencia opcional, configurable en checkout.transferencia)
+    // Medios de pago según la config: transferencia (checkout.transferencia) y/o Mercado Pago
+    // (checkout.mercadopago). Si hay uno solo, no se muestra el selector.
     const tr = cfg.checkout.transferencia;
-    const transferenciaOn = Boolean(tr && tr.habilitada) && cfg.checkout.modo !== 'externo';
+    const externo = cfg.checkout.modo === 'externo';
+    const transferenciaOn = Boolean(tr && tr.habilitada) && !externo;
+    const mercadopagoOn = (cfg.checkout.mercadopago ? cfg.checkout.mercadopago.habilitada !== false : true) && !externo;
     const payPicker = $('#pay-picker');
-    if (transferenciaOn) {
+    if (transferenciaOn && mercadopagoOn) {
       $('#pago-field').hidden = false;
       payPicker.innerHTML = `
         <label><input type="radio" id="pago-mp" name="medio_pago" value="mercadopago" checked>Mercado Pago<span>Tarjeta de crédito, débito o dinero en cuenta. Confirmación al instante.</span></label>
@@ -469,7 +495,11 @@
         }<span>Te damos el alias y un código, subís el comprobante y lo confirmamos en menos de ${esc(String(tr.plazo_horas || 48))} hs.</span></label>`;
       payPicker.addEventListener('change', () => setPack(state.pack));
     }
-    const medioElegido = () => (transferenciaOn && form.elements.medio_pago?.value) || 'mercadopago';
+    const medioElegido = () => {
+      if (transferenciaOn && !mercadopagoOn) return 'transferencia';
+      if (transferenciaOn && mercadopagoOn) return form.elements.medio_pago?.value || 'mercadopago';
+      return 'mercadopago';
+    };
     const totalPack = (pack, medio) =>
       medio === 'transferencia' && tr?.descuento_pct ? Math.round(pack.precio * (1 - tr.descuento_pct / 100)) : pack.precio;
 
@@ -483,17 +513,19 @@
       $('#sum-part').textContent = `Curso completo + ${pack.participaciones} ${unidad(pack.participaciones)}`;
       $('#sum-bici').textContent = bici ? bici.nombre : '—';
       $('#sum-total').textContent = total === pack.precio ? fmtARS(total) : `${fmtARS(total)} (antes ${fmtARS(pack.precio)})`;
-      $('#btn-pagar').textContent =
-        cfg.checkout.modo === 'externo'
-          ? 'Comprar en la tienda'
-          : medio === 'transferencia'
-            ? 'Confirmar y ver datos para transferir'
-            : 'Ir a pagar con Mercado Pago';
+      // Transferencia: los datos bancarios y el comprobante van dentro del mismo formulario.
+      const box = $('#modal-transfer');
+      if (box) {
+        const on = medio === 'transferencia';
+        box.hidden = !on;
+        if (on) $('#modal-transfer-data').innerHTML = renderTransferData({ ...tr, monto: total, codigo: '' });
+      }
+      $('#btn-pagar').textContent = externo ? 'Comprar en la tienda' : medio === 'transferencia' ? 'Participar' : 'Ir a pagar con Mercado Pago';
       const secure = $('#modal-form .secure');
       if (secure) {
         secure.lastChild.textContent =
           medio === 'transferencia'
-            ? ' Sin comisiones · Recibís factura al acreditarse la transferencia'
+            ? ' Transferencia bancaria · Recibís factura al acreditarse'
             : ' Pago seguro procesado por Mercado Pago · Recibís factura';
       }
     }
@@ -530,6 +562,13 @@
     // Cambios en el pack desde el resumen deben reflejar la bici elegida en el radio.
     bikePicker.addEventListener('change', () => setPack(state.pack));
 
+    const fileInput = $('#f-comprobante');
+    if (fileInput) {
+      fileInput.addEventListener('change', () => {
+        $('#f-comprobante-nombre').textContent = fileInput.files[0] ? fileInput.files[0].name : 'Foto, captura o PDF del banco';
+      });
+    }
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       errorBox.classList.remove('is-visible');
@@ -552,21 +591,29 @@
           location.href = pack.url_externa;
           return;
         }
+        // Comprobante adjunto (transferencia): se convierte a base64 (imagen reducida o PDF).
+        let comprobante = null;
+        if (data.medio_pago === 'transferencia' && data.comprobante instanceof File && data.comprobante.size) {
+          btn.textContent = 'Preparando el comprobante…';
+          comprobante = await archivoABase64(data.comprobante);
+        }
+        delete data.comprobante;
         if (cfg.checkout.modo === 'api') {
+          btn.textContent = comprobante ? 'Enviando…' : 'Un segundo…';
           const res = await fetch('api/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
+            body: JSON.stringify(comprobante ? { ...data, comprobante } : data),
           });
           const out = await res.json().catch(() => ({}));
           if (!res.ok) {
             if (out.errores) paintErrors(form, out.errores);
-            throw new Error(out.error || 'No pudimos iniciar el pago.');
+            throw new Error(out.error || 'No pudimos registrar tu participación.');
           }
           location.href = out.medio_pago === 'transferencia' ? `gracias.html?orden=${encodeURIComponent(out.orden_id)}` : out.init_point;
           return;
         }
-        // Modo demo: simula la confirmación de pago (o la reserva por transferencia).
+        // Modo demo: simula la confirmación de pago (o la recepción del comprobante).
         await new Promise((r) => setTimeout(r, 700));
         const bici = cfg.bicis.find((b) => b.id === data.bici_preferida);
         if (data.medio_pago === 'transferencia') {
@@ -575,7 +622,8 @@
             pack,
             numeros: [],
             bici,
-            transferencia: { ...tr, monto: totalPack(pack, 'transferencia'), codigo: `BK-${Math.random().toString(36).slice(2, 7).toUpperCase()}` },
+            transferencia: { ...tr, monto: totalPack(pack, 'transferencia'), codigo: '' },
+            comprobante: Boolean(comprobante),
           });
           return;
         }
@@ -591,7 +639,7 @@
       }
     });
 
-    function showSuccess({ nombre, pack, numeros, bici, transferencia = null }) {
+    function showSuccess({ nombre, pack, numeros, bici, transferencia = null, comprobante = false }) {
       formView.hidden = true;
       successView.hidden = false;
       $('#ok-nombre').textContent = nombre;
@@ -605,12 +653,21 @@
       const titulo = $('#modal-success .modal-head h3');
       const sub = $('#modal-success .modal-head p');
       const eyebrow = $('#modal-success .modal-head .eyebrow');
-      if (eyebrow) eyebrow.textContent = transferencia ? 'Reserva confirmada' : 'Participación confirmada';
-      if (transferencia) {
+      const plazo = transferencia?.plazo_horas || 48;
+      if (eyebrow) eyebrow.textContent = comprobante ? 'Comprobante recibido' : transferencia ? 'Reserva confirmada' : 'Participación confirmada';
+      if (transferencia && comprobante) {
+        // Flujo principal: transfirió y adjuntó el comprobante en el mismo formulario.
+        titulo.innerHTML = `¡Gracias, <span id="ok-nombre">${esc(nombre)}</span>!`;
+        sub.textContent = `Recibimos tu comprobante. Validamos la transferencia y te mandamos por mail tus ${pack.participaciones} ${unidad(
+          pack.participaciones,
+        )} y el acceso al curso, en menos de ${plazo} hs.`;
+        transferBox.hidden = true;
+        $('#ok-ticket').hidden = true;
+      } else if (transferencia) {
         titulo.innerHTML = `¡Reservamos tu lugar, <span id="ok-nombre">${esc(nombre)}</span>!`;
-        sub.textContent = 'Te mandamos por mail los datos para transferir. Cuando subas el comprobante te asignamos tus participaciones.';
+        sub.textContent = 'Te mandamos por mail los datos para transferir. Cuando subas el comprobante te asignamos tus chances.';
         $('#ok-transfer-data').innerHTML = renderTransferData(transferencia);
-        $('#ok-transfer-note').textContent = `Transferí el monto exacto y poné el código en el concepto. Después subí el comprobante desde el link del mail o mandalo a ${transferencia.email_comprobantes}. Lo confirmamos en menos de ${transferencia.plazo_horas || 48} hs.`;
+        $('#ok-transfer-note').textContent = `Transferí el monto exacto y subí el comprobante desde el link del mail o mandalo a ${transferencia.email_comprobantes}. Lo confirmamos en menos de ${plazo} hs.`;
         transferBox.hidden = false;
         $('#ok-ticket').hidden = true;
       } else {
@@ -634,10 +691,12 @@
       ['Banco', t.banco],
       ['Código', t.codigo, true],
     ].filter(([, v]) => v);
+    // Datos bancarios todavía no confirmados: se muestran como "a confirmar", sin botón de copiar.
     return filas
-      .map(
-        ([k, v, big]) =>
-          `<dt>${esc(k)}</dt><dd class="${big ? 'big' : ''}">${esc(v)}</dd><button type="button" class="copy" data-copy="${esc(v)}">Copiar</button>`,
+      .map(([k, v, big]) =>
+        pendiente(v)
+          ? `<dt>${esc(k)}</dt><dd class="pendiente">a confirmar</dd><span></span>`
+          : `<dt>${esc(k)}</dt><dd class="${big ? 'big' : ''}">${esc(v)}</dd><button type="button" class="copy" data-copy="${esc(v)}">Copiar</button>`,
       )
       .join('');
   }
@@ -658,7 +717,30 @@
     }
     setTimeout(() => (b.textContent = 'Copiar'), 1500);
   });
-  window.BaikingUI = { renderTransferData, fmtARS };
+  /* Comprobante → base64: imágenes reducidas a 1600 px (JPEG); PDF hasta 3 MB. */
+  async function archivoABase64(file) {
+    if (file.type.startsWith('image/')) {
+      const bitmap = await createImageBitmap(file).catch(() => {
+        throw new Error('No pudimos abrir esa imagen. Probá con una captura de pantalla (JPG o PNG) o con el PDF del banco.');
+      });
+      const escala = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(bitmap.width * escala);
+      canvas.height = Math.round(bitmap.height * escala);
+      canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      return { tipo: 'image/jpeg', nombre: file.name.replace(/\.[^.]+$/, '') + '.jpg', contenido_base64: dataUrl.split(',')[1] };
+    }
+    if (file.type === 'application/pdf') {
+      if (file.size > 3 * 1024 * 1024) throw new Error('El PDF pesa más de 3 MB. Sacale una captura al comprobante y subila como imagen.');
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      return { tipo: 'application/pdf', nombre: file.name, contenido_base64: btoa(bin) };
+    }
+    throw new Error('Formato no soportado: subí una imagen (JPG, PNG) o un PDF.');
+  }
+  window.BaikingUI = { renderTransferData, fmtARS, archivoABase64 };
 
   function collect(form) {
     const fd = new FormData(form);
@@ -682,6 +764,14 @@
     if (!d.provincia) e.provincia = 'Elegí tu provincia.';
     if (!cfg.bicis.some((b) => b.id === d.bici_preferida)) e.bici_preferida = 'Elegí una bici.';
     if (d.medio_pago && !['mercadopago', 'transferencia'].includes(d.medio_pago)) e.medio_pago = 'Elegí cómo querés pagar.';
+    // Transferencia dentro del formulario: el comprobante es obligatorio.
+    const box = $('#modal-transfer');
+    if (d.medio_pago === 'transferencia' && box && !box.hidden) {
+      const f = d.comprobante;
+      if (!(f instanceof File) || !f.size) e.comprobante = 'Adjuntá el comprobante de la transferencia.';
+      else if (f.size > 8 * 1024 * 1024) e.comprobante = 'El archivo pesa más de 8 MB. Probá con una captura de pantalla.';
+      else if (!(f.type.startsWith('image/') || f.type === 'application/pdf')) e.comprobante = 'Subí una imagen (JPG, PNG) o un PDF.';
+    }
     if (!d.mayor_edad) e.mayor_edad = 'Tenés que ser mayor de 18 años.';
     if (!d.acepta_bases) e.acepta_bases = 'Tenés que aceptar las bases y condiciones.';
     return e;
@@ -845,9 +935,8 @@
       if (txt) txt.hidden = secundarios.length === 0;
     }
     $$('[data-vigencia-desde]').forEach(
-      (el) => (el.textContent = cap(fmtFechaLarga(`${cfg.legal.vigencia_desde}T00:00:00-03:00`))),
+      (el) => (el.textContent = fmtFechaTexto(`${cfg.legal.vigencia_desde}T00:00:00-03:00`, true)),
     );
-    $$('[data-edicion-nombre]').forEach((el) => (el.textContent = cfg.edicion.nombre));
     $$('[data-gratuita-cantidad]').forEach((el) => (el.textContent = String(cfg.participacion_gratuita?.participaciones || 1)));
     $$('[data-sorteo-metodo]').forEach((el) => (el.textContent = cfg.sorteo.metodo));
     $$('[data-hoy]').forEach((el) => (el.textContent = cap(fmtFechaLarga(new Date().toISOString()))));
@@ -864,7 +953,8 @@
       return;
     }
     const cfg = state.cfg;
-    state.bici = store.get('baiking_bici') || cfg.bicis[0].id;
+    const guardada = store.get('baiking_bici');
+    state.bici = cfg.bicis.some((b) => b.id === guardada) ? guardada : cfg.bicis[0].id;
     state.pack = (cfg.packs.find((p) => p.destacado) || cfg.packs[0]).id;
 
     const page = document.body.dataset.page;

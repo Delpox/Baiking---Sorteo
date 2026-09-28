@@ -8,13 +8,13 @@
   <meta name="theme-color" content="#0b0f14">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body data-page="gracias">
   <header class="nav">
     <div class="container">
-      <a class="logo" href="index.html"><svg><use href="#ico-wheel"></use></svg> Baiking <small>Participá</small></a>
+      <a class="logo" href="index.html"><img src="assets/img/logo-baiking-blanco.png" alt="Baiking · Tienda de bicis" width="110" height="44"> <small>Participá</small></a>
       <div class="nav-cta"><a class="btn btn-ghost" href="index.html">Volver al inicio</a></div>
     </div>
   </header>
@@ -31,7 +31,7 @@
       <div id="estado-ok" hidden>
         <span class="eyebrow">Participación confirmada</span>
         <h1 class="h-section">¡Ya estás adentro, <em id="ok-nombre">—</em>!</h1>
-        <p class="lead">Te mandamos por mail y por WhatsApp el acceso al curso y tus participaciones. Guardá esta página: es tu comprobante.</p>
+        <p class="lead">Te mandamos por mail el acceso al curso y tus <span data-unidad-plural>chances</span>. Guardá esta página: es tu comprobante.</p>
 
         <div class="ticket">
           <div class="ticket-head">
@@ -75,7 +75,7 @@
               <input id="f-comprobante" name="comprobante" type="file" accept="image/*,application/pdf">
               <span class="hint" id="f-nombre-archivo"></span>
             </label>
-            <p class="hint">Foto o captura del comprobante (JPG, PNG) o el PDF del banco. Máximo 8 MB.</p>
+            <p class="hint">Foto o captura del comprobante (JPG, PNG, hasta 8 MB) o el PDF del banco (hasta 3 MB).</p>
             <div class="form-error" id="tr-error" role="alert"></div>
             <button type="submit" class="btn btn-primary" id="btn-subir" style="margin-top:12px">Subir comprobante</button>
             <p class="progress" id="tr-progress" hidden></p>
@@ -85,14 +85,14 @@
             <ul class="checks-list" id="tr-checks"></ul>
           </div>
         </div>
-        <p class="meta" style="margin-top:14px;color:var(--muted);font-size:13px">También podés mandar el comprobante por mail a <b id="tr-email">—</b> con el código <b id="tr-codigo">—</b> en el asunto.</p>
+        <p class="meta" style="margin-top:14px;color:var(--muted);font-size:13px">También podés mandar el comprobante por mail a <b id="tr-email">—</b> con tu nombre y DNI en el asunto.<span id="tr-codigo" hidden></span></p>
       </div>
 
       <div id="estado-pendiente" hidden>
         <span class="eyebrow">Pago pendiente</span>
         <h1 class="h-section">Estamos esperando <em>la acreditación</em></h1>
-        <p class="lead">Mercado Pago todavía no confirmó el pago. Apenas se acredite, te asignamos tus participaciones y te avisamos por mail y WhatsApp. Podés volver a esta página cuando quieras.</p>
-        <div class="callout">Si pagaste con un medio en efectivo (Rapipago, Pago Fácil) puede demorar hasta 48 hs hábiles.</div>
+        <p class="lead">Mercado Pago todavía no confirmó el pago. Apenas se acredite, te asignamos tus <span data-unidad-plural>chances</span> y te avisamos por mail. Podés volver a esta página cuando quieras.</p>
+        <div class="callout">Si pagaste en efectivo (Rapipago, Pago Fácil) la acreditación puede demorar hasta 2 días hábiles.</div>
         <div class="hero-actions"><a class="btn btn-ghost" href="index.html">Volver al inicio</a><a class="btn btn-wa" data-wa href="#">Consultar por WhatsApp</a></div>
       </div>
 
