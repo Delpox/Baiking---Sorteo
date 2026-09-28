@@ -241,6 +241,20 @@ p {
   height: 30px;
   color: var(--acento);
 }
+.logo .logo-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo img {
+  height: 38px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
+}
+.nav-minimal .logo img {
+  height: 42px;
+}
 .logo small {
   font-family: var(--font-body);
   font-style: normal;

@@ -407,6 +407,13 @@
       (el) => (el.textContent = `${legal.razon_social} · CUIT ${legal.cuit} · ${legal.domicilio}`),
     );
     $$('[data-gratuita-texto]').forEach((el) => (el.textContent = cfg.participacion_gratuita?.texto || ''));
+    // Logo real de Baiking (marca.logo) en todos los headers; si no está, queda el nombre en tipografía.
+    if (marca.logo) {
+      $$('.logo').forEach((a) => {
+        const small = a.querySelector('small');
+        a.innerHTML = `<img src="${esc(marca.logo)}" alt="Baiking">${small ? small.outerHTML : ''}`;
+      });
+    }
     const foto = $('#about-photo');
     if (foto && marca.foto_gaston) {
       foto.innerHTML = `<img src="${esc(marca.foto_gaston)}" alt="${esc(marca.foto_gaston_alt || '')}" loading="lazy">`;

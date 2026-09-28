@@ -6,11 +6,13 @@
     "ciudad": "Del Viso, Pilar · Buenos Aires",
     "web": "https://baiking.com.ar",
     "seguidores_instagram": "121K",
-    "_fotos": "Rutas relativas a archivos en assets/img/. Con null se usan las ilustraciones. foto_hero = \"assets/img/local.jpg\" (foto vertical del local con Gastón y las bicis, 4:4.2); foto_gaston = \"assets/img/gaston.jpg\" (horizontal); bicis[].imagen = \"assets/img/siskiu-t7.png\" (bici de perfil, fondo transparente u oscuro).",
+    "_fotos": "Rutas relativas a archivos en assets/img/. Con null se usan las ilustraciones. foto_hero = \"assets/img/local.jpg\" (foto vertical del local con Gastón y las bicis); foto_gaston = \"assets/img/gaston.jpg\" (horizontal); bicis[].imagen = \"assets/img/siskiu-t7.png\" (bici de perfil, fondo transparente u oscuro); logo = \"assets/img/logo-baiking.svg\".",
     "foto_gaston": null,
     "foto_gaston_alt": "Gastón, de Baiking, andando en bici",
     "foto_hero": null,
-    "foto_hero_alt": "Gastón con las dos Polygon en la puerta de Baiking, Del Viso"
+    "foto_hero_alt": "Gastón con las dos Polygon en la puerta de Baiking, Del Viso",
+    "logo": null,
+    "_logo_nota": "Ruta al logo real de Baiking (ej. \"assets/img/logo-baiking.svg\" o .png con fondo transparente, versión blanca o clara). Con null se muestra el nombre en tipografía."
   },
   "moneda": "ARS",
   "unidad": {
