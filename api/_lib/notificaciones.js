@@ -18,6 +18,11 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+const unidad = (campaign, n) => {
+  const u = campaign.unidad || { singular: 'participación', plural: 'participaciones' };
+  return n === 1 ? u.singular : u.plural;
+};
+
 export function armarMailConfirmacion({ orden, numeros, campaign, baseUrl, gratuita = false }) {
   const bici = campaign.bicis.find((b) => b.id === orden.bici_preferida);
   const pack = campaign.packs.find((p) => p.id === orden.pack_id);
@@ -25,10 +30,11 @@ export function armarMailConfirmacion({ orden, numeros, campaign, baseUrl, gratu
   const lista = numeros.map(fmtNumero).join(' · ');
   const nombre = escapeHtml(orden.nombre);
   const plural = numeros.length > 1;
+  const u = unidad(campaign, numeros.length);
 
   const subject = gratuita
     ? `¡Listo, ${orden.nombre}! Registramos tu participación sin cargo · Baiking`
-    : `¡Listo, ${orden.nombre}! Tu ${pack?.nombre || 'curso'} y ${plural ? 'tus participaciones' : 'tu participación'} · Baiking`;
+    : `¡Listo, ${orden.nombre}! Tu curso y ${plural ? `tus ${u}` : `tu ${u}`} · Baiking`;
 
   const intro = gratuita
     ? `Registramos tu participación <strong style="color:#fff">sin obligación de compra</strong>. Quedaste participando por tu <strong style="color:#fff">${escapeHtml(bici?.nombre || 'Polygon')}</strong> con la misma probabilidad que cualquier otra participación.`
@@ -43,7 +49,7 @@ export function armarMailConfirmacion({ orden, numeros, campaign, baseUrl, gratu
 
     <div style="background:#121820;border:1px solid #223041;border-radius:14px;padding:20px;margin:0 0 20px">
       <p style="margin:0 0 6px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#9aa6b2">
-        ${numeros.length > 1 ? 'Tus números de participación' : 'Tu número de participación'}
+        ${plural ? `Tus ${escapeHtml(u)}` : `Tu ${escapeHtml(u)}`}
       </p>
       <p style="margin:0;font-size:26px;font-weight:700;letter-spacing:.04em;color:#c9f31d">${lista}</p>
       <p style="margin:12px 0 0;font-size:13px;color:#9aa6b2">Orden ${escapeHtml(orden.id)}</p>
@@ -52,7 +58,7 @@ export function armarMailConfirmacion({ orden, numeros, campaign, baseUrl, gratu
     <table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 24px;font-size:15px">
       <tr><td style="padding:8px 0;color:#9aa6b2">Sorteo en vivo</td><td style="padding:8px 0;text-align:right">${escapeHtml(fecha)} hs · Instagram @${escapeHtml(campaign.contacto.instagram)}</td></tr>
       <tr><td style="padding:8px 0;color:#9aa6b2">Bici elegida</td><td style="padding:8px 0;text-align:right">${escapeHtml(bici?.nombre || '')}</td></tr>
-      <tr><td style="padding:8px 0;color:#9aa6b2">Participaciones</td><td style="padding:8px 0;text-align:right">${numeros.length}</td></tr>
+      <tr><td style="padding:8px 0;color:#9aa6b2">${escapeHtml(unidad(campaign, 2).charAt(0).toUpperCase() + unidad(campaign, 2).slice(1))}</td><td style="padding:8px 0;text-align:right">${numeros.length}</td></tr>
     </table>
 
     ${
@@ -74,7 +80,7 @@ export function armarMailConfirmacion({ orden, numeros, campaign, baseUrl, gratu
 
   const text = `¡Ya estás adentro, ${orden.nombre}!
 ${gratuita ? 'Registramos tu participación sin obligación de compra.' : `Confirmamos tu pago de ${pack?.nombre || 'Curso'} (${campaign.curso.nombre}).`}
-${plural ? 'Tus participaciones' : 'Tu participación'}: ${lista}
+${plural ? `Tus ${u}` : `Tu ${u}`}: ${lista}
 Bici elegida: ${bici?.nombre || ''}
 Sorteo en vivo: ${fecha} hs por Instagram @${campaign.contacto.instagram}
 ${gratuita ? '' : `Acceso al curso: ${campaign.curso.url_acceso || baseUrl}\n`}Orden: ${orden.id}

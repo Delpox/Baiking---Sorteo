@@ -41,46 +41,35 @@
 
   <main id="top">
 
-    <!-- ================= HERO ================= -->
-    <section class="hero" id="hero">
-      <div class="container hero-grid">
-        <div>
-          <span class="badge"><span class="dot"></span><span id="badge-text">Edición #1 · Sorteo en vivo</span></span>
-          <h1>Aprendé a cuidar tu bici. <em>Ganate una Polygon.</em></h1>
-          <p class="lead">
-            Hacé el <strong>Curso Baiking de Mantenimiento</strong> y participá por una
-            <strong>Polygon Siskiu T7</strong> o una <strong>Tambora</strong>, la que vos elijas.
-            Sorteo en vivo por Instagram, ante escribano, con envío a todo el país.
-          </p>
-          <div class="hero-actions">
-            <a class="btn btn-primary btn-lg" href="#packs" data-open-pack="">Quiero participar</a>
-            <a class="btn btn-ghost btn-lg" href="#como-funciona">Ver cómo funciona</a>
+    <!-- ================= HERO (foto del local + selector de chances) ================= -->
+    <section class="hero hero-shop" id="hero">
+      <div class="container shop-grid">
+        <div class="shop-photo reveal" id="shop-photo">
+          <span class="chip chip-ship"><svg><use href="#ico-truck"></use></svg> Envío sin cargo a todo el país</span>
+          <span class="chip is-gravel chip-sorteo">Sorteo</span>
+          <div class="shop-photo-media" id="shop-photo-media"></div>
+          <div class="shop-photo-foot">
+            <div class="shop-prize">
+              <b>Una Polygon a elección · 0 km</b>
+              <span>Con tu compra participás del sorteo en vivo del <span data-fecha-sorteo-corta>—</span></span>
+            </div>
+            <div class="shop-thumbs" id="shop-thumbs" role="group" aria-label="Elegí la bici"></div>
           </div>
-          <ul class="hero-trust">
-            <li><svg><use href="#ico-pin"></use></svg> Baiking · Del Viso, Pilar</li>
-            <li><svg><use href="#ico-instagram"></use></svg> <span data-seguidores>121K</span> en Instagram</li>
-            <li><svg><use href="#ico-wrench"></use></svg> Shimano Service Center</li>
-            <li><svg><use href="#ico-shield"></use></svg> Sin obligación de compra</li>
-          </ul>
         </div>
 
-        <div class="hero-visual">
-          <div class="prize-card">
-            <div class="prize-card-top">
-              <span class="tag">El premio · a elección</span>
-              <span class="chip is-accent">0 km</span>
-            </div>
-            <div class="bike-art" id="prize-art" aria-live="polite"></div>
-            <p class="prize-card-name"><span id="prize-name">Polygon Siskiu T7</span><small id="prize-type">Trail · Doble suspensión</small></p>
-            <div class="prize-switch" id="prize-switch" role="group" aria-label="Elegí la bici"></div>
-            <div class="countdown" id="countdown" aria-label="Tiempo hasta el sorteo">
-              <div><b data-cd="d">00</b><span>días</span></div>
-              <div><b data-cd="h">00</b><span>horas</span></div>
-              <div><b data-cd="m">00</b><span>min</span></div>
-              <div><b data-cd="s">00</b><span>seg</span></div>
-            </div>
-            <p class="countdown-label">Sorteo: <b data-fecha-sorteo>—</b>, <b data-hora-sorteo>—</b> · en vivo por <b data-instagram>@baikingtiendadebicis</b></p>
-          </div>
+        <div class="shop-buy">
+          <span class="chip chip-curso"><svg><use href="#ico-star"></use></svg> Curso digital</span>
+          <h1>Curso Baiking de Mantenimiento + <em><span data-unidad-plural-cap>Chances</span></em> para el sorteo de una Polygon</h1>
+          <p class="lead">Con cada compra recibís tus números automáticamente para participar del sorteo. Más compras, más <span data-unidad-plural>chances</span> de ganar. El curso es tuyo desde el primer minuto.</p>
+          <p class="ladder-label">Seleccioná tus <span data-unidad-plural>chances</span></p>
+          <div class="ladder" id="ladder" role="group" aria-label="Elegí cuántas chances"></div>
+          <button type="button" class="btn btn-primary btn-lg btn-block" id="btn-comprar" data-open-pack="">Comprar</button>
+          <ul class="hero-trust">
+            <li><svg><use href="#ico-shield"></use></svg> <a href="participa-sin-cargo.html">Sin obligación de compra</a></li>
+            <li><svg><use href="#ico-live"></use></svg> Sorteo en vivo ante escribano</li>
+            <li><svg><use href="#ico-lock"></use></svg> Mercado Pago o transferencia</li>
+          </ul>
+          <p class="countdown-inline">Cierra en <b id="countdown-inline">—</b> · Sorteo <span data-fecha-sorteo>—</span>, <span data-hora-sorteo>—</span>, en vivo por <span data-instagram>@baikingtiendadebicis</span></p>
         </div>
       </div>
     </section>
@@ -150,11 +139,12 @@
     <section class="section section-alt" id="packs">
       <div class="container">
         <div class="section-head reveal">
-          <span class="eyebrow">Elegí tu pack</span>
-          <h2 class="h-section">Más valor, <em>más participaciones</em></h2>
-          <p class="lead">Todos los packs incluyen el curso completo. Las participaciones son una bonificación sin cargo por cada compra. Elegís la bici en el siguiente paso.</p>
+          <span class="eyebrow">Elegí tus <span data-unidad-plural>chances</span></span>
+          <h2 class="h-section">Más compras, <em>más <span data-unidad-plural>chances</span></em></h2>
+          <p class="lead">Todas las opciones incluyen el curso completo. Cuantas más <span data-unidad-plural>chances</span> sumás, menos pagás por cada una. Elegís la bici en el siguiente paso.</p>
         </div>
-        <div class="packs" id="packs-grid"></div>
+        <div class="ladder ladder-wide" id="ladder-packs" role="group" aria-label="Elegí cuántas chances"></div>
+        <div class="hero-actions" style="justify-content:center;margin-top:18px"><button type="button" class="btn btn-primary btn-lg" data-open-pack="">Comprar</button></div>
         <p class="packs-note" data-gratuita>¿Preferís participar sin comprar? <a href="participa-sin-cargo.html" style="color:var(--acento);text-decoration:underline">Registrá tu participación sin cargo</a> · Sin obligación de compra.</p>
       </div>
     </section>
@@ -305,10 +295,10 @@
           <button type="button" class="modal-close" data-close-modal aria-label="Cerrar"><svg style="width:18px;height:18px"><use href="#ico-x"></use></svg></button>
         </div>
 
-        <div class="pack-picker" id="pack-picker" role="group" aria-label="Elegí tu pack"></div>
+        <div class="ladder ladder-compact" id="pack-picker" role="group" aria-label="Elegí cuántas chances"></div>
 
         <div class="summary">
-          <span class="k">Pack</span><span class="v" id="sum-pack">—</span>
+          <span class="k">Elegiste</span><span class="v" id="sum-pack">—</span>
           <span class="k">Incluye</span><span class="v" id="sum-part">—</span>
           <span class="k">Participás por</span><span class="v" id="sum-bici">—</span>
           <span class="total"><span>Total</span><b id="sum-total">—</b></span>

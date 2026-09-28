@@ -81,7 +81,14 @@
   }
 
   /* ---------- estado ---------- */
-  const state = { cfg: null, bici: null, pack: null };
+  const state = { cfg: null, bici: null, pack: null, onPackChange: null };
+
+  // Nombre de la unidad ("chance"/"chances" o "participación"/"participaciones"), configurable.
+  const unidad = (n) => {
+    const u = state.cfg?.unidad || { singular: 'participación', plural: 'participaciones' };
+    return n === 1 ? u.singular : u.plural;
+  };
+  const nombrePack = (p) => p.nombre || `${p.participaciones} ${unidad(p.participaciones)}`;
 
   function setBici(id, { scrollToPacks = false } = {}) {
     if (!state.cfg.bicis.some((b) => b.id === id)) return;
@@ -92,23 +99,72 @@
       const sel = b.closest('.bike-card').dataset.bici === id;
       b.textContent = sel ? 'Elegida ✓' : 'Quiero esta';
     });
-    $$('.prize-switch button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.bici === id)));
-    renderPrizeArt();
+    $$('.thumb[data-bici]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.bici === id)));
     $$('input[name="bici_preferida"]').forEach((r) => (r.checked = r.value === id));
     if (scrollToPacks) $('#packs')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  /* ---------- hero ---------- */
-  function renderPrizeArt() {
-    const bici = state.cfg.bicis.find((b) => b.id === state.bici) || state.cfg.bicis[0];
-    const art = $('#prize-art');
-    if (!art) return;
-    art.classList.toggle('is-gravel', bici.ilustracion === 'gravel');
-    art.innerHTML = bici.imagen
-      ? `<img src="${esc(bici.imagen)}" alt="${esc(bici.nombre)}">`
-      : `<svg viewBox="0 0 400 240" role="img" aria-label="${esc(bici.nombre)}"><use href="#art-${esc(bici.ilustracion)}"></use></svg>`;
-    $('#prize-name').textContent = bici.nombre;
-    $('#prize-type').textContent = bici.tipo;
+  /* Selección global del pack: sincroniza todas las escaleras (hero, sección, modal). */
+  function setPackGlobal(id) {
+    const cfg = state.cfg;
+    const pack = cfg.packs.find((p) => p.id === id) || cfg.packs.find((p) => p.destacado) || cfg.packs[0];
+    state.pack = pack.id;
+    $$('.ladder input[type="radio"]').forEach((r) => (r.checked = r.value === pack.id));
+    const mb = $('#mobile-bar-info');
+    if (mb) mb.innerHTML = `${esc(nombrePack(pack))} · ${fmtARS(pack.precio)}<b>Incluye el curso completo</b>`;
+    if (state.onPackChange) state.onPackChange(pack.id);
+  }
+
+  /* Escalera de precios (radios). Se usa en el hero, en la sección de packs y en el modal. */
+  function renderLadder(container, name) {
+    if (!container) return;
+    const cfg = state.cfg;
+    container.innerHTML = cfg.packs
+      .map(
+        (p) => `
+        <label class="ladder-item" data-pack="${esc(p.id)}">
+          <input type="radio" name="${esc(name)}" value="${esc(p.id)}" ${p.id === state.pack ? 'checked' : ''}>
+          <span class="q"><b>${esc(nombrePack(p))}</b> para el sorteo${p.etiqueta ? `<span class="tag">${esc(p.etiqueta)}</span>` : ''}</span>
+          <span class="p">${fmtARS(p.precio)}</span>
+        </label>`,
+      )
+      .join('');
+    container.addEventListener('change', (e) => {
+      if (e.target.name === name) setPackGlobal(e.target.value);
+    });
+  }
+
+  /* ---------- hero tipo tienda ---------- */
+  function renderShopHero(cfg) {
+    const media = $('#shop-photo-media');
+    if (media) {
+      media.innerHTML = cfg.marca.foto_hero
+        ? `<img src="${esc(cfg.marca.foto_hero)}" alt="${esc(cfg.marca.foto_hero_alt || '')}">`
+        : `<div class="shop-placeholder">
+            <div class="shop-placeholder-art">
+              ${cfg.bicis.map((b) => `<svg viewBox="0 0 400 240" role="img" aria-label="${esc(b.nombre)}"><use href="#art-${esc(b.ilustracion)}"></use></svg>`).join('')}
+            </div>
+            <p><b>Acá va la foto del local</b>Gastón con las dos Polygon en la puerta de Baiking, Del Viso</p>
+          </div>`;
+    }
+    const thumbs = $('#shop-thumbs');
+    if (thumbs) {
+      thumbs.innerHTML = cfg.bicis
+        .map(
+          (b) => `
+          <button type="button" class="thumb" data-bici="${esc(b.id)}" aria-pressed="false">
+            ${b.imagen ? `<img src="${esc(b.imagen)}" alt="">` : `<svg viewBox="0 0 400 240" aria-hidden="true"><use href="#art-${esc(b.ilustracion)}"></use></svg>`}
+            <span><b>${esc(b.nombre.replace('Polygon ', ''))}</b><span>${esc(b.tipo)}</span></span>
+          </button>`,
+        )
+        .join('');
+      thumbs.addEventListener('click', (e) => {
+        const btn = e.target.closest('.thumb[data-bici]');
+        if (btn) setBici(btn.dataset.bici);
+      });
+    }
+    renderLadder($('#ladder'), 'pack_hero');
+    initCountdown(cfg.edicion.cierre_ventas);
   }
 
   /* Textos comunes a todas las páginas (fechas, Instagram, seguidores). */
@@ -123,35 +179,21 @@
     );
     $$('[data-instagram]').forEach((el) => (el.textContent = `@${cfg.contacto.instagram}`));
     $$('[data-seguidores]').forEach((el) => (el.textContent = cfg.marca.seguidores_instagram || ''));
+    $$('[data-unidad-plural]').forEach((el) => (el.textContent = unidad(2)));
+    $$('[data-unidad-plural-cap]').forEach((el) => (el.textContent = cap(unidad(2))));
+    $$('[data-unidad-singular]').forEach((el) => (el.textContent = unidad(1)));
     const badge = $('#badge-text');
     if (badge) {
       badge.textContent = `${edicion.nombre} · Sorteo en vivo el ${fmtFechaLarga(edicion.fecha_sorteo).replace(/^\w+,?\s*/, '')}`;
     }
   }
 
-  function renderHero(cfg) {
-    const { edicion } = cfg;
-    const sw = $('#prize-switch');
-    if (sw) {
-      sw.innerHTML = cfg.bicis
-        .map(
-          (b) =>
-            `<button type="button" data-bici="${esc(b.id)}" aria-pressed="false">${esc(b.nombre.replace('Polygon ', ''))}</button>`,
-        )
-        .join('');
-      sw.addEventListener('click', (e) => {
-        const btn = e.target.closest('button[data-bici]');
-        if (btn) setBici(btn.dataset.bici);
-      });
-    }
-    initCountdown(edicion.fecha_sorteo);
-  }
-
+  /* Cuenta regresiva en una línea: "66 días 04:21:53" (hasta el cierre de inscripciones). */
   function initCountdown(iso) {
-    const el = $('#countdown');
+    const el = $('#countdown-inline');
     if (!el) return;
     const target = new Date(iso).getTime();
-    const cells = ['d', 'h', 'm', 's'].map((k) => $(`[data-cd="${k}"]`, el));
+    const dos = (n) => String(n).padStart(2, '0');
     const tick = () => {
       let diff = Math.max(0, target - Date.now());
       const d = Math.floor(diff / 864e5);
@@ -160,7 +202,7 @@
       diff -= h * 36e5;
       const m = Math.floor(diff / 6e4);
       const s = Math.floor((diff - m * 6e4) / 1e3);
-      [d, h, m, s].forEach((v, i) => cells[i] && (cells[i].textContent = String(v).padStart(2, '0')));
+      el.textContent = `${d} ${d === 1 ? 'día' : 'días'} ${dos(h)}:${dos(m)}:${dos(s)}`;
     };
     tick();
     setInterval(tick, 1000);
@@ -232,26 +274,9 @@
     }
   }
 
-  /* ---------- packs ---------- */
-  function renderPacks(cfg) {
-    const wrap = $('#packs-grid');
-    if (!wrap) return;
-    wrap.innerHTML = cfg.packs
-      .map((p) => {
-        const porPart = Math.round(p.precio / p.participaciones);
-        return `
-        <article class="pack reveal ${p.destacado ? 'is-featured' : ''}" data-pack="${esc(p.id)}">
-          ${p.etiqueta ? `<span class="ribbon">${esc(p.etiqueta)}</span>` : ''}
-          <div class="qty">${p.participaciones}<small>${p.participaciones === 1 ? 'participación' : 'participaciones'} · ${esc(p.nombre)}</small></div>
-          <div class="price">${fmtARS(p.precio)}<span>${p.participaciones > 1 ? `equivale a ${fmtARS(porPart)} por participación` : 'precio del curso'}</span></div>
-          <ul>${(p.incluye || []).map((t) => `<li>${icon('ico-check')}<span>${esc(t)}</span></li>`).join('')}</ul>
-          <button type="button" class="btn ${p.destacado ? 'btn-primary' : 'btn-ghost'}" data-open-pack="${esc(p.id)}">Elegir ${esc(p.nombre)}</button>
-        </article>`;
-      })
-      .join('');
-    const feat = cfg.packs.find((p) => p.destacado) || cfg.packs[0];
-    const mb = $('#mobile-bar-info');
-    if (mb) mb.innerHTML = `${esc(feat.nombre)} · ${fmtARS(feat.precio)}<b>${feat.participaciones} participaciones</b>`;
+  /* ---------- packs (segunda escalera, más abajo en la página) ---------- */
+  function renderPacks() {
+    renderLadder($('#ladder-packs'), 'pack_seccion');
   }
 
   /* ---------- sorteo ---------- */
@@ -367,16 +392,8 @@
         PROVINCIAS.map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
     }
 
-    picker.innerHTML = cfg.packs
-      .map(
-        (p) =>
-          `<button type="button" data-pack="${esc(p.id)}" aria-pressed="false"><b>${p.participaciones}</b>${esc(p.nombre)}</button>`,
-      )
-      .join('');
-    picker.addEventListener('click', (e) => {
-      const b = e.target.closest('button[data-pack]');
-      if (b) setPack(b.dataset.pack);
-    });
+    renderLadder(picker, 'pack_modal');
+    state.onPackChange = (id) => setPack(id);
 
     bikePicker.innerHTML = cfg.bicis
       .map(
@@ -405,15 +422,14 @@
     const totalPack = (pack, medio) =>
       medio === 'transferencia' && tr?.descuento_pct ? Math.round(pack.precio * (1 - tr.descuento_pct / 100)) : pack.precio;
 
+    // Actualiza el resumen del modal para el pack elegido (la selección global vive en setPackGlobal).
     function setPack(id) {
       const pack = cfg.packs.find((p) => p.id === id) || cfg.packs.find((p) => p.destacado) || cfg.packs[0];
-      state.pack = pack.id;
-      $$('button[data-pack]', picker).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.pack === pack.id)));
       const bici = cfg.bicis.find((b) => b.id === state.bici);
       const medio = medioElegido();
       const total = totalPack(pack, medio);
-      $('#sum-pack').textContent = `${pack.nombre}`;
-      $('#sum-part').textContent = `${pack.participaciones} ${pack.participaciones === 1 ? 'participación' : 'participaciones'}`;
+      $('#sum-pack').textContent = nombrePack(pack);
+      $('#sum-part').textContent = `Curso completo + ${pack.participaciones} ${unidad(pack.participaciones)}`;
       $('#sum-bici').textContent = bici ? bici.nombre : '—';
       $('#sum-total').textContent = total === pack.precio ? fmtARS(total) : `${fmtARS(total)} (antes ${fmtARS(pack.precio)})`;
       $('#btn-pagar').textContent =
@@ -434,7 +450,10 @@
     function open(packId) {
       formView.hidden = false;
       successView.hidden = true;
-      setPack(packId);
+      if (packId) setPackGlobal(packId);
+      setPack(state.pack);
+      const activo = $('input[type="radio"]:checked', picker);
+      if (activo) activo.closest('.ladder-item')?.scrollIntoView({ block: 'nearest' });
       $$('input[name="bici_preferida"]').forEach((r) => (r.checked = r.value === state.bici));
       modal.classList.add('is-open');
       modal.setAttribute('aria-hidden', 'false');
@@ -527,7 +546,7 @@
       $('#ok-nombre').textContent = nombre;
       $('#ok-numeros').innerHTML = numeros.map((n) => `<li>${fmtNum(n)}</li>`).join('');
       $('#ok-bici').textContent = bici?.nombre || '';
-      $('#ok-pack').textContent = `${pack.nombre} · ${pack.participaciones} ${pack.participaciones === 1 ? 'participación' : 'participaciones'}`;
+      $('#ok-pack').textContent = `${nombrePack(pack)} + curso completo`;
       const texto = `¡Ya estoy participando por una ${bici?.nombre || 'Polygon'} con Baiking! 🚵 Mirá: ${location.href.split('#')[0]}`;
       $('#ok-share').href = `https://wa.me/?text=${encodeURIComponent(texto)}`;
 
@@ -749,7 +768,7 @@
       packs.innerHTML = cfg.packs
         .map(
           (p) =>
-            `<li><b>${esc(p.nombre)}</b> (${fmtARS(p.precio)}): ${esc((p.incluye || []).join('; '))}. Bonificación: ${p.participaciones} ${
+            `<li><b>${esc(nombrePack(p))}</b> (${fmtARS(p.precio)}): ${esc((p.incluye || ['Curso online completo']).join('; '))}. Bonificación: ${p.participaciones} ${
               p.participaciones === 1 ? 'participación' : 'participaciones'
             }.</li>`,
         )
@@ -802,7 +821,7 @@
     renderCommon(cfg);
     initPresencia(cfg);
     if (page === 'home') {
-      renderHero(cfg);
+      renderShopHero(cfg);
       renderBikes(cfg);
       renderCourse(cfg);
       renderPacks(cfg);
@@ -812,6 +831,7 @@
       initMobileBar();
       initQueryFlags();
       setBici(state.bici);
+      setPackGlobal(state.pack);
     }
     if (page === 'gratuita') initFreeForm(cfg);
     if (page === 'bases') renderBases(cfg);

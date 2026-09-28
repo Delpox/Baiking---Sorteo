@@ -35,10 +35,11 @@ async function mp(path, { method = 'GET', body, idempotencyKey } = {}) {
  * El usuario es redirigido a `init_point`; el pago se confirma por webhook.
  */
 export async function crearPreferencia({ orden, pack, campaign, baseUrl }) {
-  // El ítem cobrado es SIEMPRE el producto real (curso / kit / service).
-  // La participación es una bonificación y no forma parte del título del cobro.
-  const titulo = `${campaign.curso.nombre_corto} · ${pack.nombre}`.slice(0, 256);
-  const descripcion = (pack.incluye || []).join(' · ').slice(0, 600);
+  // El ítem cobrado es SIEMPRE el producto real (el curso). La participación es
+  // una bonificación y no forma parte del título ni la descripción del cobro
+  // (Mercado Pago prohíbe cobrar loterías o productos de azar).
+  const titulo = `${campaign.curso.nombre_corto} · Pack ${pack.participaciones}`.slice(0, 256);
+  const descripcion = [campaign.curso.nombre, ...(pack.incluye || [])].join(' · ').slice(0, 600);
 
   const body = {
     items: [

@@ -20,7 +20,11 @@ if (cfg.packs.filter((p) => p.destacado).length !== 1) avisos.push('packs: deber
 for (const p of cfg.packs) {
   if (!(Number.isFinite(p.precio) && p.precio > 0)) errores.push(`pack ${p.id}: precio inválido`);
   if (!(Number.isInteger(p.participaciones) && p.participaciones > 0)) errores.push(`pack ${p.id}: participaciones inválidas`);
-  if (!p.incluye?.length) avisos.push(`pack ${p.id}: sin lista "incluye" (el cobro debe describir el producto real)`);
+}
+for (let i = 1; i < cfg.packs.length; i++) {
+  const a = cfg.packs[i - 1], b = cfg.packs[i];
+  if (b.participaciones <= a.participaciones || b.precio <= a.precio) avisos.push(`packs: ${b.id} no es creciente respecto de ${a.id}`);
+  if (b.precio / b.participaciones > a.precio / a.participaciones) avisos.push(`packs: ${b.id} sale más caro por unidad que ${a.id}`);
 }
 const fs = new Date(cfg.edicion.fecha_sorteo).getTime();
 const cv = new Date(cfg.edicion.cierre_ventas).getTime();

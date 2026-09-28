@@ -25,34 +25,45 @@ Diferencias con Autoloop, y por qué:
 | Cobro en Shopify/Tienda Nube | Mercado Pago Checkout Pro desde el sitio (o Tienda Nube de Baiking, modo `externo`) | Trazabilidad + factura automática |
 | Sorteo en vivo | Sorteo en vivo **+ escribano + padrón certificado + acta descargable** | Transparencia auditable |
 
-## 2. Packs propuestos (precios a confirmar)
+## 2. Escalera de precios (decisión del 28/09: copiar la estructura de Autoloop)
 
-| Pack | Precio | Participaciones | Incluye | Costo estimado para Baiking |
-|---|---|---|---|---|
-| Curso | $15.000 | 1 | 8 clases en video + guía PDF + consultas por WhatsApp | ~$0 (una vez grabado) |
-| Curso + Kit | $35.000 | 3 | Curso + kit de limpieza y lubricación Baiking | ~$8.000 (kit al costo) |
-| Curso + Service | $60.000 | 5 | Curso + service completo en el taller (Shimano Service Center) + turno prioritario | ~$15.000 (mano de obra) |
-| Pack Full | $110.000 | 10 | Curso + Kit + Service + jersey Baiking + salida grupal MTB | ~$38.000 |
+El cliente decidió copiar la estructura de precios de Autoloop: todas las opciones incluyen el mismo curso y lo que cambia es la cantidad de chances. Está cargada en `config/campaign.json` → `packs`:
 
-Regla de proporcionalidad usada: **≈ 1 participación cada $12.000 de compra**. Mantenerla si se cambian los precios: es lo que justifica que "más compra = más participaciones" sin que se parezca a vender chances.
+| Opción | Precio | Precio por chance | Descuento vs. 1 chance |
+|---|---|---|---|
+| 1 chance | $10.000 | $10.000 | — |
+| 2 chances | $15.000 | $7.500 | 25 % |
+| 4 chances | $25.000 | $6.250 | 38 % |
+| 6 chances | $35.000 | $5.833 | 42 % |
+| 10 chances | $45.000 | $4.500 | 55 % (destacado "Más elegido") |
+| 15 chances | $70.000 | $4.667 | 53 % |
+| 20 chances | $90.000 | $4.500 | 55 % |
+| 30 chances | $120.000 | $4.000 | 60 % |
+| 50 chances | $150.000 | $3.000 | 70 % |
+| 200 chances | $300.000 | $1.500 | 85 % |
 
-Ideas para sumar valor sin costo: descuento del 10 % en repuestos durante la vigencia para quien compró el curso; acceso a una clase en vivo con el taller; prioridad en la lista de espera de bicis.
+Notas:
+- La palabra que se usa ("chance"/"chances") se cambia en un solo lugar: `config/campaign.json` → `unidad`. Con `participación`/`participaciones` el sitio, los mails y el panel se adaptan solos.
+- **Riesgo legal (ver `docs/01-investigacion.md` §2.4):** un precio que sube solo por la cantidad de chances del mismo producto digital es exactamente lo que la lotería de Entre Ríos calificó de "rifa encubierta" en 2022. Las mitigaciones que quedan en pie y conviene no tocar: el curso es real y se entrega de verdad; la vía gratuita "sin obligación de compra" sigue activa; el sorteo es ante escribano y en vivo; en Mercado Pago se cobra "Curso · Pack N" sin mencionar el sorteo; las bases hablan de "participaciones bonificadas". Vale la consulta al abogado antes de lanzar con esta estructura.
+- Alternativa intermedia si el abogado lo pide: mantener la escalera pero hacer que cada escalón agregue algo real (kit, service, jersey), como estaba en la primera versión de este documento.
 
 ## 3. Escenarios económicos (ilustrativos: cargar números reales)
 
-Supuestos: bici al costo para Baiking ≈ $2.600.000 (PVP $3.664.500 menos margen); premios adicionales $250.000; escribano $100.000; producción del curso $300.000; comisiones Mercado Pago + retenciones ≈ 8 % del cobrado; mezcla de ventas 50 % Curso · 25 % Kit · 20 % Service · 5 % Full.
+Supuestos: bici al costo para Baiking ≈ $2.600.000 (PVP $3.664.500 menos margen); escribano $100.000; producción del curso $300.000; reserva para premios adicionales o imprevistos $250.000; comisiones Mercado Pago + retenciones ≈ 8 % del cobrado (ver `docs/05` para el detalle y el efecto de la transferencia); mezcla de ventas estimada con la escalera: 35 % 1 chance · 20 % 2 · 15 % 4 · 10 % 6 · 12 % 10 · 5 % 15 · 3 % 30 o más.
 
-- Ticket promedio ≈ **$33.750**.
-- Costo variable promedio por orden ≈ $6.900 (kits, mano de obra, jersey) + 8 % comisiones ≈ **$9.600**.
-- Margen de contribución por orden ≈ **$24.000**.
-- Costos fijos ≈ **$3.250.000** → **punto de equilibrio ≈ 135 órdenes**.
+- Ticket promedio ≈ **$26.500** (≈ 4,6 chances por orden).
+- Costo variable por orden ≈ 8 % comisiones ≈ **$2.100** (el curso no tiene costo por unidad).
+- Margen de contribución por orden ≈ **$24.400**.
+- Costos fijos ≈ **$3.250.000** → **punto de equilibrio ≈ 135 órdenes** (≈ 620 chances).
 
 | Órdenes pagas | Ingresos | Costos variables | Costos fijos | Resultado |
 |---|---|---|---|---|
-| 150 | $5.060.000 | $1.440.000 | $3.250.000 | **+$370.000** |
-| 300 | $10.125.000 | $2.880.000 | $3.250.000 | **+$3.995.000** |
-| 600 | $20.250.000 | $5.760.000 | $3.250.000 | **+$11.240.000** |
-| 1.000 | $33.750.000 | $9.600.000 | $3.250.000 | **+$20.900.000** |
+| 150 | $3.975.000 | $318.000 | $3.250.000 | **+$407.000** |
+| 300 | $7.950.000 | $636.000 | $3.250.000 | **+$4.064.000** |
+| 600 | $15.900.000 | $1.272.000 | $3.250.000 | **+$11.378.000** |
+| 1.000 | $26.500.000 | $2.120.000 | $3.250.000 | **+$21.130.000** |
+
+Si se cobra por transferencia con 5 % de descuento, el margen por orden baja unos $1.300 en el descuento pero sube unos $2.100 al no pagar comisión: neto ≈ +$800 por orden, más el trabajo de revisar comprobantes (ver `docs/03-automatizaciones.md` §7).
 
 Con 121K seguidores en Instagram, 300 órdenes equivale a una conversión del 0,25 % de la audiencia. Además, cada pack Service y Full trae gente al taller (venta cruzada) y todos los compradores quedan en una base de datos con mail y WhatsApp.
 

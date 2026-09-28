@@ -42,6 +42,7 @@ async function resumen(req, res) {
   return json(res, 200, {
     generado_at: new Date().toISOString(),
     edicion: campaign.edicion,
+    unidad: campaign.unidad || { singular: 'participación', plural: 'participaciones' },
     packs: campaign.packs,
     bicis: campaign.bicis.map((b) => ({ id: b.id, nombre: b.nombre })),
     presencia: { ahora: ahora || 0, hoy: visitasHoy || 0 },

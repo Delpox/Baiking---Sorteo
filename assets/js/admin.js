@@ -137,7 +137,7 @@
       const cant = Math.max(1, Math.round(base * (0.6 + r() * 0.8)));
       for (let i = 0; i < cant; i++) {
         const u = r();
-        const pack = packs[u < 0.5 ? 0 : u < 0.75 ? 1 : u < 0.95 ? 2 : 3];
+        const pack = packs[Math.min(packs.length - 1, u < 0.35 ? 0 : u < 0.55 ? 1 : u < 0.7 ? 2 : u < 0.8 ? 3 : u < 0.92 ? 4 : u < 0.97 ? 5 : 7)];
         const gratuita = r() < 0.12;
         const medio = gratuita ? 'gratuita' : r() < 0.78 ? 'mercadopago' : 'transferencia';
         const t = new Date(fecha.getTime() - r() * 14 * 36e5 - 6 * 36e5);
@@ -179,6 +179,7 @@
     return {
       generado_at: new Date().toISOString(),
       edicion: cfg.edicion,
+      unidad: cfg.unidad,
       packs: cfg.packs,
       bicis: cfg.bicis.map((b) => ({ id: b.id, nombre: b.nombre })),
       presencia: { ahora: 4 + Math.floor(r() * 9), hoy: 180 + Math.floor(r() * 120) },
@@ -251,6 +252,11 @@
     const partAyer = todasPagadas.filter((o) => claveDia(o.pagada_at || o.created_at) === ayerClave).reduce((s, o) => s + o.cantidad_participaciones, 0);
     const ordenesHoy = todasPagadas.filter((o) => o.medio_pago !== 'gratuita' && claveDia(o.pagada_at || o.created_at) === hoyClave).length;
 
+    const plural = d.unidad?.plural || 'participaciones';
+    const Plural = plural.charAt(0).toUpperCase() + plural.slice(1);
+    $('.tile-hero .tile-label').textContent = `${Plural} asignadas`;
+    $('#kpi-gratuitas').previousElementSibling.textContent = `${Plural} sin cargo`;
+    $('#card-dias h2').textContent = `${Plural} por día`;
     $('#edicion-nombre').textContent = `${d.edicion.nombre} · Sorteo ${fmtDiaLargo(d.edicion.fecha_sorteo)}`;
     $('#meta-actualizado').textContent = `Actualizado ${new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: TZ }).format(new Date(d.generado_at))} hs · ${state.demo ? 'datos de ejemplo' : 'se actualiza cada 20 s'}`;
 
