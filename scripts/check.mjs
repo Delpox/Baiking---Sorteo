@@ -62,7 +62,7 @@ for (const b of cfg.bicis) if (!symbols.has(`art-${b.ilustracion}`)) errores.pus
 // --- sintaxis JS (frontend + backend) ---
 const apiFiles = [
   'api/checkout.js', 'api/orden.js', 'api/export.js', 'api/participacion-gratuita.js', 'api/webhooks/mercadopago.js',
-  'api/admin.js', 'api/ping.js', 'api/comprobante.js', 'api/inbound-email.js',
+  'api/admin.js', 'api/ping.js', 'api/comprobante.js', 'api/inbound-email.js', 'api/progreso.js',
   'api/_lib/db.js', 'api/_lib/http.js', 'api/_lib/mercadopago.js', 'api/_lib/notificaciones.js', 'api/_lib/confirmar.js',
   'api/_lib/comprobante.js',
 ];

@@ -4,7 +4,7 @@
 // probabilidad que cualquier participación por compra. Envía el mail de confirmación.
 import campaign from '../config/campaign.json' with { type: 'json' };
 import { json, readJson, baseUrl } from './_lib/http.js';
-import { crearOrden } from './_lib/db.js';
+import { crearOrden, contarParticipaciones } from './_lib/db.js';
 import { confirmarOrden } from './_lib/confirmar.js';
 
 const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -51,6 +51,11 @@ export default async function handler(req, res) {
   if (Object.keys(errores).length) return json(res, 422, { error: 'Revisá los datos.', errores });
 
   try {
+    const cupo = Number(campaign.edicion.cupo_total || 0);
+    if (cupo && (await contarParticipaciones(campaign.edicion.id)) >= cupo) {
+      return json(res, 409, { error: 'Se ocuparon todas las chances de esta edición.' });
+    }
+
     let orden;
     try {
       orden = await crearOrden({

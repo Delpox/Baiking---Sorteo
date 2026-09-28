@@ -4,7 +4,7 @@
 import { randomInt } from 'node:crypto';
 import campaign from '../config/campaign.json' with { type: 'json' };
 import { json, readJson, baseUrl } from './_lib/http.js';
-import { crearOrden, actualizarOrden } from './_lib/db.js';
+import { crearOrden, actualizarOrden, contarParticipaciones } from './_lib/db.js';
 import { crearPreferencia } from './_lib/mercadopago.js';
 import { armarMailTransferencia, enviarMail } from './_lib/notificaciones.js';
 
@@ -66,6 +66,17 @@ export default async function handler(req, res) {
   if (Object.keys(errores).length) return json(res, 422, { error: 'Revisá los datos.', errores });
 
   try {
+    // Cupo: si la edición tiene un total de chances, no vender más de las que quedan.
+    const cupo = Number(campaign.edicion.cupo_total || 0);
+    if (cupo) {
+      const ocupadas = await contarParticipaciones(campaign.edicion.id);
+      const restantes = cupo - ocupadas;
+      if (restantes <= 0) return json(res, 409, { error: 'Se ocuparon todas las chances de esta edición.' });
+      if (datos.pack.participaciones > restantes) {
+        return json(res, 409, { error: `Quedan solo ${restantes} chances disponibles. Elegí una opción más chica.` });
+      }
+    }
+
     const esTransferencia = datos.medio === 'transferencia';
     const descuento = esTransferencia ? Number(datos.transferencia.descuento_pct || 0) : 0;
     const monto = Math.round(datos.pack.precio * (1 - descuento / 100));

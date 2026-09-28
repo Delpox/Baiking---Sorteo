@@ -184,6 +184,7 @@
       bicis: cfg.bicis.map((b) => ({ id: b.id, nombre: b.nombre })),
       presencia: { ahora: 4 + Math.floor(r() * 9), hoy: 180 + Math.floor(r() * 120) },
       participaciones_total: asignadas,
+      cupo_total: Number(cfg.edicion.cupo_total || 0),
       ordenes,
     };
   }
@@ -265,7 +266,8 @@
     $('#kpi-participaciones').textContent = fmtInt(state.rango === 'todo' ? d.participaciones_total : partFiltro);
     const delta = partHoy - partAyer;
     const kd = $('#kpi-participaciones-delta');
-    kd.textContent = `${partHoy > 0 ? `+${fmtInt(partHoy)} hoy` : 'Sin asignaciones hoy'}${partAyer ? ` · ${delta >= 0 ? '+' : ''}${fmtInt(delta)} vs. ayer` : ''}`;
+    const cupoTxt = d.cupo_total ? ` · ${Math.round((d.participaciones_total / d.cupo_total) * 100)} % del cupo de ${fmtInt(d.cupo_total)}` : '';
+    kd.textContent = `${partHoy > 0 ? `+${fmtInt(partHoy)} hoy` : 'Sin asignaciones hoy'}${partAyer ? ` · ${delta >= 0 ? '+' : ''}${fmtInt(delta)} vs. ayer` : ''}${cupoTxt}`;
     kd.classList.toggle('up', delta > 0);
     $('#kpi-ordenes').textContent = fmtInt(compras.length);
     $('#kpi-ordenes-delta').textContent = ordenesHoy ? `+${fmtInt(ordenesHoy)} hoy` : '';

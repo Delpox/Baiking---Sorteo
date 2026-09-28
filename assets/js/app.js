@@ -165,6 +165,7 @@
     }
     renderLadder($('#ladder'), 'pack_hero');
     initCountdown(cfg.edicion.cierre_ventas);
+    initProgreso(cfg);
   }
 
   /* Textos comunes a todas las páginas (fechas, Instagram, seguidores). */
@@ -187,6 +188,42 @@
       badge.textContent = `${edicion.nombre} · Sorteo en vivo el ${fmtFechaLarga(edicion.fecha_sorteo).replace(/^\w+,?\s*/, '')}`;
     }
   }
+
+  /* Barra de progreso: chances ocupadas sobre el cupo total (contador real o valor demo). */
+  function initProgreso(cfg) {
+    const strip = $('#progreso');
+    const total = Number(cfg.edicion.cupo_total || 0);
+    if (!strip || !total) return;
+    const pintar = (ocupadas) => {
+      const pct = Math.min(100, (ocupadas / total) * 100);
+      const restantes = Math.max(0, total - ocupadas);
+      $('#prog-pct').textContent = `${pct < 10 ? pct.toFixed(1).replace('.', ',') : Math.round(pct)} %`;
+      $('#prog-ocupadas').textContent = fmtEntero(ocupadas);
+      $('#prog-total').textContent = fmtEntero(total);
+      $('#prog-restantes').textContent = fmtEntero(restantes);
+      $('.progress-bar', strip).setAttribute('aria-valuenow', String(Math.round(pct)));
+      strip.classList.toggle('is-hot', pct >= 80);
+      strip.hidden = false;
+      requestAnimationFrame(() => ($('#prog-fill').style.width = `${pct}%`));
+    };
+    if (cfg.checkout.modo !== 'api') {
+      pintar(Number(cfg.edicion.ocupado_demo || 0));
+      return;
+    }
+    const cargar = async () => {
+      try {
+        const res = await fetch('api/progreso', { cache: 'no-store' });
+        if (!res.ok) return;
+        const d = await res.json();
+        pintar(Number(d.ocupadas || 0));
+      } catch {
+        /* sin red: la barra queda como estaba */
+      }
+    };
+    cargar();
+    setInterval(() => document.visibilityState === 'visible' && cargar(), 60000);
+  }
+  const fmtEntero = (n) => new Intl.NumberFormat('es-AR').format(Math.round(n));
 
   /* Cuenta regresiva en una línea: "66 días 04:21:53" (hasta el cierre de inscripciones). */
   function initCountdown(iso) {
@@ -246,6 +283,14 @@
       const btn = e.target.closest('[data-select]');
       if (btn) setBici(btn.dataset.select, { scrollToPacks: true });
     });
+    const incluye = $('#premio-incluye');
+    if (incluye) {
+      const icons = ['ico-check', 'ico-users', 'ico-star', 'ico-wrench', 'ico-shield'];
+      incluye.innerHTML = (cfg.premio.incluye || [])
+        .map((t, i) => `<li>${icon(icons[i % icons.length])}<span>${esc(t)}</span></li>`)
+        .join('');
+    }
+    $$('[data-premio-entrega]').forEach((el) => cfg.premio.entrega && (el.textContent = cfg.premio.entrega));
   }
 
   /* ---------- curso ---------- */

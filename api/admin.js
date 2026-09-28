@@ -47,6 +47,7 @@ async function resumen(req, res) {
     bicis: campaign.bicis.map((b) => ({ id: b.id, nombre: b.nombre })),
     presencia: { ahora: ahora || 0, hoy: visitasHoy || 0 },
     participaciones_total: total,
+    cupo_total: Number(campaign.edicion.cupo_total || 0),
     ordenes: ordenes || [],
   });
 }

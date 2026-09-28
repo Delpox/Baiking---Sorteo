@@ -24,17 +24,22 @@
     "nombre": "Edición #1",
     "fecha_sorteo": "2026-12-04T21:00:00-03:00",
     "cierre_ventas": "2026-12-03T23:59:00-03:00",
-    "lugar_sorteo": "En vivo por Instagram"
+    "lugar_sorteo": "En vivo por Instagram",
+    "cupo_total": 10000,
+    "ocupado_demo": 3412,
+    "_cupo_nota": "cupo_total = cantidad total de chances de la edición (define la barra de progreso y frena las ventas al llegar). [A CONFIRMAR] con Gastón. ocupado_demo = valor que muestra la barra en modo demo; en producción sale del contador real (api/progreso)."
   },
   "premio": {
     "titulo": "Una Polygon a elección",
-    "descripcion": "Quien gana elige entre la Polygon Siskiu T7 (trail, doble suspensión) o la Polygon Tambora (gravel). La bici se entrega 0 km, armada y regulada por Baiking, con service de cortesía.",
+    "descripcion": "Quien gana elige entre la Polygon Siskiu T7 (trail, doble suspensión) o la Polygon Tambora (gravel). La bici se entrega 0 km, armada y regulada por Baiking. Gastón te la lleva personalmente y la estrenamos juntos en una salida.",
     "incluye": [
       "Bici 0 km del talle que corresponda, armada y regulada en Baiking",
+      "Gastón te la lleva personalmente (si vivís lejos, viaja embalada hasta tu casa sin costo)",
+      "Salida en bici con Gastón y el equipo de Baiking para estrenarla",
       "Primer service sin cargo a los 30 días",
-      "Envío a todo el país (o retiro en la tienda)",
       "Garantía oficial de la marca"
-    ]
+    ],
+    "entrega": "Gastón te la lleva personalmente y la estrenamos juntos en una salida."
   },
   "bicis": [
     {
@@ -344,7 +349,7 @@
     },
     {
       "p": "¿Qué pasa si no vivo cerca de Baiking?",
-      "r": "La bici viaja embalada a cualquier punto del país sin costo para quien gana, o se puede retirar en la tienda de Del Viso con armado y regulación incluidos. El kit se envía; el service se realiza en el taller."
+      "r": "Si ganás, Gastón te lleva la bici personalmente y organizamos una salida para estrenarla con el equipo de Baiking. Si vivís lejos del AMBA, viaja embalada hasta tu casa sin costo y coordinamos la salida para cuando vengas o para una próxima juntada. El kit se envía; el service se realiza en el taller."
     },
     {
       "p": "¿Qué medios de pago aceptan?",

@@ -43,6 +43,15 @@
 
     <!-- ================= HERO (foto del local + selector de chances) ================= -->
     <section class="hero hero-shop" id="hero">
+      <div class="container">
+        <div class="progress-strip" id="progreso" hidden>
+          <div class="progress-head">
+            <span><b id="prog-pct">0 %</b> de las <span data-unidad-plural>chances</span> ya están ocupadas</span>
+            <span class="progress-count"><b id="prog-ocupadas">0</b> de <span id="prog-total">0</span> · quedan <b id="prog-restantes">0</b></span>
+          </div>
+          <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Chances ocupadas"><b id="prog-fill" style="width:0%"></b></div>
+        </div>
+      </div>
       <div class="container shop-grid">
         <div class="shop-photo reveal" id="shop-photo">
           <span class="chip chip-ship"><svg><use href="#ico-truck"></use></svg> Envío sin cargo a todo el país</span>
@@ -51,7 +60,7 @@
           <div class="shop-photo-foot">
             <div class="shop-prize">
               <b>Una Polygon a elección · 0 km</b>
-              <span>Con tu compra participás del sorteo en vivo del <span data-fecha-sorteo-corta>—</span></span>
+              <span>Sorteo en vivo el <span data-fecha-sorteo-corta>—</span>. <span data-premio-entrega>Gastón te la lleva personalmente y la estrenamos juntos en una salida.</span></span>
             </div>
             <div class="shop-thumbs" id="shop-thumbs" role="group" aria-label="Elegí la bici"></div>
           </div>
@@ -80,7 +89,7 @@
         <ul>
           <li><svg><use href="#ico-gift"></use></svg><div><b>2 bicis a elección</b>Siskiu T7 o Tambora, 0 km</div></li>
           <li><svg><use href="#ico-live"></use></svg><div><b>Sorteo en vivo</b>Por Instagram, ante escribano</div></li>
-          <li><svg><use href="#ico-truck"></use></svg><div><b>Envío a todo el país</b>Sin costo para quien gana</div></li>
+          <li><svg><use href="#ico-users"></use></svg><div><b>Gastón te la lleva</b>En persona, y la estrenamos en una salida</div></li>
           <li><svg><use href="#ico-shield"></use></svg><div><b>Sin obligación de compra</b>Participación gratuita disponible</div></li>
         </ul>
       </div>
@@ -95,7 +104,11 @@
           <p class="lead">Trail o gravel: cuando te inscribís, elegís por cuál participás. Si ganás, te la entregamos 0 km, armada y regulada en el taller de Baiking.</p>
         </div>
         <div class="bikes-grid" id="bikes-grid"></div>
-        <p class="bikes-note"><svg><use href="#ico-shield"></use></svg><span>Las imágenes son ilustrativas. Talle y color según stock del importador oficial. Podés cambiar tu elección hasta el momento de la entrega. Incluye primer service sin cargo y garantía oficial.</span></p>
+        <div class="prize-includes reveal">
+          <span class="eyebrow">El premio incluye</span>
+          <ul class="about-points" id="premio-incluye"></ul>
+        </div>
+        <p class="bikes-note"><svg><use href="#ico-shield"></use></svg><span>Las imágenes son ilustrativas. Talle y color según stock del importador oficial. Podés cambiar tu elección hasta el momento de la entrega.</span></p>
       </div>
     </section>
 
@@ -111,7 +124,7 @@
           <li class="step reveal"><svg><use href="#ico-cart"></use></svg><h3>Elegí tu pack</h3><p>Curso solo, o curso + kit / service en Baiking. Cuanto más valor te llevás, más participaciones sumás de regalo.</p></li>
           <li class="step reveal"><svg><use href="#ico-lock"></use></svg><h3>Pagá con Mercado Pago</h3><p>Tarjeta de crédito, débito o dinero en cuenta. Todo con factura.</p></li>
           <li class="step reveal"><svg><use href="#ico-hash"></use></svg><h3>Recibí tus participaciones</h3><p>Al instante: en pantalla, por mail y por WhatsApp. Números correlativos, sin repetir, y acceso inmediato al curso.</p></li>
-          <li class="step reveal"><svg><use href="#ico-live"></use></svg><h3>Sorteo en vivo</h3><p>El <span data-fecha-sorteo-corta>—</span> por Instagram, ante escribano público. Si ganás, te llamamos ese mismo día.</p></li>
+          <li class="step reveal"><svg><use href="#ico-live"></use></svg><h3>Sorteo en vivo</h3><p>El <span data-fecha-sorteo-corta>—</span> por Instagram, ante escribano público. Si ganás, te llamamos ese mismo día, Gastón te lleva la bici en persona y la estrenamos juntos en una salida.</p></li>
         </ol>
       </div>
     </section>
