@@ -17,6 +17,7 @@ import { crearPreferencia } from './_lib/mercadopago.js';
 import { armarMailTransferencia, enviarMail } from './_lib/notificaciones.js';
 import { procesarComprobante, validarArchivo, enviarAcuseComprobante } from './_lib/comprobante.js';
 import { validarPersona, texto } from './_lib/validar.js';
+import { espejarOrdenEnSheet } from './_lib/sheets.js';
 
 // Código interno para identificar la transferencia (sin 0/O/1/I). Ya no se le muestra al
 // participante; queda para el panel y para matchear mails con comprobantes.
@@ -175,6 +176,11 @@ export default async function handler(req, res) {
           console.error(`[checkout] comprobante de la orden ${orden.id}:`, err.message || err);
           out = await recuperarTrasFallo({ orden, err, base: urlBase });
         }
+        // Espejo en la planilla con el estado real de la orden (si Sheets no está configurado, no hace nada).
+        if (out.estado !== 'pagada') {
+          const fresca = await obtenerOrden(orden.id).catch(() => null);
+          await espejarOrdenEnSheet(fresca || { ...orden, estado: out.estado }, { numeros: out.numeros || [] });
+        }
         return json(res, 200, {
           orden_id: orden.id,
           medio_pago: 'transferencia',
@@ -192,6 +198,7 @@ export default async function handler(req, res) {
       } catch (err) {
         console.error(`[checkout] mail transferencia de la orden ${orden.id}:`, err.message || err);
       }
+      await espejarOrdenEnSheet(orden);
       return json(res, 200, { orden_id: orden.id, medio_pago: 'transferencia', estado: 'pendiente', numeros: [] });
     }
 

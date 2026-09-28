@@ -9,6 +9,7 @@
 // manda; si el envío falla, se libera la marca para que un reintento lo vuelva a intentar.
 import { actualizarOrden, asignarParticipaciones, reclamarMarca, liberarMarca } from './db.js';
 import { armarMailConfirmacion, enviarMail, enviarWhatsApp, whatsappConfigurado } from './notificaciones.js';
+import { espejarOrdenEnSheet } from './sheets.js';
 
 export async function confirmarOrden({ orden, campaign, baseUrl, cambios = {}, gratuita = false }) {
   let actual = orden;
@@ -43,5 +44,7 @@ export async function confirmarOrden({ orden, campaign, baseUrl, cambios = {}, g
     }
   }
 
+  // Espejo en Google Sheets (no lanza: si la planilla no está configurada, no hace nada).
+  await espejarOrdenEnSheet(actual, { numeros });
   return { orden: actual, numeros };
 }

@@ -18,6 +18,7 @@ import { confirmarOrden } from './_lib/confirmar.js';
 import { buscarPagosPorOrden } from './_lib/mercadopago.js';
 import { aplicarPago } from './_lib/pagos-mp.js';
 import { RE_UUID, texto } from './_lib/validar.js';
+import { espejarOrdenEnSheet } from './_lib/sheets.js';
 
 const RE_EDICION = /^[a-z0-9-]{1,40}$/;
 
@@ -104,12 +105,13 @@ async function accion(req, res) {
   if (body.accion === 'rechazar') {
     if (orden.estado === 'pagada') return json(res, 409, { error: 'La orden ya está pagada; usá un reembolso.' });
     if (!['pendiente', 'en_revision'].includes(orden.estado)) return json(res, 409, { error: `La orden ya está ${orden.estado}.` });
-    await actualizarOrden(orden.id, {
+    const rechazada = await actualizarOrden(orden.id, {
       estado: 'rechazada',
       revisado_por: revisor,
       revisado_at: new Date().toISOString(),
       comprobante_datos: { ...(orden.comprobante_datos || {}), motivo_rechazo: texto(body.motivo, 300) },
     });
+    await espejarOrdenEnSheet(rechazada);
     return json(res, 200, { ok: true });
   }
 
@@ -131,6 +133,7 @@ async function accion(req, res) {
       return json(res, 200, { ok: true, estado: 'pagada', acreditada: true, numeros });
     }
     const actual = await actualizarOrden(orden.id, marca);
+    await espejarOrdenEnSheet(actual);
     const nota = valor === true && actual.estado !== 'pagada' ? `La orden está ${actual.estado}: se marcó acreditada pero no se aprueba.` : undefined;
     return json(res, 200, { ok: true, estado: actual.estado, acreditada: actual.acreditada, ...(nota ? { nota } : {}) });
   }

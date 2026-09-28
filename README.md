@@ -66,6 +66,8 @@ Medio de pago: únicamente transferencia bancaria, sin descuento (decisión del 
 
 La IA lee el comprobante, pero no puede saber si la plata entró: un comprobante editado pasa los chequeos. Por eso el valor por defecto es `TRANSFERENCIAS_AUTO_APROBAR=false` y se aprueba desde el panel después de ver la acreditación (buscar por monto exacto, fecha y nombre o CUIT del ordenante). El código `BK-XXXXX` sigue existiendo como identificador interno de la orden, pero ya no se le muestra al participante ni se le pide en el concepto. Detalle y riesgos en `docs/03-automatizaciones.md` §7; costos y conciliación automática en `docs/05-cobros-y-comparativa-internacional.md`.
 
+Planilla compartida: todas las órdenes se espejan en un Google Sheets (`api/_lib/sheets.js`, `api/sheets-sync.js`) que Gastón puede ver desde cualquier lado; la columna "Llegó la plata" (SI/NO) se puede marcar ahí o en el panel y ambas quedan sincronizadas (cron diario en `vercel.json`, o al instante con el Apps Script de `docs/06-google-sheets.md`). Configuración paso a paso en `docs/06-google-sheets.md`.
+
 ## Variables de entorno (`.env.example`)
 
 | Variable | Para qué |

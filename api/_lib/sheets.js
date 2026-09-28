@@ -412,24 +412,28 @@ async function cargarOrdenes(edicionId) {
 }
 
 /**
- * Misma lógica que la acción "acreditar" del panel (api/admin.js): guarda acreditada,
- * acreditada_at y acreditada_nota y, si es SI sobre una transferencia pendiente o en revisión,
- * confirma la orden (números + mail + WhatsApp, idempotente). Con NO solo marca: rechazar la
- * orden sigue siendo una decisión del panel. Devuelve { orden, numeros, confirmada }.
+ * Misma lógica que la acción "acreditar" del panel (api/admin.js): solo transferencias; guarda
+ * acreditada, acreditada_at, acreditada_nota, revisado_por y revisado_at y, si es SI sobre una
+ * orden pendiente o en revisión, la confirma (números + mail + WhatsApp, idempotente). Con NO,
+ * o con SI sobre una orden cerrada, solo marca: rechazar sigue siendo una decisión del panel.
+ * Devuelve { orden, numeros, confirmada }.
  */
 export async function marcarAcreditada({ orden, acreditada, nota = null, baseUrl, revisor = 'planilla' }) {
+  if (orden.medio_pago !== 'transferencia') throw new Error(`Solo se concilian transferencias (esta orden es ${orden.medio_pago})`);
   const ahora = new Date().toISOString();
-  const cambios = { acreditada: Boolean(acreditada), acreditada_at: ahora, acreditada_nota: nota ?? null };
-  const confirmar = Boolean(acreditada) && orden.medio_pago === 'transferencia' && ['pendiente', 'en_revision'].includes(orden.estado);
-  if (!confirmar) return { orden: await actualizarOrden(orden.id, cambios), numeros: null, confirmada: false };
+  const marca = {
+    acreditada: Boolean(acreditada),
+    acreditada_at: ahora,
+    acreditada_nota: texto(nota, 300) || null,
+    revisado_por: revisor,
+    revisado_at: ahora,
+  };
+  if (!(Boolean(acreditada) && ['pendiente', 'en_revision'].includes(orden.estado))) {
+    return { orden: await actualizarOrden(orden.id, marca), numeros: null, confirmada: false };
+  }
   // Import dinámico para no armar un ciclo confirmar.js ⇄ sheets.js cuando confirmarOrden llame al hook.
   const { confirmarOrden } = await import('./confirmar.js');
-  const { orden: actual, numeros } = await confirmarOrden({
-    orden,
-    campaign,
-    baseUrl: baseUrl || baseUrlDe(null),
-    cambios: { ...cambios, revisado_por: revisor, revisado_at: ahora },
-  });
+  const { orden: actual, numeros } = await confirmarOrden({ orden, campaign, baseUrl: baseUrl || baseUrlDe(null), cambios: marca });
   return { orden: actual, numeros, confirmada: true };
 }
 
