@@ -35,8 +35,8 @@
     "progreso_demo_pct": 34
   },
   "premio": {
-    "titulo": "Una Polygon a elección",
-    "descripcion": "Quien gana elige entre tres Polygon: la Siskiu T7 (trail, doble suspensión), la Tambora (gravel) o la Strattos (ruta). La bici se entrega 0 km, armada y regulada por Baiking. Gastón te la lleva personalmente, estés donde estés, y hacemos la salida para estrenarla.",
+    "titulo": "Una sola bici, a elección de quien gana",
+    "descripcion": "Se sortea una (1) bicicleta. Quien gana elige cuál de las tres Polygon se lleva: la Siskiu T7 (trail, doble suspensión), la Tambora (gravel) o la Strattos (ruta). Se entrega 0 km, armada y regulada por Baiking. Gastón te la lleva personalmente, estés donde estés, y hacemos la salida para estrenarla.",
     "incluye": [
       "Bici 0 km del talle que corresponda, armada y regulada en Baiking",
       "Gastón te la lleva personalmente, estés donde estés",
@@ -353,8 +353,8 @@
       "r": "El Curso Baiking de Mantenimiento: clases en video con Gastón, con acceso inmediato y para siempre. Cada compra incluye, como bonificación sin costo adicional, chances para el sorteo de la Polygon. El curso es tuyo gane quien gane."
     },
     {
-      "p": "¿Puedo elegir la bici?",
-      "r": "Sí. Al inscribirte nos decís cuál preferís (Siskiu T7, Tambora o Strattos) y, si ganás, te la entregamos 0 km en tu talle. Podés cambiar de opinión hasta el momento de la entrega."
+      "p": "¿Se sortean tres bicis?",
+      "r": "No: se sortea una sola bici, y la elige quien gana entre la Siskiu T7, la Tambora y la Strattos. Al inscribirte nos decís cuál preferís, y podés cambiar de opinión hasta el momento de la entrega."
     },
     {
       "p": "¿Puedo participar sin comprar?",
