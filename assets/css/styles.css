@@ -1999,3 +1999,33 @@ h2 em,
     height: 220px;
   }
 }
+
+/* Título del hero a lo ancho, arriba de la foto y de la escalera (28/09) */
+.shop-title {
+  margin-top: 26px;
+  max-width: 900px;
+}
+.shop-title h1 {
+  font-size: clamp(34px, 4.8vw, 56px);
+  margin-top: 14px;
+}
+.shop-buy .lead {
+  margin-top: 0;
+}
+@media (max-width: 560px) {
+  .shop-title h1 {
+    font-size: 32px;
+  }
+}
+/* Claim de la columna de compra: título mediano, no tan grande como el H1 */
+.shop-claim {
+  font-size: clamp(21px, 2.2vw, 26px);
+  line-height: 1.2;
+  font-stretch: 105%;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  text-wrap: pretty;
+}
+.shop-claim span {
+  color: var(--rojo);
+}
