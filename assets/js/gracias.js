@@ -70,8 +70,7 @@
     if (!checks) return;
     const filas = [
       ['monto_ok', 'El monto coincide', 'El monto no coincide con el de tu orden'],
-      ['destino_ok', 'La cuenta destino es la de Baiking', 'No pudimos ver la cuenta destino'],
-      ['codigo_ok', 'El código aparece en la transferencia', 'No vimos el código en el comprobante (no es un problema: lo revisamos a mano)'],
+      ['destino_ok', 'La cuenta destino es la de Baiking', 'No pudimos ver la cuenta destino (lo revisamos a mano)'],
     ];
     for (const [k, ok, bad] of filas) {
       const li = document.createElement('li');

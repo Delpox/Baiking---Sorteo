@@ -600,6 +600,34 @@
     return seg;
   }
 
+  // Versión compacta para la tabla de órdenes (un <select> con las mismas tres opciones,
+  // para que la columna "Banco" no desborde la tabla en pantallas de notebook).
+  function selectAcreditada(o) {
+    const sel = document.createElement('select');
+    sel.className = 'select-acreditada';
+    sel.setAttribute('aria-label', `¿Llegó la transferencia de ${o.nombre} ${o.apellido} al banco?`);
+    Object.assign(sel.style, {
+      padding: '3px 6px',
+      borderRadius: '8px',
+      border: '1px solid var(--line-2)',
+      background: 'var(--bg)',
+      color: o.acreditada === true ? 'var(--status-good)' : o.acreditada === false ? 'var(--status-critical)' : 'var(--text)',
+      font: 'inherit',
+      fontSize: '11px',
+      fontWeight: '600',
+    });
+    for (const [valor, etiqueta] of [['', 'Sin revisar'], ['true', 'Llegó'], ['false', 'No llegó']]) {
+      const op = document.createElement('option');
+      op.value = valor;
+      op.textContent = etiqueta;
+      op.selected = String(o.acreditada ?? '') === valor;
+      sel.appendChild(op);
+    }
+    if (o.acreditada_at) sel.title = `Marcada el ${fmtFechaHora(o.acreditada_at)}${o.acreditada_nota ? ` · ${o.acreditada_nota}` : ''}`;
+    sel.addEventListener('change', () => acreditarOrden(o, sel.value === '' ? null : sel.value === 'true'));
+    return sel;
+  }
+
   async function acreditarOrden(o, valor) {
     const aprueba = valor === true && ['pendiente', 'en_revision'].includes(o.estado);
     if (state.demo) {
@@ -735,13 +763,17 @@
       chip.className = `chip-estado ${o.estado}`;
       chip.textContent = ESTADO[o.estado] || o.estado;
       tdE.appendChild(chip);
+      // Banco: conciliación manual de cada transferencia abierta o pagada, debajo del estado
+      // (sin columna nueva: la tabla ya ocupa todo el ancho del contenedor).
+      if (o.medio_pago === 'transferencia' && ESTADOS_CONCILIABLES.includes(o.estado)) {
+        const sel = selectAcreditada(o);
+        sel.style.display = 'block';
+        sel.style.marginTop = '4px';
+        tdE.appendChild(sel);
+      }
       const tdM = tr.insertCell();
       tdM.className = 'num';
       tdM.textContent = o.medio_pago === 'gratuita' ? '—' : fmtARS(o.monto);
-      // Banco: conciliación manual para cada transferencia abierta o pagada.
-      const tdB = tr.insertCell();
-      if (o.medio_pago === 'transferencia' && ESTADOS_CONCILIABLES.includes(o.estado)) tdB.appendChild(controlAcreditada(o));
-      else tdB.textContent = '—';
     }
     $('#tabla-meta').textContent = lista.length ? `Mostrando ${fmtInt(lista.length)} de ${fmtInt(q ? lista.length : filas.length)}${q ? ` resultados para “${state.q.trim()}”` : ''}` : 'Sin órdenes para mostrar.';
   }
@@ -787,16 +819,17 @@
       if (!b) return;
       setEstadoFiltro(b.dataset.estado);
     });
-    // Columna "Banco" en la tabla de órdenes y KPI de conciliación (clic = aplica el filtro).
-    const th = document.createElement('th');
-    th.textContent = 'Banco';
-    $('#tabla-ordenes thead tr').appendChild(th);
+    // La celda "Estado" de la tabla lleva también el control de conciliación; KPI de
+    // conciliación (clic = aplica el filtro).
+    const thEstado = $$('#tabla-ordenes thead th').find((th) => th.textContent.trim() === 'Estado');
+    if (thEstado) thEstado.textContent = 'Estado / Banco';
     const tile = document.createElement('div');
     tile.className = 'tile tile-conciliar';
     tile.setAttribute('role', 'button');
     tile.tabIndex = 0;
     tile.title = 'Ver las transferencias sin conciliar';
     tile.style.cursor = 'pointer';
+    tile.style.gridColumn = 'span 2';
     const tileLabel = document.createElement('span');
     tileLabel.className = 'tile-label';
     tileLabel.textContent = 'Transferencias sin conciliar';
@@ -810,7 +843,8 @@
     tile.append(tileLabel, tileValue, tileDelta);
     const irASinConciliar = () => {
       setEstadoFiltro('sin_conciliar');
-      $('#tabla-ordenes').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Se desplaza la card (no la tabla, que puede tener scroll horizontal propio).
+      $('#tabla-ordenes').closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
     tile.addEventListener('click', irASinConciliar);
     tile.addEventListener('keydown', (e) => {
