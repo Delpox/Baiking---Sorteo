@@ -36,14 +36,14 @@
   },
   "premio": {
     "titulo": "Una Polygon a elección",
-    "descripcion": "Quien gana elige entre la Polygon Siskiu T7 (trail, doble suspensión) o la Polygon Tambora (gravel). La bici se entrega 0 km, armada y regulada por Baiking. Gastón te la lleva personalmente y la estrenamos juntos en una salida.",
+    "descripcion": "Quien gana elige entre tres Polygon: la Siskiu T7 (trail, doble suspensión), la Tambora (all-road / gravel) o la Bend (gravel). La bici se entrega 0 km, armada y regulada por Baiking. Gastón te la lleva personalmente, estés donde estés, y hacemos la salida para estrenarla.",
     "incluye": [
       "Bici 0 km del talle que corresponda, armada y regulada en Baiking",
-      "Gastón te la lleva personalmente (si vivís lejos, viaja embalada hasta tu casa sin costo)",
-      "Salida en bici con Gastón y el equipo de Baiking para estrenarla",
+      "Gastón te la lleva personalmente, estés donde estés",
+      "Salida en bici con Gastón para estrenarla, estés donde estés",
       "Primer service sin cargo a los 30 días y garantía oficial de la marca"
     ],
-    "entrega": "Gastón te la lleva personalmente y la estrenamos juntos en una salida.",
+    "entrega": "Gastón te la lleva personalmente, estés donde estés, y hacemos la salida para estrenarla.",
     "_nota": "[A CONFIRMAR] con Gastón: el service a los 30 días y la garantía oficial se prometen en el sitio y en las bases."
   },
   "bicis": [
@@ -88,7 +88,7 @@
       "id": "tambora",
       "nombre": "Polygon Tambora",
       "marca": "Polygon",
-      "tipo": "Gravel · All-road",
+      "tipo": "All-road · Gravel",
       "ilustracion": "gravel",
       "imagen": null,
       "tagline": "Dos bicis en una: con un cambio de posición en el cuadro (flip chips) pasás de geometría all-road a gravel en minutos. Asfalto, ripio y sendero con la misma bici.",
@@ -121,6 +121,44 @@
       "version_nota": "[A CONFIRMAR] versión a sortear: A4 (aluminio, GRX 2x11, ≈ $3.600.000) · G4 (≈ $2.320.000) · G5 (carbono, ≈ $4.460.000 – $5.775.000)",
       "valor_referencia": 3600000,
       "color": "#1c1a1b"
+    },
+    {
+      "id": "bend",
+      "nombre": "Polygon Bend",
+      "marca": "Polygon",
+      "tipo": "Gravel",
+      "ilustracion": "gravel",
+      "imagen": null,
+      "tagline": "La gravel de Polygon para salir del asfalto: cuadro de aluminio, horquilla de carbono y cubiertas anchas para ripio, tierra y rutas largas.",
+      "specs": [
+        {
+          "k": "Cuadro",
+          "v": "Aluminio ALX, geometría gravel (según versión)"
+        },
+        {
+          "k": "Horquilla",
+          "v": "Carbono (según versión)"
+        },
+        {
+          "k": "Transmisión",
+          "v": "Shimano GRX (según versión)"
+        },
+        {
+          "k": "Frenos",
+          "v": "Disco hidráulico, flat mount"
+        },
+        {
+          "k": "Cubiertas",
+          "v": "700c · gravel, paso ancho"
+        },
+        {
+          "k": "Anclajes",
+          "v": "Para bikepacking y portaequipaje"
+        }
+      ],
+      "version_nota": "[A CONFIRMAR] modelo y versión de la gravel (ej. Bend R2 / R5) y su valor de referencia.",
+      "valor_referencia": null,
+      "color": "#6e686b"
     }
   ],
   "curso": {
@@ -312,6 +350,10 @@
       "r": "El Curso Baiking de Mantenimiento: clases en video con Gastón, con acceso inmediato y para siempre. Cada compra incluye, como bonificación sin costo adicional, chances para el sorteo de la Polygon. El curso es tuyo gane quien gane."
     },
     {
+      "p": "¿Puedo elegir la bici?",
+      "r": "Sí. Al inscribirte nos decís cuál preferís (Siskiu T7, Tambora o Bend) y, si ganás, te la entregamos 0 km en tu talle. Podés cambiar de opinión hasta el momento de la entrega."
+    },
+    {
       "p": "¿Puedo participar sin comprar?",
       "r": "Sí. La promoción es sin obligación de compra: completando el formulario de participación sin cargo recibís una chance por persona, con la misma probabilidad que cualquier otra."
     },
@@ -325,7 +367,7 @@
     },
     {
       "p": "¿Qué pasa si no vivo cerca de Baiking?",
-      "r": "Si ganás, Gastón te lleva la bici personalmente y organizamos una salida para estrenarla. Si vivís lejos del AMBA, viaja embalada hasta tu casa sin costo y coordinamos la salida para cuando vengas."
+      "r": "Da igual dónde vivas: si ganás, Gastón te lleva la bici personalmente y hacemos la salida para estrenarla ahí, estés donde estés."
     }
   ],
   "legal": {

@@ -417,11 +417,16 @@ h2 em,
   gap: 8px;
 }
 .shop-placeholder-art svg {
-  width: 46%;
+  width: 31%;
   color: var(--rojo);
 }
 .shop-placeholder-art svg + svg {
   color: var(--fg);
+}
+.shop-placeholder-art svg + svg + svg,
+.thumb[data-bici='bend'] svg,
+.bike-card[data-bici='bend'] .bike-art {
+  color: var(--fg-2);
 }
 .shop-placeholder p {
   margin: 20px auto 0;
@@ -458,7 +463,7 @@ h2 em,
 }
 .shop-thumbs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 10px;
   margin-top: 14px;
 }
@@ -703,7 +708,7 @@ h2 em,
 /* ---------- bicis ---------- */
 .bikes-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 20px;
 }
 .bike-card {
@@ -1485,7 +1490,7 @@ h2 em,
 .bike-picker,
 .pay-picker {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
 }
 .pay-picker {
