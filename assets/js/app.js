@@ -523,10 +523,12 @@
       $('#btn-pagar').textContent = externo ? 'Comprar en la tienda' : medio === 'transferencia' ? 'Participar' : 'Ir a pagar con Mercado Pago';
       const secure = $('#modal-form .secure');
       if (secure) {
-        secure.lastChild.textContent =
+        const svg = secure.querySelector('svg');
+        const texto =
           medio === 'transferencia'
-            ? ' Transferencia bancaria · Recibís factura al acreditarse'
-            : ' Pago seguro procesado por Mercado Pago · Recibís factura';
+            ? `Tus ${unidad(2)} se confirman al validar la transferencia · Recibís factura`
+            : 'Pago seguro procesado por Mercado Pago · Recibís factura';
+        secure.replaceChildren(...(svg ? [svg] : []), document.createTextNode(` ${texto}`));
       }
     }
 
@@ -566,6 +568,7 @@
     if (fileInput) {
       fileInput.addEventListener('change', () => {
         $('#f-comprobante-nombre').textContent = fileInput.files[0] ? fileInput.files[0].name : 'Foto, captura o PDF del banco';
+        fileInput.closest('.field')?.classList.remove('is-invalid');
       });
     }
 
