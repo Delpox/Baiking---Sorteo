@@ -2029,3 +2029,8 @@ h2 em,
 .shop-claim span {
   color: var(--rojo);
 }
+.countdown-inline a {
+  color: var(--rojo-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
