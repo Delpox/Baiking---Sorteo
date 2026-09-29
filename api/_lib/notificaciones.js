@@ -57,6 +57,23 @@ const unidad = (campaign, n) => {
 const pendienteConfig = (v) => !v || /A CONFIRMAR/i.test(String(v));
 const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+/**
+ * Link de entrega del producto digital comprado: `pack.entrega_url`; para el producto
+ * `curso`, si está vacío, cae a `curso.url_acceso` (YouTube no listado) con `curso.acceso_texto`.
+ * Vacío o "[A CONFIRMAR]" → { url: '' } y el mail avisa que el producto llega aparte.
+ */
+function entregaDelProducto(pack, campaign) {
+  if (!pack) return { url: '', texto: '' };
+  const propia = pendienteConfig(pack.entrega_url) ? '' : String(pack.entrega_url).trim();
+  if (propia) return { url: propia, texto: '' };
+  if (pack.id === 'curso') {
+    const curso = campaign.curso || {};
+    const url = pendienteConfig(curso.url_acceso) ? '' : String(curso.url_acceso).trim();
+    return { url, texto: url ? String(curso.acceso_texto || '') : '' };
+  }
+  return { url: '', texto: '' };
+}
+
 /** Pie legal del HTML: leyenda "sin obligación de compra", aviso corto y link a las bases. */
 function pieLegalHtml(campaign, baseUrl) {
   const legal = campaign.legal || {};
@@ -81,22 +98,26 @@ export function armarMailConfirmacion({ orden, numeros, campaign, baseUrl, gratu
   const nombre = escapeHtml(orden.nombre);
   const plural = numeros.length > 1;
   const u = unidad(campaign, numeros.length);
-  const curso = campaign.curso;
   const biciNombre = bici?.nombre || 'Polygon';
-  const packTxt = pack ? ` · pack de ${pack.nombre}` : '';
-  // Nombre completo del curso solo si difiere del corto (para no repetirlo).
-  const cursoLargo = curso.nombre && curso.nombre !== curso.nombre_corto ? curso.nombre : '';
-  // Link al curso (YouTube no listado). Vacío o "[A CONFIRMAR]" → el mail avisa que llega aparte.
-  const cursoUrl = pendienteConfig(curso.url_acceso) ? '' : String(curso.url_acceso).trim();
+  const producto = pack?.nombre || 'tu producto';
+  const entrega = entregaDelProducto(pack, campaign);
+  const incluye = Array.isArray(pack?.incluye) ? pack.incluye.filter(Boolean) : [];
 
   const subject = gratuita
     ? `¡Listo, ${orden.nombre}! Registramos tu participación sin cargo · Baiking`
-    : `¡Listo, ${orden.nombre}! Tu curso y ${plural ? `tus ${u}` : `tu ${u}`} · Baiking`;
+    : `¡Listo, ${orden.nombre}! ${pack ? pack.nombre : 'Tu compra'} y ${plural ? `tus ${u}` : `tu ${u}`} · Baiking`;
 
   const conCarta = gratuita && Boolean(orden.carta_recibida_at);
+  const conNumeros = plural ? `con las ${escapeHtml(u)} ${lista}` : `con la ${escapeHtml(u)} número ${lista}`;
+  const conNumerosTexto = plural ? `con las ${u} ${lista}` : `con la ${u} número ${lista}`;
   const intro = gratuita
     ? `${conCarta ? 'Recibimos tu carta y registramos' : 'Registramos'} tu participación <strong style="color:#1c1a1b">sin obligación de compra</strong>. Quedaste participando por tu <strong style="color:#1c1a1b">${escapeHtml(biciNombre)}</strong> con la misma probabilidad que cualquier otra participación.`
-    : `Confirmamos tu pago del <strong style="color:#1c1a1b">${escapeHtml(curso.nombre_corto)}</strong>${escapeHtml(packTxt)}. Ya tenés acceso al ${cursoLargo ? `<strong style="color:#1c1a1b">${escapeHtml(cursoLargo)}</strong>` : 'curso'} y, como bonificación sin cargo del curso, quedaste participando por tu <strong style="color:#1c1a1b">${escapeHtml(biciNombre)}</strong> con ${numeros.length} ${escapeHtml(u)}.`;
+    : `Confirmamos tu pago de <strong style="color:#1c1a1b">${escapeHtml(producto)}</strong>. Ya tenés tu producto y, como bonificación sin cargo, quedaste participando por tu <strong style="color:#1c1a1b">${escapeHtml(biciNombre)}</strong> ${conNumeros}.`;
+  const incluyeHtml = incluye.length
+    ? `<p style="font-size:13px;line-height:1.6;color:#6e686b;margin:14px 0 4px">Incluye:</p>
+    <ul style="margin:0;padding-left:20px;font-size:14px;line-height:1.7;color:#4a4649">${incluye.map((i) => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`
+    : '';
+  const incluyeTexto = incluye.length ? `\nIncluye:\n${incluye.map((i) => `- ${i}`).join('\n')}` : '';
 
   const html = marcoMail(
     campaign,
@@ -120,10 +141,10 @@ export function armarMailConfirmacion({ orden, numeros, campaign, baseUrl, gratu
     ${
       gratuita
         ? ''
-        : cursoUrl
-          ? `<a href="${escapeHtml(cursoUrl)}" style="display:inline-block;background:#eb0627;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:10px">Entrar al curso</a>
-    <p style="font-size:13px;line-height:1.6;color:#6e686b;margin:14px 0 0">${escapeHtml(curso.acceso_texto || '')}</p>`
-          : `<p style="font-size:15px;line-height:1.6;color:#4a4649;margin:0;padding:14px 16px;background:#f7f5f6;border-radius:10px">El link del curso te llega en un mail aparte, apenas esté publicado.</p>`
+        : entrega.url
+          ? `<a href="${escapeHtml(entrega.url)}" style="display:inline-block;background:#eb0627;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:10px">Descargar / Ver ${escapeHtml(producto)}</a>
+    ${entrega.texto ? `<p style="font-size:13px;line-height:1.6;color:#6e686b;margin:14px 0 0">${escapeHtml(entrega.texto)}</p>` : ''}${incluyeHtml}`
+          : `<p style="font-size:15px;line-height:1.6;color:#4a4649;margin:0;padding:14px 16px;background:#f7f5f6;border-radius:10px">Tu producto (${escapeHtml(producto)}) te llega en un mail aparte, apenas esté listo.</p>${incluyeHtml}`
     }
 
     <p style="font-size:13px;line-height:1.6;color:#6e686b;margin:28px 0 0">
@@ -137,12 +158,12 @@ export function armarMailConfirmacion({ orden, numeros, campaign, baseUrl, gratu
 ${
   gratuita
     ? `${conCarta ? 'Recibimos tu carta y registramos' : 'Registramos'} tu participación sin obligación de compra.`
-    : `Confirmamos tu pago del ${curso.nombre_corto}${packTxt}${cursoLargo ? ` (${cursoLargo})` : ''}. Ya tenés acceso al curso y, como bonificación sin cargo del curso, quedaste participando por tu ${biciNombre}.`
+    : `Confirmamos tu pago de ${producto}. Ya tenés tu producto y, como bonificación sin cargo, quedaste participando por tu ${biciNombre} ${conNumerosTexto}.`
 }
 ${plural ? `Tus ${u}` : `Tu ${u}`}: ${lista}
 Bici elegida: ${bici?.nombre || ''}
 Sorteo en vivo: ${fecha} hs por Instagram @${campaign.contacto.instagram}
-${gratuita ? '' : `${cursoUrl ? `Acceso al curso: ${cursoUrl}\n${curso.acceso_texto || ''}` : 'El link del curso te llega en un mail aparte, apenas esté publicado.'}\n`}Orden: ${orden.id}
+${gratuita ? '' : `${entrega.url ? `Descargar / ver ${producto}: ${entrega.url}${entrega.texto ? `\n${entrega.texto}` : ''}` : `Tu producto (${producto}) te llega en un mail aparte, apenas esté listo.`}${incluyeTexto}\n`}Orden: ${orden.id}
 Ver tus ${unidad(campaign, 2)}: ${baseUrl}/gracias?orden=${orden.id}
 
 ${pieLegalTexto(campaign, baseUrl)}`;
@@ -203,11 +224,10 @@ const mailComprobantesDe = (t) =>
 export function armarMailTransferencia({ orden, campaign, baseUrl }) {
   const t = campaign.checkout.transferencia || {};
   const pack = campaign.packs.find((p) => p.id === orden.pack_id);
-  const curso = campaign.curso;
+  const producto = pack?.nombre || 'tu producto';
   const link = `${baseUrl}/gracias?orden=${orden.id}`;
   const plazo = String(t.plazo_horas || 48);
   const mailComprobantes = mailComprobantesDe(t);
-  const packTxt = pack ? ` (pack de ${pack.nombre})` : '';
   const filas = [
     ['Monto', fmtARS(orden.monto)],
     ['Alias', t.alias],
@@ -224,7 +244,7 @@ export function armarMailTransferencia({ orden, campaign, baseUrl }) {
   const html = marcoMail(
     campaign,
     `Reservamos tu lugar, ${escapeHtml(orden.nombre)}`,
-    `<p style="font-size:16px;line-height:1.6;margin:0 0 20px;color:#4a4649">Elegiste pagar el <strong style="color:#1c1a1b">${escapeHtml(curso.nombre_corto)}</strong>${escapeHtml(packTxt)} por transferencia. Transferí el monto exacto (si tu banco pide un concepto, poné tu nombre y apellido) y subí el comprobante desde el botón. Si ya transferiste, solo falta el comprobante. Lo confirmamos en menos de ${escapeHtml(plazo)} hs y te asignamos tus ${escapeHtml(unidad(campaign, 2))}.</p>
+    `<p style="font-size:16px;line-height:1.6;margin:0 0 20px;color:#4a4649">Elegiste pagar <strong style="color:#1c1a1b">${escapeHtml(producto)}</strong> por transferencia. Transferí el monto exacto (si tu banco pide un concepto, poné tu nombre y apellido) y subí el comprobante desde el botón. Si ya transferiste, solo falta el comprobante. Lo confirmamos en menos de ${escapeHtml(plazo)} hs y te asignamos tu ${escapeHtml(unidad(campaign, 1))}.</p>
     <table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 24px;font-size:15px;background:#fff0f2;border:1px solid #f3b5be;border-radius:14px">
       ${filas.map(([k, v]) => `<tr><td style="padding:10px 14px;color:#6e686b">${escapeHtml(k)}</td><td style="padding:10px 14px;text-align:right;font-weight:600;color:#1c1a1b">${escapeHtml(v)}</td></tr>`).join('')}
     </table>
@@ -234,7 +254,7 @@ export function armarMailTransferencia({ orden, campaign, baseUrl }) {
   );
   const porMailTexto = mailComprobantes ? ` o respondé este mail con el comprobante adjunto (con tu nombre y DNI en el asunto)` : '';
   const text = `Reservamos tu lugar, ${orden.nombre}.
-Elegiste pagar el ${curso.nombre_corto}${packTxt} por transferencia. Transferí el monto exacto (si tu banco pide un concepto, poné tu nombre y apellido). Si ya transferiste, solo falta el comprobante.
+Elegiste pagar ${producto} por transferencia. Transferí el monto exacto (si tu banco pide un concepto, poné tu nombre y apellido). Si ya transferiste, solo falta el comprobante.
 ${filas.map(([k, v]) => `${k}: ${v}`).join('\n')}
 Subí el comprobante en ${link}${porMailTexto}.
 La reserva vence si no recibimos la transferencia en ${plazo} hs.
@@ -293,21 +313,20 @@ ${pieLegalTexto(campaign, baseUrl)}`;
 export function armarMailComprobanteRecibido({ orden, campaign, baseUrl }) {
   const t = campaign.checkout.transferencia || {};
   const pack = campaign.packs.find((p) => p.id === orden.pack_id);
-  const curso = campaign.curso;
   const link = `${baseUrl}/gracias?orden=${orden.id}`;
   const plazo = String(t.plazo_horas || 48);
-  const detalle = `${fmtARS(orden.monto)} por el ${curso.nombre_corto}${pack ? ` (pack de ${pack.nombre})` : ''}`;
+  const detalle = `${fmtARS(orden.monto)} por ${pack?.nombre || 'tu producto'}`;
   const subject = `Recibimos tu comprobante · Baiking`;
   const html = marcoMail(
     campaign,
     `Recibimos tu comprobante, ${escapeHtml(orden.nombre)}`,
-    `<p style="font-size:16px;line-height:1.6;margin:0 0 20px;color:#4a4649">Recibimos el comprobante de tu transferencia de <strong style="color:#1c1a1b">${escapeHtml(detalle)}</strong>. Lo estamos revisando: en cuanto se acredite te mandamos otro mail con el acceso al curso y tus ${escapeHtml(unidad(campaign, 2))} (en general, en menos de ${escapeHtml(plazo)} hs).</p>
+    `<p style="font-size:16px;line-height:1.6;margin:0 0 20px;color:#4a4649">Recibimos el comprobante de tu transferencia de <strong style="color:#1c1a1b">${escapeHtml(detalle)}</strong>. Lo estamos revisando: en cuanto se acredite te mandamos otro mail con tu producto y tu ${escapeHtml(unidad(campaign, 1))} (en general, en menos de ${escapeHtml(plazo)} hs).</p>
     <a href="${escapeHtml(link)}" style="display:inline-block;background:#eb0627;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:10px">Ver el estado de mi orden</a>
     <p style="font-size:13px;line-height:1.6;color:#6e686b;margin:20px 0 0">Orden ${escapeHtml(orden.id)}</p>`,
     baseUrl,
   );
   const text = `Recibimos tu comprobante, ${orden.nombre}.
-Transferencia de ${detalle}. Lo estamos revisando: en cuanto se acredite te mandamos otro mail con el acceso al curso y tus ${unidad(campaign, 2)} (en general, en menos de ${plazo} hs).
+Transferencia de ${detalle}. Lo estamos revisando: en cuanto se acredite te mandamos otro mail con tu producto y tu ${unidad(campaign, 1)} (en general, en menos de ${plazo} hs).
 Estado de tu orden: ${link}
 Orden: ${orden.id}
 
@@ -333,7 +352,6 @@ export function armarMailRecordatorioSemana({ persona, ordenes, campaign, baseUr
   const lista = Array.isArray(ordenes) ? ordenes : persona?.ordenes || [];
   const nombre = persona?.nombre || lista[0]?.nombre || '';
   const ig = campaign.contacto?.instagram || '';
-  const u2 = unidad(campaign, 2);
   const fechaSorteo = fmtFecha(campaign.edicion.fecha_sorteo);
   const cierre = fmtFecha(campaign.edicion.cierre_ventas);
   const porFecha = [...lista].sort((a, b) => (String(a.created_at) < String(b.created_at) ? 1 : -1));
@@ -354,9 +372,9 @@ export function armarMailRecordatorioSemana({ persona, ordenes, campaign, baseUr
     variante = 'comprobante';
     const link = `${baseUrl}/gracias?orden=${ultimaTransferencia.id}`;
     boton = { texto: 'Subir el comprobante', href: link };
-    cuerpoHtml = `<p style="${PARRAFO}">Tu orden sigue <strong style="color:#1c1a1b">pendiente</strong>: todavía no recibimos el comprobante de tu transferencia. Subilo para que tus ${escapeHtml(u2)} entren al sorteo.</p>
+    cuerpoHtml = `<p style="${PARRAFO}">Tu orden sigue <strong style="color:#1c1a1b">pendiente</strong>: todavía no recibimos el comprobante de tu transferencia. Subilo para que tu ${escapeHtml(unidad(campaign, 1))} entre al sorteo.</p>
     <p style="${PARRAFO}">${cuandoHtml}</p>`;
-    cuerpoTexto = `Tu orden sigue pendiente: todavía no recibimos el comprobante de tu transferencia. Subilo para que tus ${u2} entren al sorteo: ${link}\n${cuandoTexto}`;
+    cuerpoTexto = `Tu orden sigue pendiente: todavía no recibimos el comprobante de tu transferencia. Subilo para que tu ${unidad(campaign, 1)} entre al sorteo: ${link}\n${cuandoTexto}`;
   } else if (gratuitaPendiente) {
     variante = 'carta';
     const { direccion } = configCarta(campaign);
@@ -367,11 +385,11 @@ export function armarMailRecordatorioSemana({ persona, ordenes, campaign, baseUr
     <p style="${PARRAFO}">${cuandoHtml}</p>`;
     cuerpoTexto = `Todavía no recibimos tu carta: tenés tiempo hasta el ${vence}. Mandala a ${direccion} o entregala en la tienda, y tu ${unidad(campaign, 1)} entra al sorteo.\n${cuandoTexto}\nEstado de tu participación: ${link}`;
   } else {
-    boton = { texto: `Sumar ${u2}`, href: baseUrl };
-    const revisionHtml = enRevision ? `<p style="${PARRAFO}">Tu transferencia está en revisión: en cuanto se acredite te mandamos tus ${escapeHtml(u2)} por mail.</p>` : '';
+    boton = { texto: 'Ver los productos', href: baseUrl };
+    const revisionHtml = enRevision ? `<p style="${PARRAFO}">Tu transferencia está en revisión: en cuanto se acredite te mandamos tu producto y tu ${escapeHtml(unidad(campaign, 1))} por mail.</p>` : '';
     cuerpoHtml = `<p style="${PARRAFO}">${cuandoHtml}</p>
-    <p style="${PARRAFO}">Si querés sumar ${escapeHtml(u2)}, todavía estás a tiempo.</p>${revisionHtml}`;
-    cuerpoTexto = `${cuandoTexto}\nSi querés sumar ${u2}, todavía estás a tiempo: ${baseUrl}${enRevision ? `\nTu transferencia está en revisión: en cuanto se acredite te mandamos tus ${u2} por mail.` : ''}`;
+    <p style="${PARRAFO}">Si todavía no tenés alguno de los productos, estás a tiempo (cada uno se compra una sola vez por persona).</p>${revisionHtml}`;
+    cuerpoTexto = `${cuandoTexto}\nSi todavía no tenés alguno de los productos, estás a tiempo (cada uno se compra una sola vez por persona): ${baseUrl}${enRevision ? `\nTu transferencia está en revisión: en cuanto se acredite te mandamos tu producto y tu ${unidad(campaign, 1)} por mail.` : ''}`;
   }
 
   const html = marcoMail(campaign, titulo, `${cuerpoHtml}

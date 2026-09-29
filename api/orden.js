@@ -32,7 +32,11 @@ export default async function handler(req, res) {
       nombre: orden.nombre,
       email: enmascararEmail(orden.email),
       cantidad: orden.cantidad_participaciones,
-      pack: pack ? { id: pack.id, nombre: pack.nombre } : null,
+      // El link de entrega del producto solo viaja cuando la orden está pagada (el id de la
+      // orden lo conoce el comprador antes de pagar).
+      pack: pack
+        ? { id: pack.id, nombre: pack.nombre, ...(orden.estado === 'pagada' && pack.entrega_url && !/A CONFIRMAR/i.test(pack.entrega_url) ? { entrega_url: String(pack.entrega_url).trim() } : {}) }
+        : null,
       bici: bici ? { id: bici.id, nombre: bici.nombre } : null,
       numeros,
       pagada_at: orden.pagada_at,

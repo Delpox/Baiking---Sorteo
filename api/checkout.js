@@ -110,6 +110,21 @@ export default async function handler(req, res) {
       }
     }
 
+    // Cada producto se compra UNA sola vez por persona (DNI), como dicen las bases; productos
+    // distintos sí (cada compra otorga una participación). Las rechazadas/anuladas no cuentan.
+    const repetida = await contarOrdenes({
+      edicionId: campaign.edicion.id,
+      dni: datos.dni,
+      packId: datos.pack.id,
+      estados: ['pagada', 'en_revision', 'pendiente'],
+    });
+    if (repetida > 0) {
+      return json(res, 409, {
+        error: `Ya tenés ${datos.pack.nombre}: cada producto se compra una sola vez por persona.`,
+        errores: { pack_id: 'Ya compraste este producto; podés elegir otro.' },
+      });
+    }
+
     const esTransferencia = datos.medio === 'transferencia';
     if (esTransferencia) {
       const pendientes = await contarOrdenes({

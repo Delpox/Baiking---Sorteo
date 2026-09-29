@@ -343,7 +343,7 @@
       return { etiqueta: p.nombre, valor: os.reduce((s, o) => s + o.cantidad_participaciones, 0), ordenes: os.length, ingresos: os.reduce((s, o) => s + Number(o.monto || 0), 0) };
     });
     chartBarras($('#chart-packs'), porPack, (x) => [{ titulo: x.etiqueta }, { k: 'participaciones', v: fmtInt(x.valor) }, { k: 'órdenes', v: fmtInt(x.ordenes) }, { k: 'ingresos', v: fmtARS(x.ingresos) }]);
-    tablaGemela($('#table-packs'), ['Pack', 'Participaciones', 'Órdenes', 'Ingresos'], porPack.map((x) => [x.etiqueta, fmtInt(x.valor), fmtInt(x.ordenes), fmtARS(x.ingresos)]), [1, 2, 3]);
+    tablaGemela($('#table-packs'), ['Producto', Plural, 'Órdenes', 'Ingresos'], porPack.map((x) => [x.etiqueta, fmtInt(x.valor), fmtInt(x.ordenes), fmtARS(x.ingresos)]), [1, 2, 3]);
 
     const porBici = d.bicis.map((b) => ({ etiqueta: b.nombre, valor: pagadas.filter((o) => o.bici_preferida === b.id).reduce((s, o) => s + o.cantidad_participaciones, 0) }));
     meter($('#chart-bicis'), porBici);
@@ -394,7 +394,8 @@
     count.textContent = '0';
     h2.appendChild(count);
     const p = document.createElement('p');
-    p.textContent = 'Participaciones sin cargo registradas en el sitio que esperan la carta. Cuando llega, "Carta recibida" asigna la chance y manda el mail con el número.';
+    p.id = 'cartas-descripcion';
+    p.textContent = 'Participaciones sin cargo registradas en el sitio que esperan la carta. Cuando llega, "Carta recibida" asigna la participación y manda el mail con el número.';
     head.append(h2, p);
     const ul = document.createElement('ul');
     ul.className = 'revision-list';
@@ -403,10 +404,13 @@
     $('#card-revision').after(sec);
   }
 
+  const unidadSingular = () => state.data?.unidad?.singular || 'participación';
+
   function renderCartas(lista, bicisPorId) {
     asegurarCardCartas();
     const card = $('#card-cartas');
     card.hidden = lista.length === 0;
+    $('#cartas-descripcion').textContent = `Participaciones sin cargo registradas en el sitio que esperan la carta. Cuando llega, "Carta recibida" asigna la ${unidadSingular()} y manda el mail con el número.`;
     $('#cartas-count').textContent = fmtInt(lista.length);
     const ul = $('#cartas-list');
     ul.replaceChildren();
@@ -454,7 +458,7 @@
         o.pagada_at = new Date().toISOString();
         o.carta_recibida_at = o.pagada_at;
         state.data.participaciones_total += o.cantidad_participaciones;
-        toast(`Carta recibida: ${o.nombre} recibe su chance por mail.`);
+        toast(`Carta recibida: ${o.nombre} recibe su ${unidadSingular()} por mail.`);
       } else {
         o.estado = 'rechazada';
         toast('Participación rechazada.');
@@ -576,7 +580,7 @@
     el.replaceChildren();
     const total = serie.reduce((s, x) => s + x.valor, 0);
     if (!total) return vacio(el, 'Sin datos en este rango.');
-    // Una barra por bici (sirve para dos o más), a la misma escala (100 % = todas las chances).
+    // Una barra por bici (sirve para dos o más), a la misma escala (100 % = todas las participaciones).
     const list = document.createElement('div');
     list.className = 'meter-list';
     list.setAttribute('role', 'img');

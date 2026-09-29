@@ -123,9 +123,15 @@ export async function obtenerOrdenGratuita(edicionId, dni) {
   return data?.[0] || null;
 }
 
-/** Cantidad de órdenes de un email con los filtros dados (anti-spam de los POST públicos). */
-export async function contarOrdenes({ email, edicionId, medioPago, origen, estados, desde }) {
-  let query = db().from('ordenes').select('id', { count: 'exact', head: true }).eq('email', String(email).toLowerCase());
+/**
+ * Cantidad de órdenes que cumplen los filtros dados (anti-spam de los POST públicos por
+ * email; "un producto por persona" por dni + packId).
+ */
+export async function contarOrdenes({ email, dni, packId, edicionId, medioPago, origen, estados, desde }) {
+  let query = db().from('ordenes').select('id', { count: 'exact', head: true });
+  if (email) query = query.eq('email', String(email).toLowerCase());
+  if (dni) query = query.eq('dni', String(dni));
+  if (packId) query = query.eq('pack_id', packId);
   if (edicionId) query = query.eq('edicion_id', edicionId);
   if (medioPago) query = query.eq('medio_pago', medioPago);
   if (origen) query = query.eq('origen', origen);

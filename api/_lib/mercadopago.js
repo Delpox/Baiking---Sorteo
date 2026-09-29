@@ -53,11 +53,11 @@ export function fechaMP(fecha) {
  * acreditados a esa fecha).
  */
 export async function crearPreferencia({ orden, pack, campaign, baseUrl, ahora = Date.now() }) {
-  // El ítem cobrado es SIEMPRE el producto real (el curso). La participación es
-  // una bonificación y no forma parte del título ni la descripción del cobro
-  // (Mercado Pago prohíbe cobrar loterías o productos de azar).
-  const titulo = `${campaign.curso.nombre_corto} · Pack ${pack.participaciones}`.slice(0, 256);
-  const descripcion = [campaign.curso.nombre, ...(pack.incluye || [])].join(' · ').slice(0, 600);
+  // El ítem cobrado es SIEMPRE el producto digital real (fondos, checklist o curso). La
+  // participación es una bonificación y no forma parte del título ni la descripción del
+  // cobro (Mercado Pago prohíbe cobrar loterías o productos de azar).
+  const titulo = String(pack.nombre || campaign.curso?.nombre_corto || 'Producto Baiking').slice(0, 256);
+  const descripcion = [pack.descripcion, ...(pack.incluye || [])].filter(Boolean).join(' · ').slice(0, 600);
   const cierre = new Date(campaign.edicion.cierre_ventas).getTime();
 
   const body = {
@@ -65,7 +65,7 @@ export async function crearPreferencia({ orden, pack, campaign, baseUrl, ahora =
       {
         id: pack.id,
         title: titulo,
-        description: descripcion || campaign.curso.nombre,
+        description: descripcion || titulo,
         category_id: 'learnings',
         quantity: 1,
         currency_id: campaign.moneda || 'ARS',
