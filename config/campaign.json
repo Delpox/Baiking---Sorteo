@@ -30,7 +30,7 @@
     "cierre_ventas": "2026-12-03T23:59:00-03:00",
     "lugar_sorteo": "En vivo por Instagram",
     "cupo_total": null,
-    "_cupo_nota": "cupo_total = null: no hay tope de chances (decisión de Baiking, 28/09). Si algún día se fija un tope, el checkout deja de vender al llegar. La barra del hero es lineal en el tiempo: 0 % en edicion.inicio y 100 % en fecha_sorteo (progreso_demo_pct = valor que muestra en modo demo).",
+    "_cupo_nota": "cupo_total = null: no hay tope de participaciones (decisión de Baiking, 28/09). Si algún día se fija un tope, el checkout deja de vender al llegar. La barra del hero es lineal en el tiempo: 0 % en edicion.inicio y 100 % en fecha_sorteo (progreso_demo_pct = valor que muestra en modo demo).",
     "inicio": "2026-10-15T00:00:00-03:00",
     "progreso_demo_pct": 34
   },
@@ -197,7 +197,12 @@
     "acceso_texto": "El curso está en YouTube, en un link no listado: solo entra quien lo tiene. Guardalo y no lo compartas.",
     "_url_nota": "url_acceso = link de YouTube no listado (video o lista de reproducción). Cuando esté, pegarlo acá: el botón \"Entrar al curso\" del mail de confirmación y de /gracias apunta ahí. Mientras esté vacío, el mail avisa que el link llega aparte."
   },
-  "_packs_nota": "Modelo del 29/09 (camino intermedio de la revisión legal, docs/08): tres productos digitales con contenido y precio distintos; CADA compra otorga UNA (1) participación en el sorteo, la misma que la vía gratuita. Nadie paga por más probabilidad. Precios [A CONFIRMAR] con Gastón. entrega_url = link del producto (Drive, PDF, YouTube no listado) que va en el mail de confirmación; vacío = el mail avisa que llega aparte.",
+  "regla_participaciones": {
+    "por_peso": 1,
+    "texto": "Cada $1 es una participación en el sorteo",
+    "_nota": "Decisión de Baiking (29/09, Delfina): cada $1 del precio del producto = 1 participación (un número) en el sorteo. packs[].participaciones tiene que ser precio × por_peso: scripts/check.mjs lo verifica. Cada orden pagada recibe un bloque de números correlativos (rango desde–hasta) y el sorteo elige al azar un entero entre 1 y el total de participaciones. La vía gratuita sigue en 1 participación por persona (participacion_gratuita.participaciones)."
+  },
+  "_packs_nota": "Modelo del 29/09: tres productos digitales con contenido y precio distintos. Cada compra otorga tantas participaciones como pesos tiene su precio (regla_participaciones): fondos $10.000 → 10.000, checklist $12.000 → 12.000, curso $25.000 → 25.000. Cada producto se compra una sola vez por DNI. entrega_url = link del producto (Drive, PDF, YouTube no listado) que va en el mail de confirmación; vacío = el mail avisa que llega aparte.",
   "packs": [
     {
       "id": "fondos",
@@ -206,8 +211,8 @@
       "incluye": [
         "Pack de fondos de pantalla en alta resolución (celular y computadora)"
       ],
-      "participaciones": 1,
-      "precio": 5000,
+      "participaciones": 10000,
+      "precio": 10000,
       "destacado": false,
       "etiqueta": "",
       "entrega_url": "",
@@ -221,7 +226,7 @@
         "Checklist pre-salida en PDF (los 2 minutos que evitan la mayoría de los problemas)",
         "Pack de fondos de pantalla"
       ],
-      "participaciones": 1,
+      "participaciones": 12000,
       "precio": 12000,
       "destacado": false,
       "etiqueta": "",
@@ -237,7 +242,7 @@
         "Checklist pre-salida en PDF",
         "Pack de fondos de pantalla"
       ],
-      "participaciones": 1,
+      "participaciones": 25000,
       "precio": 25000,
       "destacado": true,
       "etiqueta": "",
@@ -251,8 +256,8 @@
     "requiere_carta": true,
     "direccion_carta": "Las Camelias 3327, Del Viso (1669), Pilar, Buenos Aires",
     "plazo_carta_dias": 15,
-    "texto": "Sin obligación de compra: completá el formulario y mandanos una carta a Las Camelias 3327, Del Viso (Pilar), contándonos por qué deberías ganar la bici. Una (1) participación por persona, con la misma probabilidad que cualquier otra.",
-    "_nota": "Decisión de Baiking (28/09): la vía gratuita exige el formulario + una carta a la tienda; la chance se asigna desde el panel al marcar \"Carta recibida\". Máximo 1 chance por DNI."
+    "texto": "Sin obligación de compra: completá el formulario y mandanos una carta a Las Camelias 3327, Del Viso (Pilar), contándonos por qué deberías ganar la bici. Una (1) participación por persona, con su número en el mismo padrón; cada participación tiene la misma probabilidad de salir.",
+    "_nota": "Decisión de Baiking (28/09): la vía gratuita exige el formulario + una carta a la tienda; la participación (un número) se asigna desde el panel al marcar \"Carta recibida\". Máximo 1 participación por DNI. Decisión del 29/09: sigue en 1 aunque las compras den una por peso (\"que la gratuita se diluya\")."
   },
   "panel": {
     "presencia": false,
