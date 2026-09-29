@@ -192,7 +192,10 @@
         "duracion": ""
       }
     ],
-    "_modulos_nota": "Lo que vas a aprender (lista de Baiking, 28/09). duracion es opcional: si está vacía no se muestra."
+    "_modulos_nota": "Lo que vas a aprender (lista de Baiking, 28/09). duracion es opcional: si está vacía no se muestra.",
+    "plataforma": "youtube",
+    "acceso_texto": "El curso está en YouTube, en un link no listado: solo entra quien lo tiene. Guardalo y no lo compartas.",
+    "_url_nota": "url_acceso = link de YouTube no listado (video o lista de reproducción). Cuando esté, pegarlo acá: el botón \"Entrar al curso\" del mail de confirmación y de /gracias apunta ahí. Mientras esté vacío, el mail avisa que el link llega aparte."
   },
   "_packs_nota": "Escalera de precios con la estructura de Autoloop, multiplicada por 10 en chances (decisión de Baiking, 28/09): cada opción incluye el curso completo y N chances. Ver docs/01 §2 y docs/02 §2 sobre el riesgo legal de vender \"chances\" y las mitigaciones que quedan (curso real, vía gratuita, sorteo en vivo y grabado).",
   "packs": [

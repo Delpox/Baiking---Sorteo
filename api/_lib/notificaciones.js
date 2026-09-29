@@ -77,6 +77,8 @@ export function armarMailConfirmacion({ orden, numeros, campaign, baseUrl, gratu
   const packTxt = pack ? ` · pack de ${pack.nombre}` : '';
   // Nombre completo del curso solo si difiere del corto (para no repetirlo).
   const cursoLargo = curso.nombre && curso.nombre !== curso.nombre_corto ? curso.nombre : '';
+  // Link al curso (YouTube no listado). Vacío o "[A CONFIRMAR]" → el mail avisa que llega aparte.
+  const cursoUrl = pendienteConfig(curso.url_acceso) ? '' : String(curso.url_acceso).trim();
 
   const subject = gratuita
     ? `¡Listo, ${orden.nombre}! Registramos tu participación sin cargo · Baiking`
@@ -109,7 +111,10 @@ export function armarMailConfirmacion({ orden, numeros, campaign, baseUrl, gratu
     ${
       gratuita
         ? ''
-        : `<a href="${escapeHtml(curso.url_acceso || baseUrl)}" style="display:inline-block;background:#eb0627;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:10px">Entrar al curso</a>`
+        : cursoUrl
+          ? `<a href="${escapeHtml(cursoUrl)}" style="display:inline-block;background:#eb0627;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:10px">Entrar al curso</a>
+    <p style="font-size:13px;line-height:1.6;color:#6e686b;margin:14px 0 0">${escapeHtml(curso.acceso_texto || '')}</p>`
+          : `<p style="font-size:15px;line-height:1.6;color:#4a4649;margin:0;padding:14px 16px;background:#f7f5f6;border-radius:10px">El link del curso te llega en un mail aparte, apenas esté publicado.</p>`
     }
 
     <p style="font-size:13px;line-height:1.6;color:#6e686b;margin:28px 0 0">
@@ -128,7 +133,7 @@ ${
 ${plural ? `Tus ${u}` : `Tu ${u}`}: ${lista}
 Bici elegida: ${bici?.nombre || ''}
 Sorteo en vivo: ${fecha} hs por Instagram @${campaign.contacto.instagram}
-${gratuita ? '' : `Acceso al curso: ${curso.url_acceso || baseUrl}\n`}Orden: ${orden.id}
+${gratuita ? '' : `${cursoUrl ? `Acceso al curso: ${cursoUrl}\n${curso.acceso_texto || ''}` : 'El link del curso te llega en un mail aparte, apenas esté publicado.'}\n`}Orden: ${orden.id}
 Ver tus ${unidad(campaign, 2)}: ${baseUrl}/gracias?orden=${orden.id}
 
 ${pieLegalTexto(campaign, baseUrl)}`;
