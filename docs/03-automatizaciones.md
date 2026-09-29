@@ -4,42 +4,56 @@
 
 | Momento | Qué hace el sistema | Archivo |
 |---|---|---|
-| La persona completa el formulario con el comprobante adjunto | Valida los datos, crea la orden en estado `pendiente` (con un código interno `BK-XXXXX` que no se muestra), guarda el comprobante en Storage y lo manda a leer | `api/checkout.js`, `api/_lib/validar.js`, `api/_lib/comprobante.js` |
+| La persona completa el formulario con el comprobante adjunto | Valida los datos, rechaza con `409` si esa persona (DNI) ya compró ese producto, crea la orden en estado `pendiente` (con un código interno `BK-XXXXX` que no se muestra), guarda el comprobante en Storage y lo manda a leer | `api/checkout.js`, `api/_lib/validar.js`, `api/_lib/comprobante.js` |
 | Claude lee el comprobante | Extrae monto, fecha, cuenta destino, titular, referencia y señales de edición; los chequeos quedan en `comprobante_datos`; la orden pasa a `en_revision` y sale el mail "Recibimos tu comprobante" | `api/_lib/comprobante.js` (`leerComprobante`, `evaluarComprobante`, `procesarComprobante`), `api/_lib/notificaciones.js` |
-| Aprobación | Desde el panel ("Aprobar" / "Rechazar") o automática si `TRANSFERENCIAS_AUTO_APROBAR=true` y todos los chequeos dan bien | `admin.html`, `api/admin.js`, `api/_lib/comprobante.js` |
+| Aprobación | Desde el panel ("Aprobar" / "Rechazar", o "Llegó" / "No llegó" en la conciliación), desde la planilla de Google Sheets (columna "Llegó la plata", `docs/06`) o automática si `TRANSFERENCIAS_AUTO_APROBAR=true` y todos los chequeos dan bien | `admin.html`, `api/admin.js`, `api/_lib/sheets.js`, `api/_lib/comprobante.js` |
 | Orden aprobada | Marca la orden `pagada`, **asigna números correlativos de forma atómica** y dispara las notificaciones | `api/_lib/confirmar.js`, `supabase/schema.sql` (`asignar_participaciones`) |
-| Mail "chances confirmadas" | Resend: números, bici elegida, fecha del sorteo, link al curso y a las bases | `api/_lib/notificaciones.js` (`armarMailConfirmacion`) |
+| Mail de confirmación | Resend: "¡Listo, {nombre}! {producto} y tu participación": número, bici elegida, fecha del sorteo, botón "Descargar / Ver {producto}" con el link de entrega (`packs[].entrega_url`; el curso, `curso.url_acceso`; vacío = "te llega en un mail aparte"), lo que incluye y link a las bases | `api/_lib/notificaciones.js` (`armarMailConfirmacion`) |
 | WhatsApp | Envía la plantilla aprobada por la API oficial de Meta (si está configurada) | `api/_lib/notificaciones.js` |
 | Vuelve al sitio | `/gracias?orden=...` muestra "comprobante en revisión" con los chequeos o, ya aprobada, los números; permite volver a subir el comprobante | `gracias.html`, `assets/js/gracias.js`, `api/orden.js`, `api/comprobante.js` |
 | Comprobante por mail | Los mails a `belen.baiking@gmail.com` reenviados a `/api/inbound-email` se procesan igual: busca la orden por el mail del remitente (o por el código interno, si aparece) | `api/inbound-email.js` |
-| Participación sin cargo | Registra 1 participación por DNI, asigna número y manda el mail | `api/participacion-gratuita.js` |
+| Participación sin cargo | Registra 1 por DNI en estado `pendiente` y manda el mail "Registramos tus datos: ahora mandá la carta"; cuando Baiking marca "Carta recibida" en el panel se asigna el número y sale el mail de confirmación ("Recibimos tu carta y registramos tu participación") | `api/participacion-gratuita.js`, `api/admin.js` (`carta_recibida`, `carta_rechazada`), `api/_lib/carta.js` |
+| Recordatorios | Cron diario de Vercel (10:00 de Buenos Aires): "Falta una semana para el sorteo" (27/11, a todas las personas con alguna orden) y "¡Hoy es el sorteo!" (4/12, a las personas con participaciones confirmadas), una sola vez por edición | `api/recordatorios.js`, `vercel.json` |
+| Planilla | Cron diario (y al instante, desde el hook de cada cambio de estado): espeja las órdenes en Google Sheets y aplica los `SI`/`NO` de "Llegó la plata" | `api/sheets-sync.js`, `api/_lib/sheets.js` |
 | Padrón | Exporta el CSV de todas las participaciones pagas para el sorteo en vivo y la planilla (desde el panel, token en `Authorization: Bearer`) | `api/export.js` |
 
 Idempotencia: el paso a `en_revision` es un update condicional (si la orden se aprobó o rechazó desde el panel mientras se leía el comprobante, no se le pisa el estado); `confirmarOrden` devuelve los mismos números si ya fueron asignados y los mails/WhatsApp se marcan como enviados en la orden. Un comprobante nunca reabre una orden `rechazada`, `reembolsada` o `anulada`.
 
 ## 2. Mails (Resend)
 
-- Remitente: `MAIL_FROM` (por ejemplo `Baiking <hola@baiking.com.ar>`). Hay que **verificar el dominio baiking.com.ar en Resend** (registros DKIM/SPF en el DNS) para que no caiga en spam.
+- Remitente: `MAIL_FROM` (propuesto: `Baiking <sorteo@baiking.com.ar>`, con respuestas a `belen.baiking@gmail.com`). Hay que **verificar el dominio baiking.com.ar en Resend** (registros DKIM/SPF en el DNS) para que no caiga en spam.
 - Casilla de contacto y comprobantes: `belen.baiking@gmail.com` (`checkout.transferencia.email_comprobantes` y `contacto.email` en la config).
 
-**"Recibimos tu comprobante"** (`armarMailComprobanteRecibido`): sale apenas se procesa el comprobante. Asunto "Recibimos tu comprobante · Baiking"; cuerpo: lo estamos revisando, en cuanto se acredite la transferencia te mandamos el acceso al curso y tus chances (en general, en menos de 48 hs); botón "Ver el estado de mi orden".
+- Todos comparten el marco de `marcoMail`: header rojo con el logo, un solo botón, pie con contacto, leyenda legal y link a las bases, versión en texto plano. Vista previa con datos de ejemplo: `node scripts/mails-preview.mjs` → `dist/mails.html`.
 
-**"Chances confirmadas"** (`armarMailConfirmacion`): sale al aprobar. Asunto "¡Listo, {nombre}! Tu curso y tus chances · Baiking". Cuerpo: saludo, confirmación del pack, números en grande, bici elegida, fecha y hora del sorteo, botón "Entrar al curso", link permanente a la orden, link a bases, leyenda legal. Versión sin cargo: mismo mail sin el botón del curso y con la frase "Registramos tu participación sin obligación de compra".
+Son siete (el orden es el de `docs/07` §2):
 
-Texto de referencia (el HTML está en `api/_lib/notificaciones.js`):
+1. **"Recibimos tu comprobante"** (`armarMailComprobanteRecibido`): sale apenas se procesa el comprobante (adjunto en la inscripción, subido en `/gracias` o llegado por mail). Cuerpo: recibimos el comprobante de tu transferencia de $X por {producto}; lo estamos revisando; en cuanto se acredite te mandamos otro mail con tu producto y tu participación (en general, en menos de 48 hs); botón "Ver el estado de mi orden".
+2. **Confirmación** (`armarMailConfirmacion`): sale al aprobar. Asunto "¡Listo, {nombre}! {producto} y tu participación · Baiking". Cuerpo: "Confirmamos tu pago de {producto}. Ya tenés tu producto y, como bonificación sin cargo, quedaste participando por tu {bici} con la participación número NNNN"; número en grande, sorteo, bici elegida, botón "Descargar / Ver {producto}" con el link de entrega (`packs[].entrega_url`; el curso usa `curso.url_acceso` y agrega `curso.acceso_texto`; si el link está vacío: "Tu producto te llega en un mail aparte, apenas esté listo"), lista "Incluye:", link permanente a la orden, bases y leyenda legal.
+3. **"Registramos tus datos: ahora mandá la carta"** (`armarMailGratuitaPendiente`): al completar el formulario sin cargo. Dirección de la tienda, qué tiene que incluir la carta (nombre, DNI, mail, por qué debería ganar), fecha límite (15 días), botón "Ver el estado de mi participación". Una sola vez por orden (marca `instrucciones_enviado_at`).
+4. **Carta confirmada** (`armarMailConfirmacion` con `gratuita: true`): cuando Baiking marca "Carta recibida" en el panel. Asunto "¡Listo, {nombre}! Registramos tu participación sin cargo · Baiking"; "Recibimos tu carta y registramos tu participación sin obligación de compra", número, misma probabilidad que cualquier otra; sin botón de producto.
+5. **"Reservamos tu lugar · datos para transferir"** (`armarMailTransferencia`): solo si una orden entra sin comprobante o el adjunto no se pudo procesar (fallback): monto, alias, CBU, titular, CUIT, banco y botón "Subir el comprobante"; las respuestas van a `email_comprobantes`. En el flujo normal no sale: la persona transfiere antes de enviar el formulario.
+6. **"Falta una semana para el sorteo"** (`armarMailRecordatorioSemana`): lo manda `api/recordatorios` 7 días antes de `edicion.fecha_sorteo` a todas las personas con alguna orden (pagada, en revisión o pendiente), una por mail. Tres variantes: general (fecha del sorteo, cierre de inscripciones, botón "Ver los productos": "si todavía no tenés alguno de los productos, estás a tiempo; cada uno se compra una sola vez por persona"), comprobante (su última orden por transferencia sigue pendiente: botón "Subir el comprobante") y carta (su participación sin cargo espera la carta: fecha límite y dirección).
+7. **"¡Hoy es el sorteo! 21:00 en vivo"** (`armarMailRecordatorioSorteo`): el día del sorteo, a cada persona con órdenes pagadas, con todos sus números juntos y el botón "Ver el vivo" (Instagram).
+
+Texto de referencia del mail de confirmación (el HTML está en `api/_lib/notificaciones.js`):
 
 ```
 ¡Ya estás adentro, Delfina!
-Confirmamos tu pago del Curso Baiking de Mantenimiento · pack de 4 chances.
-Tus chances: 0142 · 0143 · 0144 · 0145
+Confirmamos tu pago de Curso Baiking de Mantenimiento. Ya tenés tu producto y, como bonificación sin cargo, quedaste participando por tu Polygon Siskiu T7 con la participación número 1201.
+Tu participación: 1201
 Bici elegida: Polygon Siskiu T7
 Sorteo en vivo: viernes, 4 de diciembre, 21:00 hs por Instagram @baikingtiendadebicis
-Acceso al curso: <link>
+Descargar / ver Curso Baiking de Mantenimiento: <link>   (mientras el link esté vacío: "Tu producto te llega en un mail aparte, apenas esté listo.")
+Incluye:
+- Curso en video: cómo preparar tu bici, lavado y lubricación, ajuste general, errores comunes
+- Checklist pre-salida en PDF
+- Pack de fondos de pantalla
 Orden: <uuid>
-Bases y condiciones: <link>
+Ver tus participaciones: <link>/gracias?orden=<uuid>
 ```
 
-El mail con los datos para transferir (`armarMailTransferencia`) ya no forma parte del flujo normal: la persona transfiere antes de enviar el formulario. La plantilla queda por si una orden llega sin comprobante.
+Los mails 6 y 7 son idempotentes por edición (`ediciones.recordatorio_semana_at` / `recordatorio_sorteo_at`) y salen en lotes de 100 por `/emails/batch` de Resend. Para probar sin marcar nada: `GET /api/recordatorios?tipo=semana&test=mail@dominio` (o `tipo=sorteo`) con el token de admin; `&forzar=1` manda hoy aunque no sea la fecha. El cron es `"0 13 * * *"` UTC en `vercel.json` (10:00 de Buenos Aires) y se autoriza con `CRON_SECRET`.
 
 ## 3. WhatsApp
 
@@ -50,7 +64,7 @@ El mail con los datos para transferir (`armarMailTransferencia`) ya no forma par
 
 ```
 Hola {{1}}, ¡ya estás participando por tu Polygon con Baiking! 🚵
-Tus chances: {{2}}
+Tu participación: {{2}}
 Participás por: {{3}}
 Sorteo en vivo: {{4}} por Instagram @baikingtiendadebicis.
 Ver el detalle de tu orden: {{5}}
@@ -75,13 +89,13 @@ Cuidado con la política de comercio de WhatsApp: el mensaje habla de una promoc
 | Cuándo | Canal | Mensaje |
 |---|---|---|
 | Lanzamiento | Instagram (video de Gastón), mail a clientes, WhatsApp de la tienda | "Aprendé a cuidar tu bici y participá por una Polygon. Sin obligación de compra." |
-| Semanal | Instagram feed + stories con el contador | Clases del curso como adelanto, testimonios, fotos de las bicis |
-| 7 días antes del cierre | Mail + WhatsApp a quienes ya compraron | "Sumá chances: cuantas más sumás, menos pagás por cada una" / "regalá el curso" |
+| Semanal | Instagram feed + stories con el contador | Adelantos del curso, del checklist y de los fondos, testimonios, fotos de las bicis |
+| 27/11 (7 días antes del sorteo) | Mail automático (`api/recordatorios`, cron de las 10:00) a todas las personas con alguna orden | "Falta una semana para el sorteo": fecha y cierre; según la persona, "subí el comprobante", "mandá la carta" o "si todavía no tenés alguno de los productos, estás a tiempo" |
 | 24 hs antes del cierre | Stories + WhatsApp | "Última oportunidad: cerramos mañana 23:59" |
-| Día del sorteo | Stories, mail | "Hoy 21:00 en vivo" + cantidad total de chances del padrón + link al vivo |
+| Día del sorteo | Mail automático (`api/recordatorios`) + stories | "¡Hoy es el sorteo! 21:00 en vivo" con los números de cada persona; en stories, la cantidad total de participaciones del padrón y el link al vivo |
 | Post-sorteo | Todos | Video del sorteo, nombre y localidad del ganador (con su consentimiento), entrega de la bici |
 
-Estos envíos se pueden programar desde Metricool (posts y stories) y desde Resend (broadcasts a la base). La base de contactos se saca de Supabase (`ordenes`) con un filtro por estado `pagada`.
+Los posts y stories se pueden programar desde Metricool; los broadcasts extra, desde Resend. La base de contactos se saca de Supabase (`ordenes`) con un filtro por estado `pagada`. Ninguna pieza invita a "sumar" participaciones: cada producto se compra una sola vez por persona y todas las participaciones valen lo mismo.
 
 ## 5. Contacto con la persona ganadora
 
@@ -100,17 +114,17 @@ Decisión del 28/09: se cobra únicamente por transferencia, sin descuento, y el
 
 | Paso | Qué pasa | Archivo |
 |---|---|---|
-| 1 | En el formulario, al elegir la cantidad de chances, la persona ve el monto exacto y los datos bancarios (alias `baiking.bicis`, CBU `0070119420000003239999`, titular X Centro Pilar SRL, CUIT 30-71025912-3, Banco Galicia) con botones "Copiar", transfiere desde su banco y **adjunta el comprobante** (foto, captura o PDF). El campo es obligatorio: sin comprobante no se puede tocar "Participar". Las imágenes se reducen a 1600 px (JPEG) en el navegador; los PDF hasta 3 MB. | `index.html`, `assets/js/app.js` (`renderTransferData`, `archivoABase64`, `validate`) |
-| 2 | **Un solo `POST api/checkout`** con los datos de la persona, `pack_id`, `medio_pago: "transferencia"` y `comprobante: { tipo, nombre, contenido_base64 }`. Se validan los datos, se crea la orden `pendiente` con el monto exacto y un código interno `BK-XXXXX` (identificador de la orden en el panel y los mails; no se muestra ni se pide en el concepto) y se procesa el comprobante. Tope anti-spam: 3 órdenes por transferencia sin pagar por mail en 24 h. | `api/checkout.js`, `api/_lib/validar.js` |
+| 1 | En el formulario, al elegir el producto (y la bici por la que participa), la persona ve el monto exacto y los datos bancarios (alias `baiking.bicis`, CBU `0070119420000003239999`, titular X Centro Pilar SRL, CUIT 30-71025912-3, Banco Galicia) con botones "Copiar", transfiere desde su banco y **adjunta el comprobante** (foto, captura o PDF). El campo es obligatorio: sin comprobante no se puede tocar "Participar". Las imágenes se reducen a 1600 px (JPEG) en el navegador; los PDF hasta 3 MB. | `index.html`, `assets/js/app.js` (`renderTransferData`, `archivoABase64`, `validate`) |
+| 2 | **Un solo `POST api/checkout`** con los datos de la persona, `pack_id`, `medio_pago: "transferencia"` y `comprobante: { tipo, nombre, contenido_base64 }`. Se validan los datos; si esa persona (DNI) ya tiene una orden de ese producto (`pendiente`, `en_revision` o `pagada`) la API responde `409` ("cada producto se compra una sola vez por persona"; productos distintos sí); se crea la orden `pendiente` con el monto exacto y un código interno `BK-XXXXX` (identificador de la orden en el panel y los mails; no se muestra ni se pide en el concepto) y se procesa el comprobante. Tope anti-spam: 3 órdenes por transferencia sin pagar por mail en 24 h. | `api/checkout.js`, `api/_lib/validar.js` |
 | 3 | El archivo se guarda en Supabase Storage (bucket privado `comprobantes`) y **Claude lo lee**: monto, fecha, cuenta destino, titular, referencia, señales de edición y confianza (salida estructurada JSON). | `api/_lib/comprobante.js` (`guardarArchivo`, `leerComprobante`) |
 | 4 | Chequeos contra la orden: monto exacto, cuenta destino (alias/CBU/CUIT/titular de la config), fecha reciente, sin señales de edición, confianza ≥ 0,8. | `evaluarComprobante()` |
 | 5 | La orden pasa a **`en_revision`** (update condicional) y sale el mail "Recibimos tu comprobante". `/gracias?orden=...` muestra el estado y los chequeos. | `procesarComprobante()`, `armarMailComprobanteRecibido()`, `gracias.html` |
-| 6 | En el panel la orden aparece en "Transferencias por revisar" con los chequeos en verde/rojo y el link al comprobante (URL firmada de 5 minutos). **Aprobar** la pasa a `pagada`, asigna los números y manda el mail "chances confirmadas" (+ WhatsApp); **Rechazar** la pasa a `rechazada` con un motivo. | `admin.html`, `assets/js/admin.js`, `api/admin.js`, `api/_lib/confirmar.js` |
+| 6 | En el panel la orden aparece en "Transferencias por revisar" con los chequeos en verde/rojo y el link al comprobante (URL firmada de 5 minutos). **Aprobar** (o "Llegó" en la conciliación, o `SI` en la planilla) la pasa a `pagada`, asigna el número y manda el mail de confirmación con el link del producto (+ WhatsApp); **Rechazar** la pasa a `rechazada` con un motivo. | `admin.html`, `assets/js/admin.js`, `api/admin.js`, `api/_lib/confirmar.js` |
 | 6b | Con `TRANSFERENCIAS_AUTO_APROBAR=true`, si todos los chequeos dan bien se aprueba sola sin pasar por el panel (`revisado_por: 'auto'`). | `api/_lib/comprobante.js` |
 | 7 | Carga posterior: si el comprobante no llegó o fue rechazado, la persona lo sube de nuevo desde `/gracias` (`POST api/comprobante` con `{ orden_id, tipo, nombre, contenido_base64 }`; solo órdenes `pendiente` o `en_revision`). | `api/comprobante.js`, `assets/js/gracias.js` |
 | 8 | Por mail: comprobantes mandados a `belen.baiking@gmail.com`. Un servicio de correo entrante reenvía el mail a `/api/inbound-email` (header `X-Inbound-Secret`), que busca la orden por el mail del remitente (la última por transferencia que siga abierta) o por el código interno si aparece, y procesa el adjunto igual que el paso 3. Sin reenvío automático, Belén revisa la casilla y aprueba desde el panel (funciona también con órdenes `pendiente`, sin comprobante cargado). | `api/inbound-email.js`, `api/admin.js` |
 
-Estados de la orden: `pendiente` (creada) → `en_revision` (comprobante cargado y leído) → `pagada` (aprobada: recién acá cuentan las chances y se asignan los números). Cierres: `rechazada` (panel), `reembolsada`, `anulada`. Un comprobante nunca reabre una orden cerrada.
+Estados de la orden: `pendiente` (creada) → `en_revision` (comprobante cargado y leído) → `pagada` (aprobada: recién acá cuenta la participación y se asigna el número). Cierres: `rechazada` (panel), `reembolsada`, `anulada`. Un comprobante nunca reabre una orden cerrada.
 
 ### El riesgo que hay que tener claro
 
@@ -118,7 +132,7 @@ La IA **lee** el comprobante; no puede saber si es verdadero. Los comprobantes e
 
 - Dejá `TRANSFERENCIAS_AUTO_APROBAR=false` (valor por defecto): la orden queda "por revisar" y se aprueba desde el panel **después de ver la acreditación** en el home banking de Galicia. El panel muestra los chequeos de la IA para que la revisión tome 10 segundos.
 - Cómo encontrar el movimiento en el extracto: monto exacto, fecha y nombre o CUIT del ordenante (la IA los lee y el panel los muestra). El código `BK-XXXXX` ya no se le pide al participante, así que no va a estar en el concepto.
-- Si se activa la aprobación automática, verificar antes que `evaluarComprobante()` no exija el chequeo de código (`codigo_ok`) para marcar la orden como `aprobable`: el participante ya no conoce el código, así que con esa condición nunca se aprobaría sola (pendiente en `docs/04` sección G).
+- La aprobación automática no depende del código `BK-XXXXX`: `evaluarComprobante()` marca `aprobable` con comprobante válido, monto, destino y fecha correctos, sin edición y confianza ≥ 0,8 (`codigo_ok` se guarda solo como dato para el panel).
 - Rechazar desde el panel las órdenes que no acreditan en 48 h (`plazo_horas`): hoy no hay anulación automática.
 - Si más adelante se quiere automatizar del todo, la forma correcta es conciliar contra el banco: una cuenta recaudadora con CVU por orden o un proveedor con webhook de acreditación (ver `docs/05-cobros-y-comparativa-internacional.md` §5). Con eso se puede prender la aprobación automática con tranquilidad.
 
@@ -193,7 +207,7 @@ Una lectura con `claude-opus-5-5` sobre una imagen de comprobante ronda 2.000 a 
 
 Decisión del 28/09: no se ofrece. La integración (Checkout Pro + webhook) sigue en el repositorio y se reactiva sin tocar código:
 
-1. `config/campaign.json` → `checkout.mercadopago.habilitada: true`. El modal vuelve a mostrar el selector de medio de pago (Mercado Pago primero, transferencia segunda) y `api/checkout.js` acepta `medio_pago: "mercadopago"`: crea la preferencia (`api/_lib/mercadopago.js`, ítem "Curso Baiking de Mantenimiento · Pack N", sin mencionar el sorteo) y devuelve `init_point`.
+1. `config/campaign.json` → `checkout.mercadopago.habilitada: true`. El modal vuelve a mostrar el selector de medio de pago (Mercado Pago primero, transferencia segunda) y `api/checkout.js` acepta `medio_pago: "mercadopago"`: crea la preferencia (`api/_lib/mercadopago.js`, ítem = el producto digital comprado, `pack.nombre` con su descripción, sin mencionar el sorteo) y devuelve `init_point`.
 2. Vercel: `MP_ACCESS_TOKEN` y `MP_WEBHOOK_SECRET` de producción; `BASE_URL` correcta (arma las `back_urls` y la `notification_url`).
 3. En el panel de Mercado Pago: webhook `https://<dominio>/api/webhooks/mercadopago`, evento "Pagos". El webhook verifica la firma, marca la orden `pagada`, asigna los números y manda mail y WhatsApp (`api/webhooks/mercadopago.js`, `api/_lib/pagos-mp.js`). Si un webhook se pierde, el panel tiene la acción `sincronizar_mp`.
 4. Elegir en "Costos y cuotas" la liberación a 14-18 días y dejar las cuotas solo con interés a cargo del cliente (`docs/05` §2 y §8). Tener en cuenta que la Protección al Vendedor no cubre productos digitales (`docs/05` §5).

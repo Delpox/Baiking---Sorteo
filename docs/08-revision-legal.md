@@ -1,5 +1,7 @@
 # 08 · Revisión legal del sitio "Curso Baiking + chances" (estado al 29/09/2026)
 
+*Esta revisión analiza el sitio tal como estaba con el modelo anterior (curso + escalera de chances). A partir de sus conclusiones, el 29/09 ese modelo se reemplazó por tres productos digitales con una (1) participación por compra (el camino C de §5, con una compra por producto y por persona): ver [docs/02](02-mecanica-y-decisiones.md) §4.2. Las citas al sitio ("10 chances $10.000", "más compras = más chances") ya no están en el código.*
+
 > Revisión hecha sobre `config/campaign.json`, `index.html`, `participa-sin-cargo.html`, `bases-y-condiciones.html`, `gracias.html`, el código que los alimenta (`assets/js/app.js`, `api/*`, `supabase/schema.sql`, `sorteo.html`) y los documentos previos (`docs/01` a `docs/07`). No se modificó ningún archivo del sitio. Es una opinión de apoyo para Gastón y para el abogado que firme las bases: no reemplaza esa firma. Todo lo marcado **"a verificar"** es algo que no puedo citar con seguridad desde acá y hay que confirmar contra el texto oficial antes de usarlo en un escrito.
 >
 > Convención usada en todo el informe: **ILEGAL** = contradice una norma vigente tal como está escrita · **RIESGO** = no es una infracción clara, pero un organismo, una plataforma o un participante puede usarlo en contra de Baiking con buenas chances · **MALA PRÁCTICA** = no trae sanción por sí solo, pero agrava lo demás o daña la credibilidad.

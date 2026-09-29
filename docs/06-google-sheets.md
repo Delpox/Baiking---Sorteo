@@ -8,10 +8,10 @@ La planilla de órdenes / transferencias del panel, espejada en un Google Sheets
 
 **Planilla → base.** En la misma corrida lee la columna **"Llegó la plata"**. Donde Gastón puso `SI` o `NO` y la base todavía no lo tiene (o tiene lo contrario), aplica la misma lógica que la acción `acreditar` del panel:
 
-- `SI` sobre una transferencia `pendiente` o `en_revision` → guarda `acreditada = true`, `acreditada_at`, `acreditada_nota`, `revisado_por = 'planilla'`, `revisado_at`, y **confirma la orden** (`confirmarOrden`: números correlativos, mail con el acceso al curso y WhatsApp si está configurado).
+- `SI` sobre una transferencia `pendiente` o `en_revision` → guarda `acreditada = true`, `acreditada_at`, `acreditada_nota`, `revisado_por = 'planilla'`, `revisado_at`, y **confirma la orden** (`confirmarOrden`: número correlativo, mail de confirmación con el link del producto y WhatsApp si está configurado).
 - `NO` → solo guarda `acreditada = false` (+ fecha, nota y revisor). Rechazar la orden sigue siendo una decisión del panel.
 - `SI` sobre una transferencia `rechazada` o `reembolsada` → solo marca; nunca la reabre (igual que el panel, que avisa "se marcó acreditada pero no se aprueba").
-- `SI`/`NO` en una fila que no es transferencia (vía gratuita, Mercado Pago) → no hace nada y lo informa en `errores` (el panel responde 409 en ese caso).
+- `SI`/`NO` en una fila que no es transferencia (vía gratuita, o Mercado Pago si se reactivara) → no hace nada y lo informa en `errores` (el panel responde 409 en ese caso).
 - Vacío u otra cosa (`ver`, `?`) → no hace nada.
 
 La lógica está en `marcarAcreditada()` de `api/_lib/sheets.js`, calcada de la acción `acreditar` de `api/admin.js` (que hoy no la exporta): si en algún momento se quiere una sola implementación, el panel puede llamar a ese helper.
@@ -24,8 +24,8 @@ Columnas, en este orden:
 | B | `fecha` | sistema | `created_at` en hora de Buenos Aires (`dd/mm/aaaa HH:MM`) |
 | C–H | `nombre` `apellido` `dni` `email` `whatsapp` `provincia` | sistema | datos del participante |
 | I | `bici` | sistema | nombre de la bici elegida (`campaign.bicis`) |
-| J | `pack` | sistema | nombre del pack (`campaign.packs`); `Sin cargo` para la vía gratuita |
-| K | `chances` | sistema | `cantidad_participaciones` |
+| J | `pack` | sistema | nombre del producto comprado (`campaign.packs`); `Sin cargo` para la vía gratuita |
+| K | `participaciones` | sistema | `cantidad_participaciones` (en el modelo vigente, siempre 1) |
 | L | `monto` | sistema | número (sin formato) |
 | M | `estado` | sistema | `pendiente` · `en_revision` · `pagada` · `rechazada` · … |
 | N | `comprobante` | sistema | fecha en que subió el comprobante |
@@ -81,22 +81,23 @@ Pendiente (archivo que edita otro equipo): agregar estas cinco líneas, con sus 
 
 ## 5. Cron en `vercel.json`
 
-Agregar la clave `crons` al `vercel.json` existente (al lado de `functions` y `headers`):
+El `vercel.json` del repo ya trae la clave `crons` (al lado de `functions` y `headers`):
 
 ```json
 {
   "crons": [
-    { "path": "/api/sheets-sync", "schedule": "*/10 * * * *" }
+    { "path": "/api/sheets-sync", "schedule": "50 2 * * *" },
+    { "path": "/api/recordatorios", "schedule": "0 13 * * *" }
   ]
 }
 ```
 
-Cada 10 minutos = 144 corridas por día, dentro de la cuota gratuita de la API de Sheets (300 lecturas por minuto por proyecto) y cada corrida tarda entre 2 y 5 segundos. Vercel llama al endpoint con `GET` y el header `Authorization: Bearer <CRON_SECRET>`; los crons corren solo en el deploy de producción.
+La sincronización corre una vez por día a las 02:50 UTC (23:50 en Argentina) y los recordatorios a las 13:00 UTC (10:00 en Argentina); cada corrida tarda entre 2 y 5 segundos, muy por debajo de la cuota gratuita de la API de Sheets (300 lecturas por minuto por proyecto). Vercel llama al endpoint con `GET` y el header `Authorization: Bearer <CRON_SECRET>`; los crons corren solo en el deploy de producción.
 
-**Plan Hobby de Vercel:** admite como máximo 2 crons y solo con frecuencia diaria (`0 12 * * *`; con `*/10` el deploy falla). Opciones:
+**Plan Hobby de Vercel:** admite como máximo 2 crons y solo con frecuencia diaria (con `*/10` el deploy falla). Por eso son diarios. Si hace falta que la planilla se actualice más seguido:
 
-1. Pasar a Pro (los crons pasan a ser por minuto).
-2. Dejar un cron diario como respaldo y disparar la sincronización desde la propia planilla con Apps Script (abajo). Además de resolver la frecuencia, hace que la acreditación salga **segundos después** de que Gastón marca `SI`.
+1. Pasar a Pro (los crons pasan a ser por minuto y se puede poner `*/10 * * * *`).
+2. Dejar el cron diario como respaldo y disparar la sincronización desde la propia planilla con Apps Script (abajo). Además de resolver la frecuencia, hace que la acreditación salga **segundos después** de que Gastón marca `SI`.
 3. Un botón "Sincronizar planilla" en el panel que haga `POST /api/sheets-sync` con el `Bearer <ADMIN_TOKEN>` (pendiente en `admin.html` / `assets/js/admin.js`).
 
 ### Disparar desde la planilla (Apps Script, opcional)
@@ -168,5 +169,5 @@ Errores típicos (vienen en `detalle` de la respuesta 500 y en los logs de Verce
 - La API de Sheets es gratuita. Cuotas: 300 lecturas y 300 escrituras por minuto por proyecto; una corrida usa 1 lectura y 1 o 2 escrituras (más 1 token OAuth por hora, cacheado en memoria).
 - Todo se escribe en modo `RAW`: ninguna celda se interpreta como fórmula, aunque un participante ponga `=…` en su nombre.
 - Si dos sincronizaciones corren a la vez (cron + botón) y agregan la misma orden dos veces, la siguiente corrida borra la fila repetida y conserva la primera. Confirmar dos veces es inofensivo: los números son idempotentes en la base y el mail se marca como enviado.
-- Hasta 5.000 órdenes por edición sin problema (la base se lee en páginas de 1.000). La planilla no reemplaza al padrón del escribano: eso sigue siendo `/api/export`.
+- Hasta 5.000 órdenes por edición sin problema (la base se lee en páginas de 1.000). La planilla no reemplaza al padrón oficial del sorteo: eso sigue siendo `/api/export` (el CSV que se publica antes de sortear).
 - El archivo JSON de la service account es una llave a la planilla (y a cualquier otra que se le comparta): si se filtra, borrar la clave en Google Cloud (Cuenta de servicio → Claves) y crear otra.

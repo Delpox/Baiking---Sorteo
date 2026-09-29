@@ -31,14 +31,14 @@ Resend (mails) ──► casilla de la persona      Respuestas ──► belen.b
 | # | Mail | Se manda cuando | A quién |
 |---|------|-----------------|---------|
 | 1 | Recibimos tu comprobante | La persona toca "Participar" con el comprobante adjunto | Esa persona |
-| 2 | ¡Ya estás adentro! Tu curso y tus chances | Baiking marca "Llegó" (panel o planilla) o la aprobación automática valida el comprobante | Esa persona |
+| 2 | ¡Listo! Tu producto y tu participación (con el link de entrega) | Baiking marca "Llegó" (panel o planilla) o la aprobación automática valida el comprobante | Esa persona |
 | 3 | Registramos tus datos: ahora mandá la carta | Alguien completa el formulario sin cargo | Esa persona |
 | 4 | Recibimos tu carta y ya estás participando | Baiking marca "Carta recibida" en el panel | Esa persona |
 | 5 | Datos para transferir | Solo si una orden entra sin comprobante (falló la subida) | Esa persona |
 | 6 | Falta una semana para el sorteo | 27/11 a las 10:00 (cron diario) | Todas las personas con alguna orden |
-| 7 | ¡Hoy es el sorteo! 21:00 en vivo | 4/12 a las 10:00 (cron diario) | Todas las personas con chances confirmadas |
+| 7 | ¡Hoy es el sorteo! 21:00 en vivo | 4/12 a las 10:00 (cron diario) | Todas las personas con participaciones confirmadas |
 
-Los mails 1 a 5 salen en el momento, desde la misma función que procesa la acción. Los 6 y 7 los manda `api/recordatorios`, que un cron de Vercel llama todos los días a las 10:00; el endpoint decide si hoy corresponde mandar algo y marca cada envío para que salga una sola vez. Vista previa de todos: `node scripts/mails-preview.mjs` (o la página publicada).
+Los mails 1 a 5 salen en el momento, desde la misma función que procesa la acción. Los 6 y 7 los manda `api/recordatorios`, que un cron de Vercel llama todos los días a las 10:00; el endpoint decide si hoy corresponde mandar algo y marca cada envío para que salga una sola vez. Vista previa de todos: `node scripts/mails-preview.mjs` (o la página publicada). El mail 2 lleva el botón "Descargar / Ver {producto}" con el link de entrega (`packs[].entrega_url`; el curso usa `curso.url_acceso`): mientras los links estén vacíos, avisa que el producto llega aparte.
 
 Reglas de envío: un solo botón por mail, remitente `Baiking <sorteo@baiking.com.ar>`, respuestas a `belen.baiking@gmail.com`, leyenda legal al pie, versión en texto plano incluida. Los mails de confirmación no se duplican aunque el sistema reintente (marca en la base).
 
@@ -46,7 +46,7 @@ Reglas de envío: un solo botón por mail, remitente `Baiking <sorteo@baiking.co
 
 - **Resend**: API simple, buena entregabilidad, plan gratuito para probar (3.000 mails por mes, 100 por día, a verificar), plan pago barato. Es lo que ya está integrado.
 - **Gmail (belen.baiking@gmail.com) como remitente**: no. Google limita a unos 500 mails por día, los mails masivos caen en spam y no hay API de envío transaccional. Sí sirve para recibir respuestas.
-- **Mailchimp / Brevo / Tienda Nube**: son para newsletters; para mails disparados por acciones (comprobante recibido, chances asignadas) son más caros y más complicados.
+- **Mailchimp / Brevo / Tienda Nube**: son para newsletters; para mails disparados por acciones (comprobante recibido, participación asignada) son más caros y más complicados.
 - **WhatsApp**: mejor tasa de apertura, pero requiere cuenta de Meta Business, número verificado, plantillas aprobadas y costo por mensaje. Queda como segunda etapa.
 
 Para mandar desde `@baiking.com.ar` hace falta verificar el dominio en Resend: dos registros DNS (DKIM y SPF) en el proveedor donde está baiking.com.ar. Si prefieren no tocar el dominio principal, se puede verificar solo un subdominio (por ejemplo `mail.baiking.com.ar`) y mandar desde `sorteo@mail.baiking.com.ar`.
@@ -77,13 +77,13 @@ Estimación: la demo sale USD 0 más el crédito de Claude. La campaña, con pla
 | DNS | Baiking (quien administre baiking.com.ar) | 1 registro para el subdominio del sitio (Vercel lo indica) + 2 registros de Resend. |
 | Variables de entorno en Vercel | Delfina | Todas las de `.env.example`: Supabase, Resend, `MAIL_FROM`, `ADMIN_TOKEN`, `BASE_URL`, `ANTHROPIC_API_KEY`, `TRANSFERENCIAS_AUTO_APROBAR=false`, `INBOUND_SECRET`, `CRON_SECRET`, Google Sheets. |
 | Google Sheets | Delfina + Gastón | Crear la planilla, compartirla con la cuenta de servicio y con Gastón (guía en docs/06). |
-| Config final | Delfina | `checkout.modo: "api"`, link de YouTube del curso, precio de la Strattos, dominio. |
+| Config final | Delfina | `checkout.modo: "api"`, precios confirmados y links de entrega de los tres productos (`packs[].precio`, `packs[].entrega_url`, `curso.url_acceso`), valor de la Strattos, dominio. |
 
 ## 6. Plan de la demo en vivo
 
 1. **Día 1**: cuentas y DNS (paso 5). Con eso, Delfina despliega el sitio en modo real y corre el esquema en Supabase.
 2. **Día 2**: pruebas internas con el token de administración: una orden con un comprobante de prueba (una captura cualquiera) para ver la lectura de la IA y los mails; una participación sin cargo; "Carta recibida"; el panel y la planilla.
-3. **Día 3**: prueba real: una transferencia de $10.000 (10 chances) desde una cuenta propia a la de X Centro Pilar SRL, comprobante real, "Llegó" desde el panel, mail con los números. Revisar que el mail no caiga en spam (Gmail, Outlook, Hotmail).
+3. **Día 3**: prueba real: una transferencia de $5.000 (el pack de fondos de pantalla: una participación) desde una cuenta propia a la de X Centro Pilar SRL, comprobante real, "Llegó" desde el panel, mail con los números. Revisar que el mail no caiga en spam (Gmail, Outlook, Hotmail).
 4. **Antes de abrir (15/10)**: bases validadas por el abogado, fotos del local y de Gastón, precio de la Strattos, `TRANSFERENCIAS_AUTO_APROBAR` decidido, planes Pro contratados si hace falta, y una prueba de los recordatorios con `?tipo=semana&test=mail` a una casilla propia.
 
 Mientras la demo esté en vivo antes del lanzamiento, el sitio puede llevar un aviso "versión de prueba" y un precio de prueba, para que nadie compre de verdad por error.
@@ -93,4 +93,4 @@ Mientras la demo esté en vivo antes del lanzamiento, el sitio puede llevar un a
 - Aprobación automática de comprobantes (recomendación: apagada al principio).
 - Sorteo: generador aleatorio en vivo o Quiniela nocturna de la Provincia como fuente del número.
 - Cartas que llegan después del cierre y registros rechazados (hoy bloquean el DNI).
-- Proporción entre la chance gratuita (1) y el mínimo por compra (10): validar con el abogado.
+- Hasta tres participaciones pagas por persona (una por producto) frente a una gratuita: validar con el abogado que la vía gratuita siga siendo equivalente (`docs/08` §3, filas 3 y 4).
