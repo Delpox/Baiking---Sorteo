@@ -225,7 +225,7 @@
         // Participación sin cargo: los datos ya están; falta la carta a la tienda.
         $('#estado-pendiente .eyebrow').textContent = 'Datos registrados';
         $('#estado-pendiente h1').innerHTML = 'Ahora, <em>la carta</em>';
-        $('#estado-pendiente .lead').textContent = `Mandanos una carta a ${orden.carta.direccion} (o dejala en la tienda) con tu nombre, DNI, mail y por qué deberías ganar la bici. Tenés tiempo hasta el ${fmtFechaHora(orden.carta.vence_at)}. Cuando la recibamos te confirmamos tu chance por mail.`;
+        $('#estado-pendiente .lead').textContent = `Mandanos una carta a ${orden.carta.direccion} (o dejala en la tienda) con tu nombre, DNI, mail y por qué deberías ganar la bici. Tenés tiempo hasta el ${fmtFechaHora(orden.carta.vence_at)}. Cuando la recibamos te confirmamos tu participación por mail.`;
         $('#estado-pendiente .callout').hidden = true;
         show('pendiente');
         iniciarPolling(campaign, 60000, 60);

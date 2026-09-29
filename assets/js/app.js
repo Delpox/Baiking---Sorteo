@@ -118,7 +118,7 @@
     state.pack = pack.id;
     $$('.ladder input[type="radio"]').forEach((r) => (r.checked = r.value === pack.id));
     const mb = $('#mobile-bar-info');
-    if (mb) mb.innerHTML = `${esc(nombrePack(pack))} · ${fmtARS(pack.precio)}<b>Incluye el curso completo</b>`;
+    if (mb) mb.innerHTML = `${esc(nombrePack(pack))} · ${fmtARS(pack.precio)}<b>Incluye ${pack.participaciones} ${esc(unidad(pack.participaciones))} en el sorteo</b>`;
     if (state.onPackChange) state.onPackChange(pack.id);
   }
 
@@ -131,7 +131,7 @@
         (p) => `
         <label class="ladder-item" data-pack="${esc(p.id)}">
           <input type="radio" name="${esc(name)}" value="${esc(p.id)}" ${p.id === state.pack ? 'checked' : ''}>
-          <span class="q"><b>${esc(nombrePack(p))}</b> para el sorteo${p.etiqueta ? `<span class="tag">${esc(p.etiqueta)}</span>` : ''}</span>
+          <span class="q"><b>${esc(nombrePack(p))}</b>${p.descripcion ? `<small>${esc(p.descripcion)}</small>` : ''}<em>Incluye ${p.participaciones} ${esc(unidad(p.participaciones))} en el sorteo</em>${p.etiqueta ? `<span class="tag">${esc(p.etiqueta)}</span>` : ''}</span>
           <span class="p">${fmtARS(p.precio)}</span>
         </label>`,
       )
@@ -516,7 +516,7 @@
       const medio = medioElegido();
       const total = totalPack(pack, medio);
       $('#sum-pack').textContent = nombrePack(pack);
-      $('#sum-part').textContent = `Curso completo + ${pack.participaciones} ${unidad(pack.participaciones)}`;
+      $('#sum-part').textContent = `${pack.participaciones} ${unidad(pack.participaciones)} en el sorteo`;
       $('#sum-bici').textContent = bici ? bici.nombre : '—';
       $('#sum-total').textContent = total === pack.precio ? fmtARS(total) : `${fmtARS(total)} (antes ${fmtARS(pack.precio)})`;
       // Transferencia: los datos bancarios y el comprobante van dentro del mismo formulario.
@@ -654,7 +654,7 @@
       $('#ok-nombre').textContent = nombre;
       $('#ok-numeros').innerHTML = pillsNumeros(numeros);
       $('#ok-bici').textContent = bici?.nombre || '';
-      $('#ok-pack').textContent = `${nombrePack(pack)} + curso completo`;
+      $('#ok-pack').textContent = nombrePack(pack);
       const texto = `¡Ya estoy participando por una ${bici?.nombre || 'Polygon'} con Baiking! 🚵 Mirá: ${location.href.split('#')[0]}`;
       $('#ok-share').href = `https://wa.me/?text=${encodeURIComponent(texto)}`;
 
@@ -667,21 +667,19 @@
       if (transferencia && comprobante) {
         // Flujo principal: transfirió y adjuntó el comprobante en el mismo formulario.
         titulo.innerHTML = `¡Gracias, <span id="ok-nombre">${esc(nombre)}</span>!`;
-        sub.textContent = `Recibimos tu comprobante. Validamos la transferencia y te mandamos por mail tus ${pack.participaciones} ${unidad(
-          pack.participaciones,
-        )} y el acceso al curso, en menos de ${plazo} hs.`;
+        sub.textContent = `Recibimos tu comprobante. Validamos la transferencia y te mandamos por mail tu producto y tu ${unidad(1)}, en menos de ${plazo} hs.`;
         transferBox.hidden = true;
         $('#ok-ticket').hidden = true;
       } else if (transferencia) {
         titulo.innerHTML = `¡Reservamos tu lugar, <span id="ok-nombre">${esc(nombre)}</span>!`;
-        sub.textContent = 'Te mandamos por mail los datos para transferir. Cuando subas el comprobante te asignamos tus chances.';
+        sub.textContent = 'Te mandamos por mail los datos para transferir. Cuando subas el comprobante te asignamos tu participación.';
         $('#ok-transfer-data').innerHTML = renderTransferData(transferencia);
         $('#ok-transfer-note').textContent = `Transferí el monto exacto y subí el comprobante desde el link del mail o mandalo a ${transferencia.email_comprobantes}. Lo confirmamos en menos de ${plazo} hs.`;
         transferBox.hidden = false;
         $('#ok-ticket').hidden = true;
       } else {
         titulo.innerHTML = `¡Ya estás adentro, <span id="ok-nombre">${esc(nombre)}</span>!`;
-        sub.textContent = 'Te mandamos el acceso al curso y tus participaciones por mail y WhatsApp.';
+        sub.textContent = 'Te mandamos por mail tu producto y tu participación.';
         transferBox.hidden = true;
         $('#ok-ticket').hidden = false;
       }

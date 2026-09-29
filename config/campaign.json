@@ -18,9 +18,9 @@
   },
   "moneda": "ARS",
   "unidad": {
-    "singular": "chance",
-    "plural": "chances",
-    "_nota": "Cómo se llama cada participación en el sitio, los mails y el panel. Legalmente es más prudente 'participación'/'participaciones' (ver docs/01 §3.3): se cambia solo acá."
+    "singular": "participación",
+    "plural": "participaciones",
+    "_nota": "Cómo se llama cada participación en el sitio, los mails y el panel. Se cambia solo acá."
   },
   "edicion": {
     "id": "edicion-1",
@@ -197,96 +197,51 @@
     "acceso_texto": "El curso está en YouTube, en un link no listado: solo entra quien lo tiene. Guardalo y no lo compartas.",
     "_url_nota": "url_acceso = link de YouTube no listado (video o lista de reproducción). Cuando esté, pegarlo acá: el botón \"Entrar al curso\" del mail de confirmación y de /gracias apunta ahí. Mientras esté vacío, el mail avisa que el link llega aparte."
   },
-  "_packs_nota": "Escalera de precios con la estructura de Autoloop, multiplicada por 10 en chances (decisión de Baiking, 28/09): cada opción incluye el curso completo y N chances. Ver docs/01 §2 y docs/02 §2 sobre el riesgo legal de vender \"chances\" y las mitigaciones que quedan (curso real, vía gratuita, sorteo en vivo y grabado).",
+  "_packs_nota": "Modelo del 29/09 (camino intermedio de la revisión legal, docs/08): tres productos digitales con contenido y precio distintos; CADA compra otorga UNA (1) participación en el sorteo, la misma que la vía gratuita. Nadie paga por más probabilidad. Precios [A CONFIRMAR] con Gastón. entrega_url = link del producto (Drive, PDF, YouTube no listado) que va en el mail de confirmación; vacío = el mail avisa que llega aparte.",
   "packs": [
     {
-      "id": "chances-10",
-      "nombre": "10 chances",
-      "participaciones": 10,
-      "precio": 10000,
+      "id": "fondos",
+      "nombre": "Fondos de pantalla Baiking",
+      "descripcion": "Pack de fondos de pantalla para el celular con las Polygon y el taller de Baiking.",
+      "incluye": [
+        "Pack de fondos de pantalla en alta resolución (celular y computadora)"
+      ],
+      "participaciones": 1,
+      "precio": 5000,
       "destacado": false,
       "etiqueta": "",
+      "entrega_url": "",
       "url_externa": ""
     },
     {
-      "id": "chances-20",
-      "nombre": "20 chances",
-      "participaciones": 20,
-      "precio": 15000,
+      "id": "checklist",
+      "nombre": "Checklist pre-salida",
+      "descripcion": "La guía en PDF para revisar tu bici antes de cada salida o carrera, más los fondos de pantalla.",
+      "incluye": [
+        "Checklist pre-salida en PDF (los 2 minutos que evitan la mayoría de los problemas)",
+        "Pack de fondos de pantalla"
+      ],
+      "participaciones": 1,
+      "precio": 12000,
       "destacado": false,
       "etiqueta": "",
+      "entrega_url": "",
       "url_externa": ""
     },
     {
-      "id": "chances-40",
-      "nombre": "40 chances",
-      "participaciones": 40,
+      "id": "curso",
+      "nombre": "Curso Baiking de Mantenimiento",
+      "descripcion": "Todo lo anterior más el curso en video con Gastón: lavado y lubricación, ajuste general y errores comunes.",
+      "incluye": [
+        "Curso en video: cómo preparar tu bici, lavado y lubricación, ajuste general, errores comunes",
+        "Checklist pre-salida en PDF",
+        "Pack de fondos de pantalla"
+      ],
+      "participaciones": 1,
       "precio": 25000,
-      "destacado": false,
-      "etiqueta": "",
-      "url_externa": ""
-    },
-    {
-      "id": "chances-60",
-      "nombre": "60 chances",
-      "participaciones": 60,
-      "precio": 35000,
-      "destacado": false,
-      "etiqueta": "",
-      "url_externa": ""
-    },
-    {
-      "id": "chances-100",
-      "nombre": "100 chances",
-      "participaciones": 100,
-      "precio": 45000,
       "destacado": true,
-      "etiqueta": "Recomendado",
-      "url_externa": ""
-    },
-    {
-      "id": "chances-150",
-      "nombre": "150 chances",
-      "participaciones": 150,
-      "precio": 70000,
-      "destacado": false,
       "etiqueta": "",
-      "url_externa": ""
-    },
-    {
-      "id": "chances-200",
-      "nombre": "200 chances",
-      "participaciones": 200,
-      "precio": 90000,
-      "destacado": false,
-      "etiqueta": "",
-      "url_externa": ""
-    },
-    {
-      "id": "chances-300",
-      "nombre": "300 chances",
-      "participaciones": 300,
-      "precio": 120000,
-      "destacado": false,
-      "etiqueta": "",
-      "url_externa": ""
-    },
-    {
-      "id": "chances-500",
-      "nombre": "500 chances",
-      "participaciones": 500,
-      "precio": 150000,
-      "destacado": false,
-      "etiqueta": "",
-      "url_externa": ""
-    },
-    {
-      "id": "chances-2000",
-      "nombre": "2000 chances",
-      "participaciones": 2000,
-      "precio": 300000,
-      "destacado": false,
-      "etiqueta": "Mejor precio",
+      "entrega_url": "",
       "url_externa": ""
     }
   ],
@@ -296,7 +251,7 @@
     "requiere_carta": true,
     "direccion_carta": "Las Camelias 3327, Del Viso (1669), Pilar, Buenos Aires",
     "plazo_carta_dias": 15,
-    "texto": "Sin obligación de compra: completá el formulario y mandanos una carta a Las Camelias 3327, Del Viso (Pilar), contándonos por qué deberías ganar la bici. Una (1) chance por persona, que se asigna cuando recibimos la carta.",
+    "texto": "Sin obligación de compra: completá el formulario y mandanos una carta a Las Camelias 3327, Del Viso (Pilar), contándonos por qué deberías ganar la bici. Una (1) participación por persona, con la misma probabilidad que cualquier otra.",
     "_nota": "Decisión de Baiking (28/09): la vía gratuita exige el formulario + una carta a la tienda; la chance se asigna desde el panel al marcar \"Carta recibida\". Máximo 1 chance por DNI."
   },
   "panel": {
@@ -336,7 +291,7 @@
     "reglas": [
       {
         "titulo": "Números correlativos",
-        "texto": "Cada chance recibe un número único y correlativo cuando se confirma el pago. Lo ves en pantalla y te llega por mail."
+        "texto": "Cada participación recibe un número único y correlativo cuando se confirma el pago o llega la carta. Lo ves en pantalla y te llega por mail."
       },
       {
         "titulo": "En vivo y grabado",
@@ -357,7 +312,11 @@
   "faq": [
     {
       "p": "¿Qué estoy comprando exactamente?",
-      "r": "El Curso Baiking de Mantenimiento: clases en video con Gastón, con acceso inmediato y para siempre. Cada compra incluye, como bonificación sin costo adicional, chances para el sorteo de la Polygon. El curso es tuyo gane quien gane."
+      "r": "Un producto digital de Baiking: el pack de fondos de pantalla, el checklist pre-salida en PDF o el curso completo en video. Cada compra incluye, como bonificación, una participación en el sorteo de la Polygon. El producto es tuyo gane quien gane."
+    },
+    {
+      "p": "¿Comprar el producto más caro me da más chances?",
+      "r": "No. Cada compra da una (1) participación, sea cual sea el producto, y la participación sin cargo vale exactamente lo mismo. El precio corresponde al contenido que te llevás, no al sorteo."
     },
     {
       "p": "¿Se sortean tres bicis?",
@@ -365,15 +324,11 @@
     },
     {
       "p": "¿Puedo participar sin comprar?",
-      "r": "Sí. Completás el formulario de participación sin cargo y nos mandás una carta a Las Camelias 3327, Del Viso (Pilar), contándonos por qué deberías ganar la bici. Cuando la recibimos te confirmamos por mail tu chance: una (1) por persona."
-    },
-    {
-      "p": "¿Cómo sé cuáles son mis chances?",
-      "r": "Apenas validamos tu comprobante te mandamos por mail tus números y el acceso al curso. También podés verlos cuando quieras con el link de tu orden."
+      "r": "Sí. Completás el formulario de participación sin cargo y nos mandás una carta a Las Camelias 3327, Del Viso (Pilar), contándonos por qué deberías ganar la bici. Cuando la recibimos te confirmamos por mail tu participación, con la misma probabilidad que cualquier otra."
     },
     {
       "p": "¿Cómo se paga?",
-      "r": "Por transferencia bancaria: al completar el checkout te damos el alias, el CBU y un código; transferís el monto exacto, subís el comprobante y en menos de 48 hs te confirmamos tus chances por mail. Todo con factura."
+      "r": "Por transferencia bancaria: al completar el formulario te damos el alias, el CBU y el monto; transferís, subís el comprobante y en menos de 48 hs te confirmamos por mail tu producto y tu participación. Todo con factura."
     },
     {
       "p": "¿Qué pasa si no vivo cerca de Baiking?",
@@ -386,7 +341,7 @@
     "domicilio": "Las Camelias 3327, Del Viso (1669), Pilar, Provincia de Buenos Aires",
     "vigencia_desde": "2026-10-15",
     "leyenda": "SIN OBLIGACIÓN DE COMPRA. Consultá las bases y condiciones en participa.baiking.com.ar/bases-y-condiciones.",
-    "aviso_corto": "Promoción organizada por Baiking. La compra del curso incluye, como bonificación sin cargo, chances para el sorteo descripto en las bases. Sin obligación de compra: participación gratuita en el sitio. Válida para mayores de 18 años residentes en Argentina, del 15/10/2026 al 3/12/2026; sorteo el 4/12/2026. Las imágenes son ilustrativas. No está patrocinada, avalada, administrada ni asociada a Instagram ni Meta.",
+    "aviso_corto": "Promoción organizada por Baiking. La compra de cualquiera de los productos digitales incluye, como bonificación sin cargo, una participación en el sorteo descripto en las bases. Sin obligación de compra: participación gratuita disponible en el sitio, con la misma probabilidad. Válida para mayores de 18 años residentes en Argentina, del 15/10/2026 al 3/12/2026; sorteo el 4/12/2026. Las imágenes son ilustrativas. No está patrocinada, avalada, administrada ni asociada a Instagram ni Meta.",
     "_nota": "leyenda y aviso_corto se muestran en el footer, las bases y los mails. Las fechas y la URL están escritas a mano: scripts/check.mjs avisa si no coinciden con edicion.* y marca.sitio_url.",
     "_organizador_nota": "Razón social y CUIT tomados de los datos bancarios que pasó Gastón (28/09). Confirmar que la promoción la organiza esa sociedad."
   },

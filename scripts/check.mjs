@@ -21,11 +21,15 @@ for (const p of cfg.packs) {
   if (!(Number.isFinite(p.precio) && p.precio > 0)) errores.push(`pack ${p.id}: precio inválido`);
   if (!(Number.isInteger(p.participaciones) && p.participaciones > 0)) errores.push(`pack ${p.id}: participaciones inválidas`);
 }
+// Modelo de productos (29/09): cada compra da la misma cantidad de participaciones (una), así que
+// el precio no tiene que "escalar" con las participaciones; solo se pide orden creciente de precio.
+const mismaBonificacion = cfg.packs.every((p) => p.participaciones === cfg.packs[0].participaciones);
 for (let i = 1; i < cfg.packs.length; i++) {
   const a = cfg.packs[i - 1], b = cfg.packs[i];
-  if (b.participaciones <= a.participaciones || b.precio <= a.precio) avisos.push(`packs: ${b.id} no es creciente respecto de ${a.id}`);
-  if (b.precio / b.participaciones > a.precio / a.participaciones) avisos.push(`packs: ${b.id} sale más caro por unidad que ${a.id}`);
+  if (b.precio <= a.precio) avisos.push(`packs: ${b.id} no es más caro que ${a.id} (la escalera va de menor a mayor)`);
+  if (!mismaBonificacion && b.precio / b.participaciones > a.precio / a.participaciones) avisos.push(`packs: ${b.id} sale más caro por unidad que ${a.id}`);
 }
+if (!mismaBonificacion) avisos.push('packs: las participaciones por compra no son iguales entre productos (revisar docs/08: nadie debería pagar por más probabilidad)');
 const fs = new Date(cfg.edicion.fecha_sorteo).getTime();
 const cv = new Date(cfg.edicion.cierre_ventas).getTime();
 if (!(cv < fs)) errores.push('edicion: cierre_ventas debe ser anterior a fecha_sorteo');

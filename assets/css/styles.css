@@ -2043,3 +2043,23 @@ h2 em,
   letter-spacing: 0;
   padding-left: 4px;
 }
+
+/* Escalera de productos (29/09): nombre, descripción corta y la participación incluida */
+.ladder-item .q {
+  display: grid;
+  gap: 3px;
+}
+.ladder-item .q small {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.ladder-item .q em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--rojo-ink);
+}
+.ladder-compact .q small {
+  display: none;
+}
