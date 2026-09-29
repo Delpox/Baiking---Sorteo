@@ -28,12 +28,21 @@ const fmtNumero = (n) => String(n).padStart(4, '0');
  * un bloque correlativo) → rango ("del 0001 al 0100"), para que el mail no lleve miles de
  * números y el parámetro de la plantilla de WhatsApp no supere el largo que admite Meta.
  */
-export function describirNumeros(numeros, { sep = ' · ', maxLista = 12 } = {}) {
-  const lista = (numeros || []).map(Number);
+export function describirNumeros(numeros, { sep = ' · ', maxLista = 12, maxTramos = 6 } = {}) {
+  const lista = [...new Set((numeros || []).map(Number).filter(Number.isFinite))].sort((a, b) => a - b);
   if (!lista.length) return '';
-  const consecutivos = lista.every((v, i) => i === 0 || v === lista[i - 1] + 1);
-  if (lista.length > maxLista && consecutivos) return `del ${fmtNumero(lista[0])} al ${fmtNumero(lista[lista.length - 1])}`;
-  return lista.map(fmtNumero).join(sep);
+  if (lista.length <= maxLista) return lista.map(fmtNumero).join(sep);
+  // Tramos consecutivos: una persona con varias órdenes tiene varios bloques
+  // ("del 0001 al 0100 y del 0201 al 0300"); si está muy fragmentado, la lista completa.
+  const tramos = [];
+  for (const n of lista) {
+    const ultimo = tramos[tramos.length - 1];
+    if (ultimo && n === ultimo[1] + 1) ultimo[1] = n;
+    else tramos.push([n, n]);
+  }
+  if (tramos.length > maxTramos) return lista.map(fmtNumero).join(sep);
+  const partes = tramos.map(([a, b]) => (a === b ? fmtNumero(a) : `del ${fmtNumero(a)} al ${fmtNumero(b)}`));
+  return partes.length === 1 ? partes[0] : `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`;
 }
 
 function escapeHtml(s) {
@@ -306,6 +315,111 @@ ${pieLegalTexto(campaign, baseUrl)}`;
   return { subject, html, text };
 }
 
+const fmtHora = (iso, tz = 'America/Argentina/Buenos_Aires') =>
+  new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz }).format(new Date(iso));
+
+const BOTON = 'display:inline-block;background:#eb0627;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:10px';
+const PARRAFO = 'font-size:16px;line-height:1.6;margin:0 0 20px;color:#4a4649';
+
+/**
+ * Recordatorio "falta una semana para el sorteo" (lo manda /api/recordatorios una sola vez
+ * por edición, a una persona por email). Tres variantes según las órdenes de la persona:
+ *  - general: fecha del sorteo, cierre de inscripciones y botón "Sumar chances";
+ *  - comprobante: su última orden por transferencia sigue `pendiente` (sin comprobante);
+ *  - carta: tiene una participación sin cargo `pendiente` de la carta.
+ * Devuelve { subject, html, text, variante }.
+ */
+export function armarMailRecordatorioSemana({ persona, ordenes, campaign, baseUrl }) {
+  const lista = Array.isArray(ordenes) ? ordenes : persona?.ordenes || [];
+  const nombre = persona?.nombre || lista[0]?.nombre || '';
+  const ig = campaign.contacto?.instagram || '';
+  const u2 = unidad(campaign, 2);
+  const fechaSorteo = fmtFecha(campaign.edicion.fecha_sorteo);
+  const cierre = fmtFecha(campaign.edicion.cierre_ventas);
+  const porFecha = [...lista].sort((a, b) => (String(a.created_at) < String(b.created_at) ? 1 : -1));
+  const ultimaTransferencia = porFecha.find((o) => o.medio_pago === 'transferencia');
+  const gratuitaPendiente = porFecha.find((o) => o.origen === 'gratuita' && o.estado === 'pendiente');
+  const enRevision = lista.some((o) => o.estado === 'en_revision');
+
+  const subject = 'Falta una semana para el sorteo · Baiking';
+  const titulo = `Falta una semana para el sorteo${nombre ? `, ${escapeHtml(nombre)}` : ''}`;
+  const cuandoHtml = `El <strong style="color:#1c1a1b">${escapeHtml(fechaSorteo)} hs</strong> sorteamos en vivo en Instagram <strong style="color:#1c1a1b">@${escapeHtml(ig)}</strong>. Las inscripciones cierran el ${escapeHtml(cierre)} hs.`;
+  const cuandoTexto = `El ${fechaSorteo} hs sorteamos en vivo en Instagram @${ig}. Las inscripciones cierran el ${cierre} hs.`;
+
+  let variante = 'general';
+  let cuerpoHtml;
+  let cuerpoTexto;
+  let boton;
+  if (ultimaTransferencia && ultimaTransferencia.estado === 'pendiente') {
+    variante = 'comprobante';
+    const link = `${baseUrl}/gracias?orden=${ultimaTransferencia.id}`;
+    boton = { texto: 'Subir el comprobante', href: link };
+    cuerpoHtml = `<p style="${PARRAFO}">Tu orden sigue <strong style="color:#1c1a1b">pendiente</strong>: todavía no recibimos el comprobante de tu transferencia. Subilo para que tus ${escapeHtml(u2)} entren al sorteo.</p>
+    <p style="${PARRAFO}">${cuandoHtml}</p>`;
+    cuerpoTexto = `Tu orden sigue pendiente: todavía no recibimos el comprobante de tu transferencia. Subilo para que tus ${u2} entren al sorteo: ${link}\n${cuandoTexto}`;
+  } else if (gratuitaPendiente) {
+    variante = 'carta';
+    const { direccion } = configCarta(campaign);
+    const vence = fmtDia(venceCarta(gratuitaPendiente, campaign));
+    const link = `${baseUrl}/gracias?orden=${gratuitaPendiente.id}`;
+    boton = { texto: 'Ver el estado de mi participación', href: link };
+    cuerpoHtml = `<p style="${PARRAFO}">Todavía no recibimos tu carta: tenés tiempo hasta el <strong style="color:#1c1a1b">${escapeHtml(vence)}</strong>. Mandala a <strong style="color:#1c1a1b">${escapeHtml(direccion)}</strong> o entregala en la tienda, y tu ${escapeHtml(unidad(campaign, 1))} entra al sorteo.</p>
+    <p style="${PARRAFO}">${cuandoHtml}</p>`;
+    cuerpoTexto = `Todavía no recibimos tu carta: tenés tiempo hasta el ${vence}. Mandala a ${direccion} o entregala en la tienda, y tu ${unidad(campaign, 1)} entra al sorteo.\n${cuandoTexto}\nEstado de tu participación: ${link}`;
+  } else {
+    boton = { texto: `Sumar ${u2}`, href: baseUrl };
+    const revisionHtml = enRevision ? `<p style="${PARRAFO}">Tu transferencia está en revisión: en cuanto se acredite te mandamos tus ${escapeHtml(u2)} por mail.</p>` : '';
+    cuerpoHtml = `<p style="${PARRAFO}">${cuandoHtml}</p>
+    <p style="${PARRAFO}">Si querés sumar ${escapeHtml(u2)}, todavía estás a tiempo.</p>${revisionHtml}`;
+    cuerpoTexto = `${cuandoTexto}\nSi querés sumar ${u2}, todavía estás a tiempo: ${baseUrl}${enRevision ? `\nTu transferencia está en revisión: en cuanto se acredite te mandamos tus ${u2} por mail.` : ''}`;
+  }
+
+  const html = marcoMail(campaign, titulo, `${cuerpoHtml}
+    <a href="${escapeHtml(boton.href)}" style="${BOTON}">${escapeHtml(boton.texto)}</a>`, baseUrl);
+  const text = `Falta una semana para el sorteo${nombre ? `, ${nombre}` : ''}.
+${cuerpoTexto}
+
+${pieLegalTexto(campaign, baseUrl)}`;
+  return { subject, html, text, variante };
+}
+
+/**
+ * Recordatorio del día del sorteo, a cada persona con órdenes pagadas (sus números de
+ * todas las órdenes juntos). Botón "Ver el vivo" → Instagram.
+ */
+export function armarMailRecordatorioSorteo({ persona, numeros, campaign, baseUrl }) {
+  const nombre = persona?.nombre || '';
+  const ig = campaign.contacto?.instagram || '';
+  const linkIg = `https://instagram.com/${ig}`;
+  const hora = fmtHora(campaign.edicion.fecha_sorteo);
+  const lista = describirNumeros(numeros);
+  const n = (numeros || []).length;
+  const u = unidad(campaign, n);
+  const plural = n !== 1;
+
+  const subject = `¡Hoy es el sorteo! ${hora} en vivo · Baiking`;
+  const html = marcoMail(
+    campaign,
+    `¡Hoy es el sorteo${nombre ? `, ${escapeHtml(nombre)}` : ''}!`,
+    `<p style="${PARRAFO}">Hoy a las <strong style="color:#1c1a1b">${escapeHtml(hora)} hs</strong> sorteamos en vivo en Instagram <strong style="color:#1c1a1b">@${escapeHtml(ig)}</strong>.</p>
+    <div style="background:#fff0f2;border:1px solid #f3b5be;border-radius:14px;padding:20px;margin:0 0 20px">
+      <p style="margin:0 0 6px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#6e686b">${plural ? `Tus ${n} ${escapeHtml(u)}` : `Tu ${escapeHtml(u)}`}</p>
+      <p style="margin:0;font-size:24px;font-weight:700;letter-spacing:.04em;color:#c40020">${escapeHtml(lista)}</p>
+    </div>
+    <p style="${PARRAFO}">Si ganás, te llamamos hoy mismo.</p>
+    <a href="${escapeHtml(linkIg)}" style="${BOTON}">Ver el vivo</a>`,
+    baseUrl,
+  );
+  const text = `¡Hoy es el sorteo${nombre ? `, ${nombre}` : ''}!
+Hoy a las ${hora} hs sorteamos en vivo en Instagram @${ig}.
+${plural ? `Tus ${n} ${u}` : `Tu ${u}`}: ${lista}
+Si ganás, te llamamos hoy mismo.
+Ver el vivo: ${linkIg}
+
+${pieLegalTexto(campaign, baseUrl)}`;
+  return { subject, html, text };
+}
+
 // Los proveedores repiten el destinatario en sus mensajes de error ("Invalid `to`: juan@…"):
 // se recorta y se enmascaran mails y teléfonos antes de que el mensaje llegue a los logs.
 const sinDatosPersonales = (s) =>
@@ -338,6 +452,62 @@ export async function enviarMail({ to, subject, html, text, replyTo }) {
   });
   if (!res.ok) throw errorProveedor('resend', res.status, await res.text());
   return res.json();
+}
+
+const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Envío masivo (recordatorios): lotes de hasta 100 mails con Resend `/emails/batch`,
+ * con una pausa entre lotes para no pasar el límite de requests por segundo. Si un lote
+ * falla por un error del pedido (4xx: p. ej. una dirección inválida), cae a envío
+ * individual para que un rebote no tumbe a los otros 99. Nunca lanza: devuelve
+ * { enviados, errores } y loguea sin datos personales.
+ */
+export async function enviarLote(mails, { tamano = 100, pausaMs = 600, pausaIndividualMs = 120 } = {}) {
+  let enviados = 0;
+  let errores = 0;
+  const cabeceras = { Authorization: `Bearer ${env('RESEND_API_KEY')}`, 'Content-Type': 'application/json' };
+  const from = mailFrom();
+  const aPayload = ({ to, subject, html, text, replyTo }) => ({ from, to: [to], subject, html, text, ...(replyTo ? { reply_to: replyTo } : {}) });
+
+  for (let i = 0; i < mails.length; i += tamano) {
+    const lote = mails.slice(i, i + tamano);
+    if (i > 0) await dormir(pausaMs);
+    let status = 0;
+    try {
+      const res = await fetch('https://api.resend.com/emails/batch', {
+        method: 'POST',
+        headers: cabeceras,
+        body: JSON.stringify(lote.map(aPayload)),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+      status = res.status;
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        enviados += Array.isArray(data.data) ? data.data.length : lote.length;
+        continue;
+      }
+      console.error(`[resend] lote ${i / tamano + 1} (${lote.length} mails): ${errorProveedor('resend', res.status, await res.text()).message}`);
+    } catch (err) {
+      console.error(`[resend] lote ${i / tamano + 1} (${lote.length} mails): ${sinDatosPersonales(err.message || err)}`);
+    }
+    if (status && status < 500) {
+      // Error del pedido: uno por uno, así solo se pierde el que rebota.
+      for (const m of lote) {
+        try {
+          await enviarMail(m);
+          enviados += 1;
+        } catch (err) {
+          errores += 1;
+          console.error(`[resend] envío individual: ${err.message || err}`);
+        }
+        await dormir(pausaIndividualMs);
+      }
+    } else {
+      errores += lote.length;
+    }
+  }
+  return { enviados, errores };
 }
 
 export function whatsappConfigurado() {

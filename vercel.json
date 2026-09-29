@@ -5,7 +5,8 @@
     "api/**/*.js": { "maxDuration": 60 }
   },
   "crons": [
-    { "path": "/api/sheets-sync", "schedule": "50 2 * * *" }
+    { "path": "/api/sheets-sync", "schedule": "50 2 * * *" },
+    { "path": "/api/recordatorios", "schedule": "0 13 * * *" }
   ],
   "headers": [
     {

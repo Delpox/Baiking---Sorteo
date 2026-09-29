@@ -14,6 +14,9 @@ create table if not exists ediciones (
   cierre_ventas  timestamptz not null,
   activa         boolean not null default true,
   ultimo_numero  integer not null default 0,
+  -- Recordatorios por mail (api/recordatorios.js): cuándo se mandó cada uno (una sola vez por edición).
+  recordatorio_semana_at timestamptz,
+  recordatorio_sorteo_at timestamptz,
   created_at     timestamptz not null default now()
 );
 
@@ -213,6 +216,9 @@ alter table ordenes add column if not exists acreditada_nota text;
 -- 4) Vía gratuita en dos pasos (formulario + carta): mail de instrucciones y recepción de la carta.
 alter table ordenes add column if not exists instrucciones_enviado_at timestamptz;
 alter table ordenes add column if not exists carta_recibida_at        timestamptz;
+-- 5) Recordatorios por mail (una semana antes y el día del sorteo), una sola vez por edición.
+alter table ediciones add column if not exists recordatorio_semana_at timestamptz;
+alter table ediciones add column if not exists recordatorio_sorteo_at timestamptz;
 
 -- ------------------------------------------------------------
 -- Edición inicial (ajustar fechas antes de lanzar; deben coincidir
