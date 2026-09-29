@@ -61,6 +61,22 @@ export async function adminAutorizado(req) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+/**
+ * Vercel Cron manda `Authorization: Bearer <CRON_SECRET>` (variable de entorno del
+ * proyecto) al llamar los endpoints programados (/api/sheets-sync, /api/recordatorios).
+ * Comparación en tiempo constante; sin CRON_SECRET configurado, nunca autoriza.
+ */
+export async function cronAutorizado(req) {
+  const { timingSafeEqual } = await import('node:crypto');
+  const esperado = process.env.CRON_SECRET || '';
+  const auth = String(req.headers.authorization || '');
+  const recibido = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+  if (!esperado || !recibido) return false;
+  const a = Buffer.from(recibido);
+  const b = Buffer.from(esperado);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 export function env(name, { required = true } = {}) {
   const value = process.env[name];
   if ((value === undefined || value === '') && required) {

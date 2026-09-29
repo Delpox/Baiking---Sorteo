@@ -65,6 +65,50 @@ export async function liberarMarca(id, columna) {
   if (error) throw new Error(`[db] ${error.message}`);
 }
 
+/** Igual que reclamarMarca / liberarMarca, para cualquier tabla (p. ej. los marcadores de `ediciones`). */
+export async function reclamarMarcaEn(tabla, id, columna) {
+  const { data, error } = await db()
+    .from(tabla)
+    .update({ [columna]: new Date().toISOString() })
+    .eq('id', id)
+    .is(columna, null)
+    .select('id');
+  if (error) throw new Error(`[db] ${error.message}`);
+  return Boolean(data && data.length);
+}
+
+export async function liberarMarcaEn(tabla, id, columna) {
+  const { error } = await db().from(tabla).update({ [columna]: null }).eq('id', id);
+  if (error) throw new Error(`[db] ${error.message}`);
+}
+
+// Supabase devuelve como máximo 1000 filas por request: los listados van paginados.
+const PAGINA = 1000;
+
+async function paginar(armarQuery) {
+  const todas = [];
+  for (let desde = 0; ; desde += PAGINA) {
+    const { data, error } = await armarQuery().range(desde, desde + PAGINA - 1);
+    if (error) throw new Error(`[db] ${error.message}`);
+    todas.push(...(data || []));
+    if (!data || data.length < PAGINA) return todas;
+  }
+}
+
+/** Todas las órdenes de una edición (opcionalmente filtradas por estado), de la más vieja a la más nueva. */
+export async function listarOrdenes(edicionId, { estados, columnas = '*' } = {}) {
+  return paginar(() => {
+    let q = db().from('ordenes').select(columnas).eq('edicion_id', edicionId).order('created_at', { ascending: true });
+    if (estados?.length) q = q.in('estado', estados);
+    return q;
+  });
+}
+
+/** Todos los números asignados en una edición: [{ orden_id, numero }]. */
+export async function listarParticipaciones(edicionId) {
+  return paginar(() => db().from('participaciones').select('orden_id,numero').eq('edicion_id', edicionId).order('numero', { ascending: true }));
+}
+
 /** Orden de la vía gratuita de un DNI en una edición (la más reciente), o null. */
 export async function obtenerOrdenGratuita(edicionId, dni) {
   const { data, error } = await db()
