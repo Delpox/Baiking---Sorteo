@@ -51,10 +51,10 @@ const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 /** Pie legal del HTML: leyenda "sin obligación de compra", aviso corto y link a las bases. */
 function pieLegalHtml(campaign, baseUrl) {
   const legal = campaign.legal || {};
-  return `<p style="font-size:12px;line-height:1.6;color:#6b7784;margin:28px 0 0">
+  return `<p style="font-size:12px;line-height:1.6;color:#6e686b;margin:28px 0 0">
       ${legal.leyenda ? `<strong>${escapeHtml(legal.leyenda)}</strong><br>` : ''}
       ${escapeHtml(legal.aviso_corto || '')}
-      Bases y condiciones: <a href="${escapeHtml(baseUrl)}/bases-y-condiciones" style="color:#c9f31d">${escapeHtml(baseUrl)}/bases-y-condiciones</a>
+      Bases y condiciones: <a href="${escapeHtml(baseUrl)}/bases-y-condiciones" style="color:#c40020">${escapeHtml(baseUrl)}/bases-y-condiciones</a>
     </p>`;
 }
 
@@ -84,43 +84,40 @@ export function armarMailConfirmacion({ orden, numeros, campaign, baseUrl, gratu
 
   const conCarta = gratuita && Boolean(orden.carta_recibida_at);
   const intro = gratuita
-    ? `${conCarta ? 'Recibimos tu carta y registramos' : 'Registramos'} tu participación <strong style="color:#fff">sin obligación de compra</strong>. Quedaste participando por tu <strong style="color:#fff">${escapeHtml(biciNombre)}</strong> con la misma probabilidad que cualquier otra participación.`
-    : `Confirmamos tu pago del <strong style="color:#fff">${escapeHtml(curso.nombre_corto)}</strong>${escapeHtml(packTxt)}. Ya tenés acceso al ${cursoLargo ? `<strong style="color:#fff">${escapeHtml(cursoLargo)}</strong>` : 'curso'} y, como bonificación sin cargo del curso, quedaste participando por tu <strong style="color:#fff">${escapeHtml(biciNombre)}</strong> con ${numeros.length} ${escapeHtml(u)}.`;
+    ? `${conCarta ? 'Recibimos tu carta y registramos' : 'Registramos'} tu participación <strong style="color:#1c1a1b">sin obligación de compra</strong>. Quedaste participando por tu <strong style="color:#1c1a1b">${escapeHtml(biciNombre)}</strong> con la misma probabilidad que cualquier otra participación.`
+    : `Confirmamos tu pago del <strong style="color:#1c1a1b">${escapeHtml(curso.nombre_corto)}</strong>${escapeHtml(packTxt)}. Ya tenés acceso al ${cursoLargo ? `<strong style="color:#1c1a1b">${escapeHtml(cursoLargo)}</strong>` : 'curso'} y, como bonificación sin cargo del curso, quedaste participando por tu <strong style="color:#1c1a1b">${escapeHtml(biciNombre)}</strong> con ${numeros.length} ${escapeHtml(u)}.`;
 
-  const html = `<!doctype html>
-<html lang="es"><body style="margin:0;background:#0b0f14;font-family:Inter,Arial,sans-serif;color:#f4f6f8">
-  <div style="max-width:560px;margin:0 auto;padding:32px 20px">
-    <p style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#c9f31d;margin:0 0 12px">Baiking · ${escapeHtml(campaign.edicion.nombre)}</p>
-    <h1 style="font-size:28px;line-height:1.15;margin:0 0 16px">¡Ya estás adentro, ${nombre}!</h1>
-    <p style="font-size:16px;line-height:1.6;margin:0 0 20px;color:#c8d0d8">${intro}</p>
+  const html = marcoMail(
+    campaign,
+    `¡Ya estás adentro, ${nombre}!`,
+    `<p style="font-size:16px;line-height:1.6;margin:0 0 20px;color:#4a4649">${intro}</p>
 
-    <div style="background:#121820;border:1px solid #223041;border-radius:14px;padding:20px;margin:0 0 20px">
-      <p style="margin:0 0 6px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#9aa6b2">
+    <div style="background:#fff0f2;border:1px solid #f3b5be;border-radius:14px;padding:20px;margin:0 0 20px">
+      <p style="margin:0 0 6px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#6e686b">
         ${plural ? `Tus ${escapeHtml(u)}` : `Tu ${escapeHtml(u)}`}
       </p>
-      <p style="margin:0;font-size:26px;font-weight:700;letter-spacing:.04em;color:#c9f31d">${lista}</p>
-      <p style="margin:12px 0 0;font-size:13px;color:#9aa6b2">Orden ${escapeHtml(orden.id)}</p>
+      <p style="margin:0;font-size:26px;font-weight:700;letter-spacing:.04em;color:#c40020">${lista}</p>
+      <p style="margin:12px 0 0;font-size:13px;color:#6e686b">Orden ${escapeHtml(orden.id)}</p>
     </div>
 
     <table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 24px;font-size:15px">
-      <tr><td style="padding:8px 0;color:#9aa6b2">Sorteo en vivo</td><td style="padding:8px 0;text-align:right">${escapeHtml(fecha)} hs · Instagram @${escapeHtml(campaign.contacto.instagram)}</td></tr>
-      <tr><td style="padding:8px 0;color:#9aa6b2">Bici elegida</td><td style="padding:8px 0;text-align:right">${escapeHtml(bici?.nombre || '')}</td></tr>
-      <tr><td style="padding:8px 0;color:#9aa6b2">${escapeHtml(unidad(campaign, 2).charAt(0).toUpperCase() + unidad(campaign, 2).slice(1))}</td><td style="padding:8px 0;text-align:right">${numeros.length}</td></tr>
+      <tr><td style="padding:8px 0;color:#6e686b">Sorteo en vivo</td><td style="padding:8px 0;text-align:right">${escapeHtml(fecha)} hs · Instagram @${escapeHtml(campaign.contacto.instagram)}</td></tr>
+      <tr><td style="padding:8px 0;color:#6e686b">Bici elegida</td><td style="padding:8px 0;text-align:right">${escapeHtml(bici?.nombre || '')}</td></tr>
+      <tr><td style="padding:8px 0;color:#6e686b">${escapeHtml(unidad(campaign, 2).charAt(0).toUpperCase() + unidad(campaign, 2).slice(1))}</td><td style="padding:8px 0;text-align:right">${numeros.length}</td></tr>
     </table>
 
     ${
       gratuita
         ? ''
-        : `<a href="${escapeHtml(curso.url_acceso || baseUrl)}" style="display:inline-block;background:#c9f31d;color:#0b0f14;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:999px">Entrar al curso</a>`
+        : `<a href="${escapeHtml(curso.url_acceso || baseUrl)}" style="display:inline-block;background:#eb0627;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:10px">Entrar al curso</a>`
     }
 
-    <p style="font-size:13px;line-height:1.6;color:#9aa6b2;margin:28px 0 0">
+    <p style="font-size:13px;line-height:1.6;color:#6e686b;margin:28px 0 0">
       Guardá este mail: es tu comprobante de participación. Podés ver tus ${escapeHtml(unidad(campaign, 2))} cuando quieras en
-      <a href="${escapeHtml(baseUrl)}/gracias?orden=${escapeHtml(orden.id)}" style="color:#c9f31d">${escapeHtml(baseUrl)}/gracias</a>.
-    </p>
-    ${pieLegalHtml(campaign, baseUrl)}
-  </div>
-</body></html>`;
+      <a href="${escapeHtml(baseUrl)}/gracias?orden=${escapeHtml(orden.id)}" style="color:#c40020">${escapeHtml(baseUrl)}/gracias</a>.
+    </p>`,
+    baseUrl,
+  );
 
   const text = `¡Ya estás adentro, ${orden.nombre}!
 ${
@@ -141,15 +138,40 @@ ${pieLegalTexto(campaign, baseUrl)}`;
 
 const fmtARS = (n) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
 
+/**
+ * Marco común de todos los mails (identidad Baiking: header rojo con el logo, tarjeta
+ * blanca, un solo botón rojo, pie gris con contacto y leyenda legal). Tablas e inline
+ * styles porque los clientes de mail no cargan CSS ni tipografías externas.
+ * El logo se sirve desde el sitio (`${baseUrl}/assets/img/logo-baiking-blanco.png`).
+ */
 function marcoMail(campaign, titulo, cuerpoHtml, baseUrl) {
+  const logo = `${baseUrl}/assets/img/logo-baiking-blanco.png`;
+  const contacto = campaign.contacto || {};
+  const wa = contacto.whatsapp ? `https://wa.me/${escapeHtml(contacto.whatsapp)}` : '';
+  const ig = contacto.instagram ? `https://instagram.com/${escapeHtml(contacto.instagram)}` : '';
   return `<!doctype html>
-<html lang="es"><body style="margin:0;background:#0b0f14;font-family:Inter,Arial,sans-serif;color:#f4f6f8">
-  <div style="max-width:560px;margin:0 auto;padding:32px 20px">
-    <p style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#c9f31d;margin:0 0 12px">Baiking · ${escapeHtml(campaign.edicion.nombre)}</p>
-    <h1 style="font-size:28px;line-height:1.15;margin:0 0 16px">${titulo}</h1>
-    ${cuerpoHtml}
-    ${pieLegalHtml(campaign, baseUrl)}
-  </div>
+<html lang="es"><body style="margin:0;padding:0;background:#f4f2f3;font-family:Helvetica,Arial,sans-serif;color:#1c1a1b;-webkit-font-smoothing:antialiased">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f2f3;border-collapse:collapse">
+    <tr><td align="center" style="padding:24px 12px">
+      <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="max-width:560px;width:100%;border-collapse:separate;border-radius:16px;overflow:hidden;background:#ffffff;border:1px solid #e6e0e2">
+        <tr><td style="background:#eb0627;padding:18px 28px" align="center">
+          <img src="${escapeHtml(logo)}" alt="Baiking · Tienda de bicis" height="40" style="height:40px;width:auto;display:block;border:0">
+        </td></tr>
+        <tr><td style="padding:28px 28px 8px">
+          <p style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#c40020;margin:0 0 12px;font-weight:700">${escapeHtml(campaign.edicion.nombre)} · Curso + sorteo</p>
+          <h1 style="font-size:26px;line-height:1.15;margin:0 0 16px;color:#1c1a1b">${titulo}</h1>
+          ${cuerpoHtml}
+        </td></tr>
+        <tr><td style="padding:20px 28px 28px">
+          <p style="font-size:13px;line-height:1.6;color:#6e686b;margin:0;border-top:1px solid #e6e0e2;padding-top:18px">
+            ¿Dudas? Respondé este mail${wa ? ` o escribinos por <a href="${wa}" style="color:#c40020">WhatsApp</a>` : ''}${ig ? ` · <a href="${ig}" style="color:#c40020">@${escapeHtml(contacto.instagram)}</a>` : ''}.<br>
+            Baiking Tienda de Bicis · ${escapeHtml(contacto.direccion || '')}
+          </p>
+          ${pieLegalHtml(campaign, baseUrl)}
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
 </body></html>`;
 }
 
@@ -188,12 +210,12 @@ export function armarMailTransferencia({ orden, campaign, baseUrl }) {
   const html = marcoMail(
     campaign,
     `Reservamos tu lugar, ${escapeHtml(orden.nombre)}`,
-    `<p style="font-size:16px;line-height:1.6;margin:0 0 20px;color:#c8d0d8">Elegiste pagar el <strong style="color:#fff">${escapeHtml(curso.nombre_corto)}</strong>${escapeHtml(packTxt)} por transferencia. Transferí el monto exacto (si tu banco pide un concepto, poné tu nombre y apellido) y subí el comprobante desde el botón. Si ya transferiste, solo falta el comprobante. Lo confirmamos en menos de ${escapeHtml(plazo)} hs y te asignamos tus ${escapeHtml(unidad(campaign, 2))}.</p>
-    <table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 24px;font-size:15px;background:#121820;border:1px solid #223041;border-radius:14px">
-      ${filas.map(([k, v]) => `<tr><td style="padding:10px 14px;color:#9aa6b2">${escapeHtml(k)}</td><td style="padding:10px 14px;text-align:right;font-weight:600;color:#fff">${escapeHtml(v)}</td></tr>`).join('')}
+    `<p style="font-size:16px;line-height:1.6;margin:0 0 20px;color:#4a4649">Elegiste pagar el <strong style="color:#1c1a1b">${escapeHtml(curso.nombre_corto)}</strong>${escapeHtml(packTxt)} por transferencia. Transferí el monto exacto (si tu banco pide un concepto, poné tu nombre y apellido) y subí el comprobante desde el botón. Si ya transferiste, solo falta el comprobante. Lo confirmamos en menos de ${escapeHtml(plazo)} hs y te asignamos tus ${escapeHtml(unidad(campaign, 2))}.</p>
+    <table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 24px;font-size:15px;background:#fff0f2;border:1px solid #f3b5be;border-radius:14px">
+      ${filas.map(([k, v]) => `<tr><td style="padding:10px 14px;color:#6e686b">${escapeHtml(k)}</td><td style="padding:10px 14px;text-align:right;font-weight:600;color:#1c1a1b">${escapeHtml(v)}</td></tr>`).join('')}
     </table>
-    <a href="${escapeHtml(link)}" style="display:inline-block;background:#c9f31d;color:#0b0f14;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:999px">Subir el comprobante</a>
-    <p style="font-size:14px;line-height:1.6;color:#9aa6b2;margin:20px 0 0">${porMailHtml}La reserva vence si no recibimos la transferencia en ${escapeHtml(plazo)} hs.</p>`,
+    <a href="${escapeHtml(link)}" style="display:inline-block;background:#eb0627;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:10px">Subir el comprobante</a>
+    <p style="font-size:14px;line-height:1.6;color:#6e686b;margin:20px 0 0">${porMailHtml}La reserva vence si no recibimos la transferencia en ${escapeHtml(plazo)} hs.</p>`,
     baseUrl,
   );
   const porMailTexto = mailComprobantes ? ` o respondé este mail con el comprobante adjunto (con tu nombre y DNI en el asunto)` : '';
@@ -231,13 +253,13 @@ export function armarMailGratuitaPendiente({ orden, campaign, baseUrl }) {
   const html = marcoMail(
     campaign,
     `Registramos tus datos, ${escapeHtml(orden.nombre)}`,
-    `<p style="font-size:16px;line-height:1.6;margin:0 0 16px;color:#c8d0d8">Tu participación <strong style="color:#fff">sin obligación de compra</strong> queda firme cuando recibimos tu carta. Mandala por correo a:</p>
+    `<p style="font-size:16px;line-height:1.6;margin:0 0 16px;color:#4a4649">Tu participación <strong style="color:#1c1a1b">sin obligación de compra</strong> queda firme cuando recibimos tu carta. Mandala por correo a:</p>
     <p style="font-size:17px;line-height:1.5;margin:0 0 6px;color:#fff;font-weight:700">${escapeHtml(direccion)}</p>
-    <p style="font-size:14px;line-height:1.6;margin:0 0 20px;color:#9aa6b2">o entregala en la tienda${escapeHtml(horarios)}.</p>
-    <p style="font-size:15px;line-height:1.6;margin:0 0 8px;color:#c8d0d8">La carta tiene que incluir:</p>
-    <ul style="margin:0 0 20px;padding-left:20px;font-size:15px;line-height:1.7;color:#c8d0d8">${requisitos.map((r) => `<li>${escapeHtml(r)}</li>`).join('')}</ul>
-    <p style="font-size:15px;line-height:1.6;margin:0 0 20px;color:#c8d0d8">Tenés <strong style="color:#fff">${plazoDias} días</strong>: la carta tiene que llegar antes del <strong style="color:#fff">${escapeHtml(vence)}</strong>. Cuando la recibamos te mandamos un mail con tu ${escapeHtml(u)}. Una (1) ${escapeHtml(u)} por persona, con la misma probabilidad que cualquier otra.</p>
-    <a href="${escapeHtml(link)}" style="display:inline-block;background:#c9f31d;color:#0b0f14;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:999px">Ver el estado de mi participación</a>`,
+    <p style="font-size:14px;line-height:1.6;margin:0 0 20px;color:#6e686b">o entregala en la tienda${escapeHtml(horarios)}.</p>
+    <p style="font-size:15px;line-height:1.6;margin:0 0 8px;color:#4a4649">La carta tiene que incluir:</p>
+    <ul style="margin:0 0 20px;padding-left:20px;font-size:15px;line-height:1.7;color:#4a4649">${requisitos.map((r) => `<li>${escapeHtml(r)}</li>`).join('')}</ul>
+    <p style="font-size:15px;line-height:1.6;margin:0 0 20px;color:#4a4649">Tenés <strong style="color:#1c1a1b">${plazoDias} días</strong>: la carta tiene que llegar antes del <strong style="color:#1c1a1b">${escapeHtml(vence)}</strong>. Cuando la recibamos te mandamos un mail con tu ${escapeHtml(u)}. Una (1) ${escapeHtml(u)} por persona, con la misma probabilidad que cualquier otra.</p>
+    <a href="${escapeHtml(link)}" style="display:inline-block;background:#eb0627;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:10px">Ver el estado de mi participación</a>`,
     baseUrl,
   );
   const text = `Registramos tus datos, ${orden.nombre}.
@@ -265,9 +287,9 @@ export function armarMailComprobanteRecibido({ orden, campaign, baseUrl }) {
   const html = marcoMail(
     campaign,
     `Recibimos tu comprobante, ${escapeHtml(orden.nombre)}`,
-    `<p style="font-size:16px;line-height:1.6;margin:0 0 20px;color:#c8d0d8">Recibimos el comprobante de tu transferencia de <strong style="color:#fff">${escapeHtml(detalle)}</strong>. Lo estamos revisando: en cuanto se acredite te mandamos otro mail con el acceso al curso y tus ${escapeHtml(unidad(campaign, 2))} (en general, en menos de ${escapeHtml(plazo)} hs).</p>
-    <a href="${escapeHtml(link)}" style="display:inline-block;background:#c9f31d;color:#0b0f14;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:999px">Ver el estado de mi orden</a>
-    <p style="font-size:13px;line-height:1.6;color:#9aa6b2;margin:20px 0 0">Orden ${escapeHtml(orden.id)}</p>`,
+    `<p style="font-size:16px;line-height:1.6;margin:0 0 20px;color:#4a4649">Recibimos el comprobante de tu transferencia de <strong style="color:#1c1a1b">${escapeHtml(detalle)}</strong>. Lo estamos revisando: en cuanto se acredite te mandamos otro mail con el acceso al curso y tus ${escapeHtml(unidad(campaign, 2))} (en general, en menos de ${escapeHtml(plazo)} hs).</p>
+    <a href="${escapeHtml(link)}" style="display:inline-block;background:#eb0627;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:10px">Ver el estado de mi orden</a>
+    <p style="font-size:13px;line-height:1.6;color:#6e686b;margin:20px 0 0">Orden ${escapeHtml(orden.id)}</p>`,
     baseUrl,
   );
   const text = `Recibimos tu comprobante, ${orden.nombre}.
