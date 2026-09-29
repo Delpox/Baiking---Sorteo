@@ -62,7 +62,7 @@ export default async function handler(req, res) {
   try {
     const cupo = Number(campaign.edicion.cupo_total || 0);
     if (cupo && (await contarParticipaciones(campaign.edicion.id)) >= cupo) {
-      return json(res, 409, { error: 'Se ocuparon todas las chances de esta edición.' });
+      return json(res, 409, { error: 'Se ocuparon todas las participaciones de esta edición.' });
     }
 
     const porEmail = await contarOrdenes({ edicionId: campaign.edicion.id, email, origen: 'gratuita' });

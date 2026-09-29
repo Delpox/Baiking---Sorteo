@@ -104,9 +104,9 @@ export default async function handler(req, res) {
     if (cupo) {
       const ocupadas = await contarParticipaciones(campaign.edicion.id);
       const restantes = cupo - ocupadas;
-      if (restantes <= 0) return json(res, 409, { error: 'Se ocuparon todas las chances de esta edición.' });
+      if (restantes <= 0) return json(res, 409, { error: 'Se ocuparon todas las participaciones de esta edición.' });
       if (datos.pack.participaciones > restantes) {
-        return json(res, 409, { error: `Quedan solo ${restantes} chances disponibles. Elegí una opción más chica.` });
+        return json(res, 409, { error: `Quedan solo ${restantes} participaciones disponibles. Elegí otro producto.` });
       }
     }
 

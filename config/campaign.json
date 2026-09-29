@@ -280,14 +280,14 @@
   },
   "contacto": {
     "whatsapp": "5491157280056",
-    "whatsapp_mensaje": "¡Hola, Baiking! Quiero saber más sobre el curso y las chances para el sorteo de la Polygon.",
+    "whatsapp_mensaje": "¡Hola, Baiking! Quiero saber más sobre los productos digitales y el sorteo de la Polygon.",
     "instagram": "baikingtiendadebicis",
     "email": "belen.baiking@gmail.com",
     "direccion": "Las Camelias 3327, Del Viso (Pilar), Buenos Aires",
     "horarios": "Lun a vie de 9:30 a 13:30 y de 15:30 a 19:30 · Sáb de 9:00 a 14:00"
   },
   "sorteo": {
-    "metodo": "El número ganador se obtiene en vivo con un generador de números aleatorios auditable, sobre el padrón de chances cerrado antes del sorteo.",
+    "metodo": "El número ganador se obtiene en vivo con un generador de números aleatorios auditable, sobre el padrón de participaciones cerrado antes del sorteo.",
     "reglas": [
       {
         "titulo": "Números correlativos",
@@ -299,11 +299,11 @@
       },
       {
         "titulo": "Padrón cerrado",
-        "texto": "Las inscripciones cierran el día anterior al sorteo. Antes de sortear publicamos cuántas chances participan."
+        "texto": "Las inscripciones cierran el día anterior al sorteo. Antes de sortear publicamos cuántas participaciones hay."
       },
       {
         "titulo": "Suplentes",
-        "texto": "Se sortean dos chances suplentes. Si la persona ganadora no responde o no acredita identidad en 7 días hábiles, el premio pasa a la siguiente."
+        "texto": "Se sortean dos números suplentes. Si la persona ganadora no responde o no acredita identidad en 7 días hábiles, el premio pasa a la siguiente."
       }
     ],
     "_premios_secundarios_nota": "Vacío en la primera edición. Si se agregan (ej. { \"puesto\": \"2° premio\", \"detalle\": \"Casco + kit Baiking\" }), aparecen solos en el sitio y en las bases.",

@@ -39,7 +39,7 @@
   function renderOk(orden, campaign) {
     clearInterval(state.poll);
     $('#ok-nombre').textContent = orden.nombre;
-    $('#ok-numeros').innerHTML = pillsNumeros(orden.numeros, campaign.unidad?.plural || 'chances');
+    $('#ok-numeros').innerHTML = pillsNumeros(orden.numeros, campaign.unidad?.plural || 'participaciones');
     $('#ok-titulo').textContent = orden.numeros.length > 1 ? 'Tus participaciones' : 'Tu participación';
     $('#ok-bici').textContent = orden.bici?.nombre || '—';
     $('#ok-pack').textContent = orden.pack ? orden.pack.nombre : 'Participación sin cargo';

@@ -48,7 +48,7 @@ const mails = [
   },
   {
     clave: 'carta-confirmada',
-    cuando: 'Cuando Baiking marca "Carta recibida" en el panel: la chance queda asignada.',
+    cuando: 'Cuando Baiking marca "Carta recibida" en el panel: la participación queda asignada.',
     ...armarMailConfirmacion({ orden: { ...gratuita, carta_recibida_at: ahora.toISOString() }, numeros: [1587], campaign, baseUrl, gratuita: true }),
   },
   {
@@ -69,7 +69,7 @@ if (typeof N.armarMailRecordatorioSemana === 'function') {
 if (typeof N.armarMailRecordatorioSorteo === 'function') {
   mails.push({
     clave: 'recordatorio-sorteo',
-    cuando: 'El día del sorteo, a las 10:00, a todas las personas con chances confirmadas.',
+    cuando: 'El día del sorteo, a las 10:00, a todas las personas con participaciones confirmadas.',
     ...N.armarMailRecordatorioSorteo({ persona, numeros, campaign, baseUrl }),
   });
 }
@@ -157,8 +157,8 @@ const page = `<!doctype html>
     <h2>Qué falta decidir</h2>
     <ul>
       <li><b>Remitente.</b> Para mandar desde <i>@baiking.com.ar</i> hay que verificar el dominio en Resend (dos registros DNS). Una casilla de Gmail no sirve como remitente; sí como casilla de respuestas.</li>
-      <li><b>Acceso al curso.</b> Hoy el botón "Entrar al curso" apunta al sitio porque no hay plataforma definida (<code>curso.url_acceso</code> vacío). Si el curso se manda por WhatsApp o por link de YouTube no listado, el botón cambia a ese link.</li>
-      <li><b>Recordatorios.</b> No hay mails de recordatorio automáticos (por ejemplo, "faltan 3 días para el sorteo" o "tu carta no llegó"). Se pueden agregar como un envío programado.</li>
+      <li><b>Entrega de los productos.</b> Cada producto se manda como link en el mail de confirmación (<code>packs[].entrega_url</code> en la config; el curso usa el link de YouTube no listado en <code>curso.url_acceso</code>). Hoy los tres links están vacíos: hasta cargarlos, el mail avisa que el producto llega aparte.</li>
+      <li><b>Recordatorios.</b> Los dos últimos mails (una semana antes y el día del sorteo) los manda un envío programado diario a las 10:00, una sola vez por edición y por persona.</li>
       <li><b>Ganador.</b> El aviso al ganador se hace a mano el día del sorteo (mail, WhatsApp y llamado).</li>
     </ul>
   </div>

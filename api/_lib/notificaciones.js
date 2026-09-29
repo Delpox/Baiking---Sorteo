@@ -1,6 +1,6 @@
 // Notificaciones al participante: mail (Resend) y WhatsApp (Meta Cloud API).
-// Regla de copy: lo que se cobra es SIEMPRE el curso; las participaciones ("chances")
-// son una bonificación del curso y nunca se presentan como lo comprado.
+// Regla de copy: lo que se cobra es SIEMPRE un producto digital (fondos, checklist, curso);
+// cada compra otorga UNA participación en el sorteo y nunca se presenta como lo comprado.
 import { env } from './http.js';
 import { configCarta, venceCarta } from './carta.js';
 
@@ -24,9 +24,9 @@ const fmtNumero = (n) => String(n).padStart(4, '0');
 
 /**
  * Cómo se muestran los números de una orden: pocos → lista ("0001 · 0002 · 0003");
- * muchos y consecutivos (los packs grandes: 100, 500, 2000 chances; el RPC siempre asigna
- * un bloque correlativo) → rango ("del 0001 al 0100"), para que el mail no lleve miles de
- * números y el parámetro de la plantilla de WhatsApp no supere el largo que admite Meta.
+ * muchos y consecutivos (si un producto otorgara más de una participación, el RPC siempre
+ * asigna un bloque correlativo) → rango ("del 0001 al 0100"), para que el mail no lleve
+ * miles de números y el parámetro de la plantilla de WhatsApp no supere el largo de Meta.
  */
 export function describirNumeros(numeros, { sep = ' · ', maxLista = 12, maxTramos = 6 } = {}) {
   const lista = [...new Set((numeros || []).map(Number).filter(Number.isFinite))].sort((a, b) => a - b);
@@ -343,7 +343,7 @@ const PARRAFO = 'font-size:16px;line-height:1.6;margin:0 0 20px;color:#4a4649';
 /**
  * Recordatorio "falta una semana para el sorteo" (lo manda /api/recordatorios una sola vez
  * por edición, a una persona por email). Tres variantes según las órdenes de la persona:
- *  - general: fecha del sorteo, cierre de inscripciones y botón "Sumar chances";
+ *  - general: fecha del sorteo, cierre de inscripciones y botón "Ver los productos";
  *  - comprobante: su última orden por transferencia sigue `pendiente` (sin comprobante);
  *  - carta: tiene una participación sin cargo `pendiente` de la carta.
  * Devuelve { subject, html, text, variante }.

@@ -27,7 +27,7 @@ import { texto } from './validar.js';
 
 export const ENCABEZADO = [
   'orden_id', 'fecha', 'nombre', 'apellido', 'dni', 'email', 'whatsapp', 'provincia', 'bici', 'pack',
-  'chances', 'monto', 'estado', 'comprobante', 'IA: monto ok / destino ok', 'números', 'Llegó la plata',
+  'participaciones', 'monto', 'estado', 'comprobante', 'IA: monto ok / destino ok', 'números', 'Llegó la plata',
   'acreditada_at', 'nota',
 ];
 export const COL_LLEGO = ENCABEZADO.indexOf('Llegó la plata'); // Q
