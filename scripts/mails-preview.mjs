@@ -4,12 +4,8 @@
 // Sirve para revisar el copy y el formato antes de lanzar: node scripts/mails-preview.mjs
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
-import {
-  armarMailComprobanteRecibido,
-  armarMailConfirmacion,
-  armarMailTransferencia,
-  armarMailGratuitaPendiente,
-} from '../api/_lib/notificaciones.js';
+import * as N from '../api/_lib/notificaciones.js';
+const { armarMailComprobanteRecibido, armarMailConfirmacion, armarMailTransferencia, armarMailGratuitaPendiente } = N;
 
 const root = path.resolve(new URL('..', import.meta.url).pathname);
 const campaign = JSON.parse(await readFile(path.join(root, 'config/campaign.json'), 'utf8'));
@@ -61,6 +57,22 @@ const mails = [
     ...armarMailTransferencia({ orden, campaign, baseUrl }),
   },
 ];
+// Recordatorios (una semana antes y el día del sorteo): se agregan cuando existen en notificaciones.js.
+const persona = { nombre: orden.nombre, email: orden.email };
+if (typeof N.armarMailRecordatorioSemana === 'function') {
+  mails.push({
+    clave: 'recordatorio-semana',
+    cuando: 'Una semana antes del sorteo, a las 10:00, a todas las personas con alguna orden (una por mail).',
+    ...N.armarMailRecordatorioSemana({ persona, ordenes: [{ ...orden, estado: 'pagada' }], campaign, baseUrl }),
+  });
+}
+if (typeof N.armarMailRecordatorioSorteo === 'function') {
+  mails.push({
+    clave: 'recordatorio-sorteo',
+    cuando: 'El día del sorteo, a las 10:00, a todas las personas con chances confirmadas.',
+    ...N.armarMailRecordatorioSorteo({ persona, numeros, campaign, baseUrl }),
+  });
+}
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 // El HTML del mail se muestra dentro de la página; se reemplaza el logo remoto por la copia inline.
