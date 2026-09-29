@@ -1,0 +1,12 @@
+# Lo que NO se sube a Vercel (todo lo demás del repo se sirve como archivo público).
+node_modules
+dist
+screenshots
+docs
+scripts
+supabase
+README.md
+.env.example
+.env
+.env.local
+package-lock.json
