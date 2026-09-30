@@ -44,7 +44,8 @@ export function problemasDelPago(pago, orden, campaign, ahora = Date.now()) {
 }
 
 /**
- * Devuelve { estado, numeros?, nota?, ignorado? } describiendo qué pasó con la orden.
+ * Devuelve { estado, rango?, nota?, ignorado? } describiendo qué pasó con la orden
+ * (`rango` = { desde, hasta, cantidad }: el bloque de números, solo cuando queda pagada).
  * Nunca lanza por reglas de negocio; solo por errores de infraestructura (base, mail).
  */
 export async function aplicarPago({ pago, orden, campaign, baseUrl }) {
@@ -95,10 +96,10 @@ export async function aplicarPago({ pago, orden, campaign, baseUrl }) {
   if (orden.estado === 'pagada') {
     if (esElPagoDeLaOrden || !orden.mp_payment_id) {
       // Reintento de la misma notificación: confirmarOrden es idempotente
-      // (mismos números; mail y WhatsApp solo si faltaban).
+      // (mismo bloque de números; mail y WhatsApp solo si faltaban).
       if (!orden.mp_payment_id) await actualizarOrden(orden.id, { mp_payment_id: pagoId });
-      const { numeros } = await confirmarOrden({ orden, campaign, baseUrl });
-      return { estado: 'pagada', numeros };
+      const { rango } = await confirmarOrden({ orden, campaign, baseUrl });
+      return { estado: 'pagada', rango };
     }
     // Segundo pago aprobado sobre una orden ya pagada (doble pago): anotar para reembolsarlo desde MP.
     console.warn(`[pagos mp] pago ${pagoId} aprobado sobre la orden ${orden.id}, que ya fue pagada con ${orden.mp_payment_id}: reembolsar desde Mercado Pago`);
@@ -118,7 +119,7 @@ export async function aplicarPago({ pago, orden, campaign, baseUrl }) {
     return { estado: 'en_revision', nota };
   }
 
-  const { numeros } = await confirmarOrden({
+  const { rango } = await confirmarOrden({
     orden,
     campaign,
     baseUrl,
@@ -127,5 +128,5 @@ export async function aplicarPago({ pago, orden, campaign, baseUrl }) {
       pagada_at: new Date(pago.date_approved || Date.now()).toISOString(),
     },
   });
-  return { estado: 'pagada', numeros };
+  return { estado: 'pagada', rango };
 }

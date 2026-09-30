@@ -1,7 +1,8 @@
 // Confirmación de una orden (la usan el webhook de Mercado Pago, la aprobación
 // de transferencias desde el panel y la vía gratuita):
-//   1) marca la orden como pagada, 2) asigna los números (atómico e idempotente),
-//   3) manda mail y WhatsApp una sola vez. Devuelve la orden actualizada y los números.
+//   1) marca la orden como pagada, 2) le asigna su bloque correlativo de números (atómico e
+//   idempotente), 3) manda mail y WhatsApp una sola vez. Devuelve la orden actualizada y el
+//   bloque como `rango` = { desde, hasta, cantidad }.
 //
 // "Una sola vez" se garantiza con un update condicional en la base
 // (`update ... set email_enviado_at = now() where id = $1 and email_enviado_at is null`):
@@ -21,11 +22,12 @@ export async function confirmarOrden({ orden, campaign, baseUrl, cambios = {}, g
     });
   }
 
-  const numeros = await asignarParticipaciones(actual.id);
+  const rango = await asignarParticipaciones(actual.id);
+  actual = { ...actual, numero_desde: rango.desde, numero_hasta: rango.hasta };
 
   if (!actual.email_enviado_at && (await reclamarMarca(actual.id, 'email_enviado_at'))) {
     try {
-      const mail = armarMailConfirmacion({ orden: actual, numeros, campaign, baseUrl, gratuita });
+      const mail = armarMailConfirmacion({ orden: actual, rango, campaign, baseUrl, gratuita });
       await enviarMail({ to: actual.email, ...mail });
       actual = { ...actual, email_enviado_at: new Date().toISOString() };
     } catch (err) {
@@ -36,7 +38,7 @@ export async function confirmarOrden({ orden, campaign, baseUrl, cambios = {}, g
 
   if (!gratuita && !actual.whatsapp_enviado_at && whatsappConfigurado() && (await reclamarMarca(actual.id, 'whatsapp_enviado_at'))) {
     try {
-      await enviarWhatsApp({ orden: actual, numeros, campaign, baseUrl });
+      await enviarWhatsApp({ orden: actual, rango, campaign, baseUrl });
       actual = { ...actual, whatsapp_enviado_at: new Date().toISOString() };
     } catch (err) {
       console.error(`[confirmar] whatsapp de la orden ${actual.id}:`, err.message || err);
@@ -45,6 +47,6 @@ export async function confirmarOrden({ orden, campaign, baseUrl, cambios = {}, g
   }
 
   // Espejo en Google Sheets (no lanza: si la planilla no está configurada, no hace nada).
-  await espejarOrdenEnSheet(actual, { numeros });
-  return { orden: actual, numeros };
+  await espejarOrdenEnSheet(actual, { rango });
+  return { orden: actual, rango };
 }

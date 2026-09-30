@@ -22,7 +22,8 @@
 import { createSign } from 'node:crypto';
 import campaign from '../../config/campaign.json' with { type: 'json' };
 import { baseUrl as baseUrlDe } from './http.js';
-import { db, actualizarOrden, obtenerParticipaciones } from './db.js';
+import { db, actualizarOrden, obtenerRango, rangoDeOrden } from './db.js';
+import { fmtNumero } from './notificaciones.js';
 import { texto } from './validar.js';
 
 export const ENCABEZADO = [
@@ -209,10 +210,22 @@ const nombreBici = (id) => campaign.bicis.find((b) => b.id === id)?.nombre || id
 const nombrePack = (id) => (id === 'gratuita' ? 'Sin cargo' : campaign.packs.find((p) => p.id === id)?.nombre || id || '');
 
 /**
+ * Columna "números": el bloque correlativo de la orden ({ desde, hasta, cantidad }) como
+ * texto, con separador de miles ("del 1 al 10.000"; un solo número: "N.º 1.587"); '' sin bloque.
+ */
+export function textoRango(rango) {
+  if (!rango || !Number.isFinite(Number(rango.desde))) return '';
+  const desde = Number(rango.desde);
+  const hasta = Number(rango.hasta ?? rango.desde);
+  return hasta > desde ? `del ${fmtNumero(desde)} al ${fmtNumero(hasta)}` : `N.º ${fmtNumero(desde)}`;
+}
+
+/**
  * Fila de la planilla (19 celdas, en el orden de ENCABEZADO) para una orden. Q y S vienen
  * como null cuando la base no tiene valor: escribirFilas() no las toca en filas existentes.
+ * `rango`: el bloque de números; si no se pasa, se toma de numero_desde / numero_hasta de la orden.
  */
-export function filaDeOrden(orden, numeros = []) {
+export function filaDeOrden(orden, rango = null) {
   const checks = orden.comprobante_datos?.checks || null;
   const ia = checks ? `${checks.monto_ok ? 'OK' : 'NO'} / ${checks.destino_ok ? 'OK' : 'NO'}` : orden.comprobante_at ? 'sin lectura' : '';
   const monto = Number(orden.monto);
@@ -232,7 +245,7 @@ export function filaDeOrden(orden, numeros = []) {
     celda(orden.estado),
     fechaBA(orden.comprobante_at),
     ia,
-    (numeros || []).map((n) => String(n).padStart(4, '0')).join(', '),
+    textoRango(rango || rangoDeOrden(orden)),
     orden.acreditada == null ? null : orden.acreditada ? 'SI' : 'NO',
     fechaBA(orden.acreditada_at),
     orden.acreditada_nota == null ? null : String(orden.acreditada_nota),
@@ -357,10 +370,10 @@ export async function escribirFilas(filas, { existentes } = {}) {
   return { actualizadas, agregadas: nuevas.length };
 }
 
-async function borrarFilas(numerosDeFila) {
+async function borrarFilas(indicesDeFila) {
   const sheetId = await obtenerSheetId();
   if (sheetId == null) throw new Error('[sheets] no se encontró la pestaña para borrar filas repetidas');
-  const requests = [...numerosDeFila]
+  const requests = [...indicesDeFila]
     .sort((a, b) => b - a) // de abajo hacia arriba, para que no se corran los índices
     .map((n) => ({ deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex: n - 1, endIndex: n } } }));
   await llamarSheets(':batchUpdate', { method: 'POST', body: { requests } });
@@ -399,24 +412,17 @@ async function todas(construir) {
   }
 }
 
-/** Órdenes de la edición (por fecha de creación) y números asignados por orden. */
-async function cargarOrdenes(edicionId) {
-  const ordenes = await todas(() => db().from('ordenes').select('*').eq('edicion_id', edicionId).order('created_at', { ascending: true }));
-  const participaciones = await todas(() => db().from('participaciones').select('orden_id,numero').eq('edicion_id', edicionId).order('numero', { ascending: true }));
-  const numerosPorOrden = new Map();
-  for (const p of participaciones) {
-    if (!numerosPorOrden.has(p.orden_id)) numerosPorOrden.set(p.orden_id, []);
-    numerosPorOrden.get(p.orden_id).push(p.numero);
-  }
-  return { ordenes, numerosPorOrden };
+/** Órdenes de la edición (por fecha de creación); el bloque de números viaja en numero_desde / numero_hasta. */
+function cargarOrdenes(edicionId) {
+  return todas(() => db().from('ordenes').select('*').eq('edicion_id', edicionId).order('created_at', { ascending: true }));
 }
 
 /**
  * Misma lógica que la acción "acreditar" del panel (api/admin.js): solo transferencias; guarda
  * acreditada, acreditada_at, acreditada_nota, revisado_por y revisado_at y, si es SI sobre una
- * orden pendiente o en revisión, la confirma (números + mail + WhatsApp, idempotente). Con NO,
- * o con SI sobre una orden cerrada, solo marca: rechazar sigue siendo una decisión del panel.
- * Devuelve { orden, numeros, confirmada }.
+ * orden pendiente o en revisión, la confirma (bloque de números + mail + WhatsApp, idempotente).
+ * Con NO, o con SI sobre una orden cerrada, solo marca: rechazar sigue siendo una decisión del panel.
+ * Devuelve { orden, rango, confirmada } (rango = { desde, hasta, cantidad } o null si no confirmó).
  */
 export async function marcarAcreditada({ orden, acreditada, nota = null, baseUrl, revisor = 'planilla' }) {
   if (orden.medio_pago !== 'transferencia') throw new Error(`Solo se concilian transferencias (esta orden es ${orden.medio_pago})`);
@@ -429,12 +435,12 @@ export async function marcarAcreditada({ orden, acreditada, nota = null, baseUrl
     revisado_at: ahora,
   };
   if (!(Boolean(acreditada) && ['pendiente', 'en_revision'].includes(orden.estado))) {
-    return { orden: await actualizarOrden(orden.id, marca), numeros: null, confirmada: false };
+    return { orden: await actualizarOrden(orden.id, marca), rango: null, confirmada: false };
   }
   // Import dinámico para no armar un ciclo confirmar.js ⇄ sheets.js cuando confirmarOrden llame al hook.
   const { confirmarOrden } = await import('./confirmar.js');
-  const { orden: actual, numeros } = await confirmarOrden({ orden, campaign, baseUrl: baseUrl || baseUrlDe(null), cambios: marca });
-  return { orden: actual, numeros, confirmada: true };
+  const { orden: actual, rango } = await confirmarOrden({ orden, campaign, baseUrl: baseUrl || baseUrlDe(null), cambios: marca });
+  return { orden: actual, rango, confirmada: true };
 }
 
 // ------------------------------------------------------------------ sincronización
@@ -458,7 +464,7 @@ export async function sincronizarSheet({ edicionId = campaign.edicion.id, baseUr
   try {
     const resumen = { ok: true, filas_escritas: 0, marcadas_si: 0, marcadas_no: 0, pendientes: 0, errores: [] };
     const hoja = await leerHojaLista();
-    const { ordenes, numerosPorOrden } = await cargarOrdenes(edicionId);
+    const ordenes = await cargarOrdenes(edicionId);
     const porId = new Map(ordenes.map((o) => [o.id, o]));
 
     // 1) Lo que Gastón marcó en la planilla y la base todavía no tiene.
@@ -487,9 +493,9 @@ export async function sincronizarSheet({ edicionId = campaign.edicion.id, baseUr
             porId.set(m.orden.id, await actualizarOrden(m.orden.id, { acreditada_nota: m.nota }));
             return;
           }
-          const { orden, numeros } = await marcarAcreditada({ orden: m.orden, acreditada: m.llego, nota: m.nota, baseUrl, revisor });
-          porId.set(orden.id, orden);
-          if (numeros?.length) numerosPorOrden.set(orden.id, numeros);
+          const { orden, rango } = await marcarAcreditada({ orden: m.orden, acreditada: m.llego, nota: m.nota, baseUrl, revisor });
+          // confirmarOrden ya deja numero_desde / numero_hasta en la orden; por las dudas, se fijan desde el rango.
+          porId.set(orden.id, rango ? { ...orden, numero_desde: rango.desde, numero_hasta: rango.hasta } : orden);
           resumen[m.llego ? 'marcadas_si' : 'marcadas_no'] += 1;
         }),
       );
@@ -499,7 +505,7 @@ export async function sincronizarSheet({ edicionId = campaign.edicion.id, baseUr
     }
 
     // 2) Espejo de todas las órdenes de la edición.
-    const filas = [...porId.values()].map((o) => filaDeOrden(o, numerosPorOrden.get(o.id) || []));
+    const filas = [...porId.values()].map((o) => filaDeOrden(o));
     const { actualizadas, agregadas } = await escribirFilas(filas, { existentes: hoja });
     resumen.filas_escritas = actualizadas + agregadas;
     return resumen;
@@ -513,11 +519,12 @@ export async function sincronizarSheet({ edicionId = campaign.edicion.id, baseUr
  * rechazo, acreditación). Escribe/actualiza esa fila en la planilla. Nunca lanza: si Sheets no
  * está configurado o falla, loguea y devuelve false (el cron de /api/sheets-sync la espeja después).
  */
-export async function espejarOrdenEnSheet(orden, { numeros } = {}) {
+export async function espejarOrdenEnSheet(orden, { rango } = {}) {
   if (!sheetsConfigurado() || sincronizando || !orden?.id) return false;
   try {
-    let nums = numeros;
-    if (!nums && orden.estado === 'pagada') nums = await obtenerParticipaciones(orden.id);
+    // El bloque: el que se pasa, el que trae la orden o, para una pagada sin esos campos, el de la base.
+    let bloque = rango || rangoDeOrden(orden);
+    if (!bloque && orden.estado === 'pagada') bloque = await obtenerRango(orden.id);
     let hoja;
     try {
       hoja = await leerFilas({ columnas: 'A:A' });
@@ -527,7 +534,7 @@ export async function espejarOrdenEnSheet(orden, { numeros } = {}) {
       hoja = await leerFilas({ columnas: 'A:A' });
     }
     if (hoja.encabezado[0] !== ENCABEZADO[0]) await asegurarEncabezado();
-    await escribirFilas([filaDeOrden(orden, nums || [])], { existentes: hoja });
+    await escribirFilas([filaDeOrden(orden, bloque)], { existentes: hoja });
     return true;
   } catch (err) {
     console.error(`[sheets] no se pudo espejar la orden ${orden.id}:`, err.message || err);

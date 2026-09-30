@@ -21,15 +21,20 @@ for (const p of cfg.packs) {
   if (!(Number.isFinite(p.precio) && p.precio > 0)) errores.push(`pack ${p.id}: precio inválido`);
   if (!(Number.isInteger(p.participaciones) && p.participaciones > 0)) errores.push(`pack ${p.id}: participaciones inválidas`);
 }
-// Modelo de productos (29/09): cada compra da la misma cantidad de participaciones (una), así que
-// el precio no tiene que "escalar" con las participaciones; solo se pide orden creciente de precio.
-const mismaBonificacion = cfg.packs.every((p) => p.participaciones === cfg.packs[0].participaciones);
+// Regla de participaciones (29/09): cada $1 del precio = `regla_participaciones.por_peso` participaciones
+// (hoy 1). packs[].participaciones tiene que ser exactamente precio × por_peso: el sitio, los mails
+// y las bases muestran esa cantidad y el sorteo asigna un bloque de números de ese tamaño.
+const porPeso = Number(cfg.regla_participaciones?.por_peso ?? 1);
+if (!(porPeso > 0)) errores.push('regla_participaciones.por_peso debe ser un número mayor que 0');
+for (const p of cfg.packs) {
+  const esperadas = Math.round(p.precio * porPeso);
+  if (p.participaciones !== esperadas) errores.push(`pack ${p.id}: participaciones (${p.participaciones}) ≠ precio × por_peso (${esperadas})`);
+}
 for (let i = 1; i < cfg.packs.length; i++) {
   const a = cfg.packs[i - 1], b = cfg.packs[i];
   if (b.precio <= a.precio) avisos.push(`packs: ${b.id} no es más caro que ${a.id} (la escalera va de menor a mayor)`);
-  if (!mismaBonificacion && b.precio / b.participaciones > a.precio / a.participaciones) avisos.push(`packs: ${b.id} sale más caro por unidad que ${a.id}`);
 }
-if (!mismaBonificacion) avisos.push('packs: las participaciones por compra no son iguales entre productos (revisar docs/08: nadie debería pagar por más probabilidad)');
+if (Number(cfg.participacion_gratuita?.participaciones || 1) !== 1) avisos.push('participacion_gratuita.participaciones: Baiking decidió 1 por persona (29/09)');
 const fs = new Date(cfg.edicion.fecha_sorteo).getTime();
 const cv = new Date(cfg.edicion.cierre_ventas).getTime();
 if (!(cv < fs)) errores.push('edicion: cierre_ventas debe ser anterior a fecha_sorteo');

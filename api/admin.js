@@ -1,22 +1,23 @@
 // /api/admin — datos del panel de administración (protegido por ADMIN_TOKEN, que viaja
 // en el header Authorization: Bearer <token>; ver adminAutorizado en _lib/http.js).
-//   GET  [?edicion=edicion-1]            → resumen: órdenes, presencia, contador
-//   POST { accion, orden_id, revisor, motivo }
-//        accion = 'aprobar'        → confirma una TRANSFERENCIA pendiente o en revisión (números + mail + WhatsApp)
+//   GET  [?edicion=edicion-1]            → resumen: órdenes (cada una con su bloque `rango` =
+//                                          { desde, hasta, cantidad } | null), presencia, contadores
+//   POST { accion, orden_id, revisor, motivo }   (las acciones que confirman responden `rango`)
+//        accion = 'aprobar'        → confirma una TRANSFERENCIA pendiente o en revisión (bloque de números + mail + WhatsApp)
 //        accion = 'rechazar'       → marca una orden pendiente o en revisión como rechazada
 //        accion = 'sincronizar_mp' → vuelve a consultar en Mercado Pago los pagos de una orden
 //                                    (recupera órdenes cuyo webhook se perdió; mismas reglas que el webhook)
 //        accion = 'acreditar'      → conciliación manual contra el banco de una TRANSFERENCIA:
 //                                    { acreditada: true | false | null, nota? }. true = "llegó la plata":
-//                                    si la orden está pendiente/en_revision la aprueba (números + mail);
+//                                    si la orden está pendiente/en_revision la aprueba (bloque de números + mail);
 //                                    false = "no llegó": queda marcada para reclamar, sin cambiar el estado;
 //                                    null = vuelve a "sin revisar".
 //        accion = 'carta_recibida' → vía gratuita en dos pasos: llegó la carta de una participación
-//                                    sin cargo `pendiente` → guarda carta_recibida_at, asigna la chance y manda el mail
+//                                    sin cargo `pendiente` → guarda carta_recibida_at, asigna la participación y manda el mail
 //        accion = 'carta_rechazada'→ la carta no llegó en el plazo (o no sirve): la participación queda `rechazada`
 import campaign from '../config/campaign.json' with { type: 'json' };
 import { json, readJson, getQuery, baseUrl, adminAutorizado } from './_lib/http.js';
-import { db, obtenerOrden, actualizarOrden, contarParticipaciones, contarPadron } from './_lib/db.js';
+import { db, obtenerOrden, actualizarOrden, contarParticipaciones, contarPadron, rangoDeOrden } from './_lib/db.js';
 import { confirmarOrden } from './_lib/confirmar.js';
 import { buscarPagosPorOrden } from './_lib/mercadopago.js';
 import { aplicarPago } from './_lib/pagos-mp.js';
@@ -28,7 +29,7 @@ const RE_EDICION = /^[a-z0-9-]{1,40}$/;
 
 const CAMPOS = [
   'id', 'created_at', 'pagada_at', 'estado', 'origen', 'medio_pago', 'pack_id',
-  'cantidad_participaciones', 'monto', 'bici_preferida', 'provincia', 'nombre', 'apellido',
+  'cantidad_participaciones', 'numero_desde', 'numero_hasta', 'monto', 'bici_preferida', 'provincia', 'nombre', 'apellido',
   'email', 'dni', 'whatsapp', 'codigo', 'comprobante_url', 'comprobante_datos', 'comprobante_at',
   'revisado_por', 'revisado_at', 'email_enviado_at', 'whatsapp_enviado_at', 'mp_payment_id',
   'acreditada', 'acreditada_at', 'acreditada_nota', 'carta_recibida_at', 'instrucciones_enviado_at',
@@ -73,9 +74,10 @@ async function resumen(req, res) {
     packs: campaign.packs,
     bicis: campaign.bicis.map((b) => ({ id: b.id, nombre: b.nombre })),
     presencia: { ahora: ahora || 0, hoy: visitasHoy || 0 },
-    // En el padrón (solo órdenes pagadas): coincide con el CSV del escribano.
+    // En el padrón: suma de las cantidades de las órdenes pagadas con bloque (coincide con el
+    // CSV de /api/export que se publica antes del sorteo).
     participaciones_total: enPadron,
-    // Números emitidos (contador correlativo; incluye reembolsadas/rechazadas).
+    // Números emitidos (contador correlativo = máximo numero_hasta; incluye reembolsadas/rechazadas).
     numeros_emitidos: emitidos,
     cupo_total: Number(campaign.edicion.cupo_total || 0),
     // Conciliación contra el banco: con comprobante y todavía sin marcar / marcadas "no llegó".
@@ -87,7 +89,8 @@ async function resumen(req, res) {
       const c = configCarta(campaign);
       return { requiere_carta: c.requiere, direccion_carta: c.direccion, plazo_carta_dias: c.plazoDias };
     })(),
-    ordenes: ordenes || [],
+    // Cada orden lleva su bloque de números como `rango` ({ desde, hasta, cantidad } | null).
+    ordenes: (ordenes || []).map(({ numero_desde, numero_hasta, ...o }) => ({ ...o, rango: rangoDeOrden({ numero_desde, numero_hasta }) })),
   });
 }
 
@@ -106,13 +109,13 @@ async function accion(req, res) {
         error: `Solo se aprueban transferencias pendientes o en revisión (esta orden es ${orden.medio_pago} / ${orden.estado}). Para una orden de Mercado Pago, usá "sincronizar_mp" o el reembolso.`,
       });
     }
-    const { numeros } = await confirmarOrden({
+    const { rango } = await confirmarOrden({
       orden,
       campaign,
       baseUrl: baseUrl(req),
       cambios: { revisado_por: revisor, revisado_at: new Date().toISOString() },
     });
-    return json(res, 200, { ok: true, numeros });
+    return json(res, 200, { ok: true, rango });
   }
 
   if (body.accion === 'rechazar') {
@@ -141,9 +144,9 @@ async function accion(req, res) {
       revisado_at: ahora,
     };
     if (valor === true && ['pendiente', 'en_revision'].includes(orden.estado)) {
-      // "Llegó la plata" es la aprobación definitiva: números + mail de confirmación.
-      const { numeros } = await confirmarOrden({ orden, campaign, baseUrl: baseUrl(req), cambios: marca });
-      return json(res, 200, { ok: true, estado: 'pagada', acreditada: true, numeros });
+      // "Llegó la plata" es la aprobación definitiva: bloque de números + mail de confirmación.
+      const { rango } = await confirmarOrden({ orden, campaign, baseUrl: baseUrl(req), cambios: marca });
+      return json(res, 200, { ok: true, estado: 'pagada', acreditada: true, rango });
     }
     const actual = await actualizarOrden(orden.id, marca);
     await espejarOrdenEnSheet(actual);
@@ -157,7 +160,7 @@ async function accion(req, res) {
     if (orden.estado !== 'pendiente') return json(res, 409, { error: `La participación está ${orden.estado}.` });
     const ahora = new Date().toISOString();
     const nota = texto(body.motivo ?? body.nota, 300);
-    const { numeros } = await confirmarOrden({
+    const { rango } = await confirmarOrden({
       orden,
       campaign,
       baseUrl: baseUrl(req),
@@ -169,7 +172,7 @@ async function accion(req, res) {
         ...(nota ? { comprobante_datos: { ...(orden.comprobante_datos || {}), carta_nota: nota } } : {}),
       },
     });
-    return json(res, 200, { ok: true, estado: 'pagada', numeros, carta_recibida_at: ahora });
+    return json(res, 200, { ok: true, estado: 'pagada', rango, carta_recibida_at: ahora });
   }
 
   if (body.accion === 'carta_rechazada') {

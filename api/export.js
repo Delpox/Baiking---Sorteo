@@ -1,6 +1,9 @@
 // GET /api/export[?edicion=edicion-1]   (header Authorization: Bearer <ADMIN_TOKEN>)
-// Exporta el padrón de participaciones (solo órdenes pagadas) en CSV.
-// Se usa para el sorteo en vivo, el escribano y la planilla de Gastón.
+// Exporta el padrón del sorteo en CSV (separador `;`): UNA fila por orden pagada con su
+// bloque correlativo de números (numero_desde, numero_hasta, cantidad), ordenadas por
+// numero_desde. Es el padrón que se cierra y publica antes del sorteo en vivo (sorteo.html
+// sortea un entero entre 1 y el total: gana la orden cuyo bloque lo contiene) y el que va
+// a la planilla de Gastón.
 import campaign from '../config/campaign.json' with { type: 'json' };
 import { json, getQuery, adminAutorizado } from './_lib/http.js';
 import { obtenerPadron } from './_lib/db.js';
@@ -24,7 +27,7 @@ export default async function handler(req, res) {
   try {
     const filas = await obtenerPadron(edicion || campaign.edicion.id);
     const columnas = [
-      'edicion_id', 'numero', 'orden_id', 'nombre', 'apellido', 'dni', 'email',
+      'edicion_id', 'numero_desde', 'numero_hasta', 'cantidad', 'orden_id', 'nombre', 'apellido', 'dni', 'email',
       'whatsapp', 'provincia', 'bici_preferida', 'pack_id', 'medio_pago', 'pagada_at',
     ];
     const lineas = [columnas.join(';')];

@@ -4,7 +4,7 @@
 //            edición (pagada, en_revision o pendiente), una por email (variantes: general /
 //            subí el comprobante / mandá la carta).
 //   sorteo → el día de edicion.fecha_sorteo: a todas las personas con alguna orden pagada, una
-//            por email, con sus números (de todas sus órdenes juntas).
+//            por email, con el bloque de números de cada una de sus órdenes pagadas.
 // Lo llama Vercel Cron todos los días a las 10:00 de Buenos Aires (vercel.json: "0 13 * * *";
 // el plan Hobby solo admite crons diarios y hasta 2: este y /api/sheets-sync). Sin parámetros
 // decide solo por la fecha de hoy en Buenos Aires; si no corresponde, no manda nada.
@@ -16,7 +16,7 @@
 // Respuesta: { ok, tipo, destinatarios, enviados, errores } · sin mails: { ok, enviados: 0, motivo }.
 import campaign from '../config/campaign.json' with { type: 'json' };
 import { json, getQuery, baseUrl, adminAutorizado, cronAutorizado } from './_lib/http.js';
-import { listarOrdenes, listarParticipaciones, reclamarMarcaEn, liberarMarcaEn } from './_lib/db.js';
+import { listarOrdenes, rangoDeOrden, reclamarMarcaEn, liberarMarcaEn } from './_lib/db.js';
 import { armarMailRecordatorioSemana, armarMailRecordatorioSorteo, enviarLote, enviarMail } from './_lib/notificaciones.js';
 import { RE_EMAIL } from './_lib/validar.js';
 
@@ -55,22 +55,22 @@ export function agruparPersonas(ordenes) {
 async function armarMails(tipo, edicionId, base) {
   const ordenes = await listarOrdenes(edicionId, {
     estados: ESTADOS[tipo],
-    columnas: 'id,created_at,email,nombre,estado,medio_pago,origen,comprobante_at,cantidad_participaciones',
+    columnas: 'id,created_at,email,nombre,estado,medio_pago,origen,comprobante_at,cantidad_participaciones,numero_desde,numero_hasta',
   });
   const personas = agruparPersonas(ordenes);
   if (tipo === 'semana') {
     return personas.map((persona) => ({ to: persona.email, ...armarMailRecordatorioSemana({ persona, ordenes: persona.ordenes, campaign, baseUrl: base }) }));
   }
-  const numerosPorOrden = new Map();
-  for (const p of await listarParticipaciones(edicionId)) {
-    if (!numerosPorOrden.has(p.orden_id)) numerosPorOrden.set(p.orden_id, []);
-    numerosPorOrden.get(p.orden_id).push(Number(p.numero));
-  }
+  // El bloque de cada orden pagada viaja en la propia orden (numero_desde / numero_hasta).
   return personas
     .map((persona) => {
-      const numeros = persona.ordenes.filter((o) => o.estado === 'pagada').flatMap((o) => numerosPorOrden.get(o.id) || []).sort((a, b) => a - b);
-      if (!numeros.length) return null;
-      return { to: persona.email, ...armarMailRecordatorioSorteo({ persona, numeros, campaign, baseUrl: base }) };
+      const rangos = persona.ordenes
+        .filter((o) => o.estado === 'pagada')
+        .map(rangoDeOrden)
+        .filter(Boolean)
+        .sort((a, b) => a.desde - b.desde);
+      if (!rangos.length) return null;
+      return { to: persona.email, ...armarMailRecordatorioSorteo({ persona, rangos, campaign, baseUrl: base }) };
     })
     .filter(Boolean);
 }
@@ -107,7 +107,7 @@ export default async function handler(req, res) {
         const persona = { email: test, nombre: 'Prueba', ordenes: [] };
         muestra = tipo === 'semana'
           ? armarMailRecordatorioSemana({ persona, ordenes: [], campaign, baseUrl: base })
-          : armarMailRecordatorioSorteo({ persona, numeros: [1, 2, 3], campaign, baseUrl: base });
+          : armarMailRecordatorioSorteo({ persona, rangos: [{ desde: 1, hasta: 3, cantidad: 3 }], campaign, baseUrl: base });
       }
       await enviarMail({ ...muestra, to: test });
       return json(res, 200, { ok: true, tipo, test: true, destinatarios: 1, enviados: 1, errores: 0 });

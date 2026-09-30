@@ -1,12 +1,18 @@
 -- ============================================================
--- Baiking · Curso + Participación — esquema de base de datos
--- Postgres (Supabase). Ejecutar completo en SQL Editor.
+-- Baiking · Productos digitales + sorteo — esquema de base de datos
+-- Postgres (Supabase). Ejecutar completo en SQL Editor: es idempotente
+-- (sirve para instalar de cero y para actualizar una instalación anterior).
+--
+-- Modelo: cada $1 del precio del producto = 1 participación (la vía gratuita,
+-- 1 por persona). Cada orden pagada recibe UN bloque correlativo de números
+-- (`ordenes.numero_desde` .. `ordenes.numero_hasta`); no hay una fila por número.
 -- ============================================================
 
 create extension if not exists "pgcrypto";
 
--- Una fila por edición del programa. El contador `ultimo_numero`
--- garantiza números de participación correlativos y sin huecos.
+-- Una fila por edición del programa. El contador `ultimo_numero` garantiza bloques
+-- de números correlativos y sin huecos: el total de participaciones emitidas es
+-- siempre el máximo `numero_hasta` de la edición.
 create table if not exists ediciones (
   id             text primary key,               -- ej: 'edicion-1'
   nombre         text not null,
@@ -20,13 +26,20 @@ create table if not exists ediciones (
   created_at     timestamptz not null default now()
 );
 
--- Una orden = una compra del curso (con N participaciones incluidas).
+-- Una orden = una compra de un producto digital (fondos, checklist o curso; cada producto
+-- una sola vez por DNI) o una participación sin cargo (carta). `cantidad_participaciones`
+-- es el precio en pesos (cada $1 = 1 participación; la vía gratuita, 1). Cuando la orden
+-- queda pagada, asignar_participaciones() le asigna el bloque numero_desde..numero_hasta.
 create table if not exists ordenes (
   id                        uuid primary key default gen_random_uuid(),
   created_at                timestamptz not null default now(),
   edicion_id                text not null references ediciones(id),
   pack_id                   text not null,
   cantidad_participaciones  integer not null check (cantidad_participaciones > 0),
+  -- Bloque correlativo de números de participación (null hasta que la orden queda pagada):
+  -- numero_hasta - numero_desde + 1 = cantidad_participaciones.
+  numero_desde              integer,
+  numero_hasta              integer,
   monto                     numeric(12,2) not null check (monto >= 0),
   moneda                    text not null default 'ARS',
   nombre                    text not null,
@@ -59,7 +72,7 @@ create table if not exists ordenes (
   acreditada_at             timestamptz,
   acreditada_nota           text,
   -- Vía gratuita en dos pasos (formulario + carta a la tienda): cuándo se mandó el mail
-  -- con las instrucciones y cuándo llegó la carta (recién ahí se asigna la chance).
+  -- con las instrucciones y cuándo llegó la carta (recién ahí se asigna la participación).
   instrucciones_enviado_at  timestamptz,
   carta_recibida_at         timestamptz,
   email_enviado_at          timestamptz,
@@ -76,26 +89,47 @@ create unique index if not exists ordenes_gratuita_dni_idx
   on ordenes (edicion_id, dni)
   where origen = 'gratuita';
 
--- Cada número de participación pertenece a una orden pagada.
-create table if not exists participaciones (
-  edicion_id  text not null references ediciones(id),
-  numero      integer not null,
-  orden_id    uuid not null references ordenes(id) on delete cascade,
-  created_at  timestamptz not null default now(),
-  primary key (edicion_id, numero)
+-- ------------------------------------------------------------
+-- Bloque correlativo por orden. Las columnas van en el create table de arriba
+-- (instalación de cero) y acá para las instalaciones anteriores; la vista y la
+-- función de más abajo dependen de ellas, por eso este bloque va antes.
+-- ------------------------------------------------------------
+alter table ordenes add column if not exists numero_desde integer;
+alter table ordenes add column if not exists numero_hasta integer;
+-- O la orden no tiene bloque, o el bloque tiene exactamente cantidad_participaciones números.
+alter table ordenes drop constraint if exists ordenes_bloque_check;
+alter table ordenes add constraint ordenes_bloque_check check (
+  (numero_desde is null and numero_hasta is null)
+  or (numero_desde >= 1 and numero_hasta = numero_desde + cantidad_participaciones - 1)
 );
-
-create index if not exists participaciones_orden_idx on participaciones (orden_id);
+-- Dos órdenes de la misma edición nunca empiezan en el mismo número.
+create unique index if not exists ordenes_bloque_idx
+  on ordenes (edicion_id, numero_desde)
+  where numero_desde is not null;
 
 -- ------------------------------------------------------------
--- asignar_participaciones(orden_id)
--- Asigna N números correlativos a una orden de forma ATÓMICA
--- (bloquea la orden y el contador de la edición) e IDEMPOTENTE
--- (si la orden ya tiene números, los devuelve sin crear nuevos).
--- Lo llama el webhook de Mercado Pago cuando el pago queda aprobado.
+-- Migración desde el modelo anterior (una fila por número en la tabla
+-- `participaciones`, generada con generate_series): con 25.000 números por orden
+-- eran millones de filas. Se elimina la tabla junto con la vista y la función que
+-- dependían de ella (la función cambia el tipo de retorno: hay que borrarla antes
+-- de recrearla). No hay base en producción: la migración es destructiva (una orden
+-- pagada con el modelo viejo queda sin bloque; volver a llamar
+-- asignar_participaciones() le asigna uno nuevo).
 -- ------------------------------------------------------------
-create or replace function asignar_participaciones(p_orden_id uuid)
-returns table (numero integer)
+drop view if exists padron_sorteo;
+drop table if exists participaciones cascade;
+drop function if exists asignar_participaciones(uuid);
+
+-- ------------------------------------------------------------
+-- asignar_participaciones(orden_id) → (numero_desde, numero_hasta)
+-- Asigna a una orden su bloque correlativo de números de forma ATÓMICA
+-- (bloquea la orden con `for update` y avanza el contador de la edición en el
+-- mismo update) e IDEMPOTENTE (si la orden ya tiene bloque, lo devuelve sin
+-- tocar nada). La llama el backend al confirmar la orden (webhook de Mercado
+-- Pago, aprobación de transferencias, carta recibida de la vía gratuita).
+-- ------------------------------------------------------------
+create function asignar_participaciones(p_orden_id uuid)
+returns table (numero_desde integer, numero_hasta integer)
 language plpgsql
 as $$
 declare
@@ -108,11 +142,10 @@ begin
     raise exception 'Orden % inexistente', p_orden_id;
   end if;
 
-  if exists (select 1 from participaciones p where p.orden_id = p_orden_id) then
-    return query
-      select p.numero from participaciones p
-       where p.orden_id = p_orden_id
-       order by p.numero;
+  if v_orden.numero_desde is not null then
+    numero_desde := v_orden.numero_desde;
+    numero_hasta := v_orden.numero_hasta;
+    return next;
     return;
   end if;
 
@@ -127,11 +160,14 @@ begin
 
   v_desde := v_hasta - v_orden.cantidad_participaciones + 1;
 
-  insert into participaciones (edicion_id, numero, orden_id)
-  select v_orden.edicion_id, gs, p_orden_id
-    from generate_series(v_desde, v_hasta) as gs;
+  update ordenes
+     set numero_desde = v_desde,
+         numero_hasta = v_hasta
+   where id = p_orden_id;
 
-  return query select gs from generate_series(v_desde, v_hasta) as gs;
+  numero_desde := v_desde;
+  numero_hasta := v_hasta;
+  return next;
 end;
 $$;
 
@@ -153,13 +189,19 @@ alter table presencia enable row level security;
 -- lee con la service_role key.
 
 -- ------------------------------------------------------------
--- Vista para el padrón del sorteo (exportar CSV / escribano)
+-- Vista para el padrón del sorteo: UNA fila por orden pagada con bloque
+-- (numero_desde, numero_hasta, cantidad) y los datos de la persona. Es lo que
+-- exporta /api/export (CSV) y lo que se cierra y publica antes del sorteo en
+-- vivo (sorteo.html sortea un entero entre 1 y el total y gana la orden cuyo
+-- bloque lo contiene).
 -- security_invoker: la vista corre con los permisos de quien consulta (y por lo
--- tanto respeta el RLS de ordenes/participaciones) en vez de los del dueño.
+-- tanto respeta el RLS de ordenes) en vez de los del dueño.
 -- ------------------------------------------------------------
-create or replace view padron_sorteo with (security_invoker = on) as
-select p.edicion_id,
-       p.numero,
+create view padron_sorteo with (security_invoker = on) as
+select o.edicion_id,
+       o.numero_desde,
+       o.numero_hasta,
+       o.numero_hasta - o.numero_desde + 1 as cantidad,
        o.id           as orden_id,
        o.nombre,
        o.apellido,
@@ -171,10 +213,10 @@ select p.edicion_id,
        o.pack_id,
        o.medio_pago,
        o.pagada_at
-  from participaciones p
-  join ordenes o on o.id = p.orden_id
+  from ordenes o
  where o.estado = 'pagada'
- order by p.edicion_id, p.numero;
+   and o.numero_desde is not null
+ order by o.edicion_id, o.numero_desde;
 
 -- ------------------------------------------------------------
 -- Seguridad: RLS activado y sin políticas => solo la service_role
@@ -184,9 +226,8 @@ select p.edicion_id,
 -- vista sin security_invoker saltea el RLS (expondría nombre, DNI, mail y
 -- WhatsApp de todo el padrón con la anon key, que es pública por diseño).
 -- ------------------------------------------------------------
-alter table ediciones       enable row level security;
-alter table ordenes         enable row level security;
-alter table participaciones enable row level security;
+alter table ediciones enable row level security;
+alter table ordenes   enable row level security;
 
 alter view padron_sorteo set (security_invoker = on);
 revoke all on padron_sorteo from public, anon, authenticated;
@@ -197,7 +238,7 @@ grant execute on function asignar_participaciones(uuid) to service_role;
 
 -- ------------------------------------------------------------
 -- Migraciones idempotentes para instalaciones existentes (el resto del
--- archivo usa `if not exists` / `or replace`, así que se puede correr
+-- archivo usa `if not exists` / `drop ... if exists`, así que se puede correr
 -- completo tanto para instalar de cero como para actualizar).
 -- ------------------------------------------------------------
 -- 1) La bici se valida contra config/campaign.json; se quita el check duplicado.
@@ -219,6 +260,8 @@ alter table ordenes add column if not exists carta_recibida_at        timestampt
 -- 5) Recordatorios por mail (una semana antes y el día del sorteo), una sola vez por edición.
 alter table ediciones add column if not exists recordatorio_semana_at timestamptz;
 alter table ediciones add column if not exists recordatorio_sorteo_at timestamptz;
+-- 6) Bloque correlativo por orden (numero_desde / numero_hasta) y baja de la tabla
+--    `participaciones`: ver el bloque "Bloque correlativo por orden" más arriba.
 
 -- ------------------------------------------------------------
 -- Edición inicial (ajustar fechas antes de lanzar; deben coincidir

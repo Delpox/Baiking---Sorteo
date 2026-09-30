@@ -1,9 +1,10 @@
 // GET /api/orden?id=<uuid>
-// Devuelve el resumen de una orden y sus números (para la página /gracias).
+// Devuelve el resumen de una orden y su bloque de números (`rango` = { desde, hasta, cantidad },
+// null hasta que se asigna) para la página /gracias.
 // El id es un UUID que solo conoce quien pagó (llega en la URL de retorno de MP).
 import campaign from '../config/campaign.json' with { type: 'json' };
 import { json, getQuery } from './_lib/http.js';
-import { obtenerOrden, obtenerParticipaciones } from './_lib/db.js';
+import { obtenerOrden, rangoDeOrden } from './_lib/db.js';
 import { configCarta, venceCarta } from './_lib/carta.js';
 
 const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -22,7 +23,7 @@ export default async function handler(req, res) {
   try {
     const orden = await obtenerOrden(id);
     if (!orden) return json(res, 404, { error: 'No encontramos esa orden' });
-    const numeros = orden.estado === 'pagada' ? await obtenerParticipaciones(orden.id) : [];
+    const rango = orden.estado === 'pagada' ? rangoDeOrden(orden) : null;
     const pack = campaign.packs.find((p) => p.id === orden.pack_id);
     const bici = campaign.bicis.find((b) => b.id === orden.bici_preferida);
 
@@ -38,7 +39,7 @@ export default async function handler(req, res) {
         ? { id: pack.id, nombre: pack.nombre, ...(orden.estado === 'pagada' && pack.entrega_url && !/A CONFIRMAR/i.test(pack.entrega_url) ? { entrega_url: String(pack.entrega_url).trim() } : {}) }
         : null,
       bici: bici ? { id: bici.id, nombre: bici.nombre } : null,
-      numeros,
+      rango,
       pagada_at: orden.pagada_at,
       medio_pago: orden.medio_pago,
       edicion: campaign.edicion,

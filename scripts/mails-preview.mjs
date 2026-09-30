@@ -27,8 +27,10 @@ const orden = {
   medio_pago: 'transferencia',
   created_at: ahora.toISOString(),
 };
-const numeros = Array.from({ length: pack.participaciones }, (_, i) => 1201 + i);
+// Cada orden pagada tiene un bloque correlativo de números (cada $1 del producto = 1 participación).
+const rango = { desde: 12001, hasta: 12000 + pack.participaciones, cantidad: pack.participaciones };
 const gratuita = { ...orden, id: 'a9b8c7d6-1e2f-4a3b-8c9d-0e1f2a3b4c5d', pack_id: 'gratuita', medio_pago: 'gratuita', origen: 'gratuita', monto: 0, cantidad_participaciones: 1 };
+const rangoGratuita = { desde: 38771, hasta: 38771, cantidad: 1 };
 
 const mails = [
   {
@@ -38,8 +40,8 @@ const mails = [
   },
   {
     clave: 'confirmacion',
-    cuando: 'Cuando Baiking valida la transferencia (desde el panel, la planilla o la aprobación automática). Trae los números y el acceso al curso.',
-    ...armarMailConfirmacion({ orden, numeros, campaign, baseUrl }),
+    cuando: 'Cuando Baiking valida la transferencia (desde el panel, la planilla o la aprobación automática). Trae el bloque de participaciones y el link del producto.',
+    ...armarMailConfirmacion({ orden, rango, campaign, baseUrl }),
   },
   {
     clave: 'carta',
@@ -49,7 +51,7 @@ const mails = [
   {
     clave: 'carta-confirmada',
     cuando: 'Cuando Baiking marca "Carta recibida" en el panel: la participación queda asignada.',
-    ...armarMailConfirmacion({ orden: { ...gratuita, carta_recibida_at: ahora.toISOString() }, numeros: [1587], campaign, baseUrl, gratuita: true }),
+    ...armarMailConfirmacion({ orden: { ...gratuita, carta_recibida_at: ahora.toISOString() }, rango: rangoGratuita, campaign, baseUrl, gratuita: true }),
   },
   {
     clave: 'datos-transferencia',
@@ -70,7 +72,7 @@ if (typeof N.armarMailRecordatorioSorteo === 'function') {
   mails.push({
     clave: 'recordatorio-sorteo',
     cuando: 'El día del sorteo, a las 10:00, a todas las personas con participaciones confirmadas.',
-    ...N.armarMailRecordatorioSorteo({ persona, numeros, campaign, baseUrl }),
+    ...N.armarMailRecordatorioSorteo({ persona, rangos: [rango], campaign, baseUrl }),
   });
 }
 

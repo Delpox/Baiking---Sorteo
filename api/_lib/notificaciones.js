@@ -1,6 +1,8 @@
 // Notificaciones al participante: mail (Resend) y WhatsApp (Meta Cloud API).
 // Regla de copy: lo que se cobra es SIEMPRE un producto digital (fondos, checklist, curso);
-// cada compra otorga UNA participación en el sorteo y nunca se presenta como lo comprado.
+// cada $1 del producto es una participación en el sorteo (cada orden pagada recibe UN bloque
+// correlativo de números, `rango` = { desde, hasta, cantidad }) y la participación nunca se
+// presenta como lo comprado.
 import { env } from './http.js';
 import { configCarta, venceCarta } from './carta.js';
 
@@ -20,30 +22,41 @@ const fmtFecha = (iso, tz = 'America/Argentina/Buenos_Aires') =>
     timeZone: tz,
   }).format(new Date(iso));
 
-const fmtNumero = (n) => String(n).padStart(4, '0');
+/** Número de participación con separador de miles es-AR (1587 → "1.587", 10000 → "10.000"), sin ceros a la izquierda. */
+export const fmtNumero = (n) => new Intl.NumberFormat('es-AR').format(Number(n));
+
+/** Cantidad de números de un bloque { desde, hasta, cantidad? } (0 si no hay bloque). */
+export function cantidadDeRango(rango) {
+  if (!rango || !Number.isFinite(Number(rango.desde))) return 0;
+  if (Number.isFinite(Number(rango.cantidad))) return Number(rango.cantidad);
+  return Number(rango.hasta ?? rango.desde) - Number(rango.desde) + 1;
+}
 
 /**
- * Cómo se muestran los números de una orden: pocos → lista ("0001 · 0002 · 0003");
- * muchos y consecutivos (si un producto otorgara más de una participación, el RPC siempre
- * asigna un bloque correlativo) → rango ("del 0001 al 0100"), para que el mail no lleve
- * miles de números y el parámetro de la plantilla de WhatsApp no supere el largo de Meta.
+ * Cómo se muestra el bloque correlativo de una orden: un solo número → "N.º 1.587"; un
+ * bloque → "del N.º 1 al N.º 10.000". Cada orden pagada tiene UN bloque (cada $1 del
+ * producto = 1 participación), así que el mail y el parámetro de la plantilla de WhatsApp
+ * nunca llevan miles de números. Sin bloque (null) → ''.
  */
-export function describirNumeros(numeros, { sep = ' · ', maxLista = 12, maxTramos = 6 } = {}) {
-  const lista = [...new Set((numeros || []).map(Number).filter(Number.isFinite))].sort((a, b) => a - b);
-  if (!lista.length) return '';
-  if (lista.length <= maxLista) return lista.map(fmtNumero).join(sep);
-  // Tramos consecutivos: una persona con varias órdenes tiene varios bloques
-  // ("del 0001 al 0100 y del 0201 al 0300"); si está muy fragmentado, la lista completa.
-  const tramos = [];
-  for (const n of lista) {
-    const ultimo = tramos[tramos.length - 1];
-    if (ultimo && n === ultimo[1] + 1) ultimo[1] = n;
-    else tramos.push([n, n]);
-  }
-  if (tramos.length > maxTramos) return lista.map(fmtNumero).join(sep);
-  const partes = tramos.map(([a, b]) => (a === b ? fmtNumero(a) : `del ${fmtNumero(a)} al ${fmtNumero(b)}`));
+export function describirRango(rango) {
+  if (!rango || !Number.isFinite(Number(rango.desde))) return '';
+  const desde = Number(rango.desde);
+  const hasta = Number(rango.hasta ?? rango.desde);
+  return hasta > desde ? `del N.º ${fmtNumero(desde)} al N.º ${fmtNumero(hasta)}` : `N.º ${fmtNumero(desde)}`;
+}
+
+/** Varios bloques (una persona con varias órdenes pagadas): "del N.º 1 al N.º 10.000 y N.º 38.771". */
+export function describirRangos(rangos) {
+  const partes = (rangos || [])
+    .filter((r) => r && Number.isFinite(Number(r.desde)))
+    .sort((a, b) => Number(a.desde) - Number(b.desde))
+    .map(describirRango);
+  if (!partes.length) return '';
   return partes.length === 1 ? partes[0] : `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`;
 }
+
+/** Total de participaciones de varios bloques. */
+export const cantidadDeRangos = (rangos) => (rangos || []).reduce((total, r) => total + cantidadDeRango(r), 0);
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -90,14 +103,21 @@ function pieLegalTexto(campaign, baseUrl) {
   return [legal.leyenda, legal.aviso_corto, `Bases y condiciones: ${baseUrl}/bases-y-condiciones`].filter(Boolean).join('\n');
 }
 
-export function armarMailConfirmacion({ orden, numeros, campaign, baseUrl, gratuita = false }) {
+/**
+ * Mail de confirmación (orden pagada): dice el producto, el link de entrega y el bloque de
+ * participaciones ("Tus participaciones: del N.º X al N.º Y (N participaciones)"; vía
+ * gratuita: "Tu participación: N.º X"). `rango` = { desde, hasta, cantidad } de la orden.
+ */
+export function armarMailConfirmacion({ orden, rango, campaign, baseUrl, gratuita = false }) {
   const bici = campaign.bicis.find((b) => b.id === orden.bici_preferida);
   const pack = campaign.packs.find((p) => p.id === orden.pack_id);
   const fecha = fmtFecha(campaign.edicion.fecha_sorteo);
-  const lista = describirNumeros(numeros);
+  const bloque = describirRango(rango);
+  const cantidad = cantidadDeRango(rango);
   const nombre = escapeHtml(orden.nombre);
-  const plural = numeros.length > 1;
-  const u = unidad(campaign, numeros.length);
+  const plural = cantidad > 1;
+  const u = unidad(campaign, cantidad);
+  const cantidadTexto = `${fmtNumero(cantidad)} ${u}`; // "25.000 participaciones" / "1 participación"
   const biciNombre = bici?.nombre || 'Polygon';
   const producto = pack?.nombre || 'tu producto';
   const entrega = entregaDelProducto(pack, campaign);
@@ -108,11 +128,12 @@ export function armarMailConfirmacion({ orden, numeros, campaign, baseUrl, gratu
     : `¡Listo, ${orden.nombre}! ${pack ? pack.nombre : 'Tu compra'} y ${plural ? `tus ${u}` : `tu ${u}`} · Baiking`;
 
   const conCarta = gratuita && Boolean(orden.carta_recibida_at);
-  const conNumeros = plural ? `con las ${escapeHtml(u)} ${lista}` : `con la ${escapeHtml(u)} número ${lista}`;
-  const conNumerosTexto = plural ? `con las ${u} ${lista}` : `con la ${u} número ${lista}`;
+  // "con 25.000 participaciones: del N.º 1 al N.º 25.000" / "con 1 participación: N.º 7"
+  const conNumeros = `con <strong style="color:#1c1a1b">${escapeHtml(cantidadTexto)}</strong>: ${escapeHtml(bloque)}`;
+  const conNumerosTexto = `con ${cantidadTexto}: ${bloque}`;
   const intro = gratuita
     ? `${conCarta ? 'Recibimos tu carta y registramos' : 'Registramos'} tu participación <strong style="color:#1c1a1b">sin obligación de compra</strong>. Quedaste participando por tu <strong style="color:#1c1a1b">${escapeHtml(biciNombre)}</strong> con la misma probabilidad que cualquier otra participación.`
-    : `Confirmamos tu pago de <strong style="color:#1c1a1b">${escapeHtml(producto)}</strong>. Ya tenés tu producto y, como bonificación sin cargo, quedaste participando por tu <strong style="color:#1c1a1b">${escapeHtml(biciNombre)}</strong> ${conNumeros}.`;
+    : `Confirmamos tu pago de <strong style="color:#1c1a1b">${escapeHtml(producto)}</strong>. Ya tenés tu producto y, como bonificación sin cargo (cada $1 del producto es una participación), quedaste participando por tu <strong style="color:#1c1a1b">${escapeHtml(biciNombre)}</strong> ${conNumeros}.`;
   const incluyeHtml = incluye.length
     ? `<p style="font-size:13px;line-height:1.6;color:#6e686b;margin:14px 0 4px">Incluye:</p>
     <ul style="margin:0;padding-left:20px;font-size:14px;line-height:1.7;color:#4a4649">${incluye.map((i) => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`
@@ -128,14 +149,15 @@ export function armarMailConfirmacion({ orden, numeros, campaign, baseUrl, gratu
       <p style="margin:0 0 6px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#6e686b">
         ${plural ? `Tus ${escapeHtml(u)}` : `Tu ${escapeHtml(u)}`}
       </p>
-      <p style="margin:0;font-size:26px;font-weight:700;letter-spacing:.04em;color:#c40020">${lista}</p>
+      <p style="margin:0;font-size:26px;font-weight:700;letter-spacing:.04em;color:#c40020">${escapeHtml(bloque)}</p>
+      ${plural ? `<p style="margin:6px 0 0;font-size:14px;color:#4a4649">${escapeHtml(cantidadTexto)}</p>` : ''}
       <p style="margin:12px 0 0;font-size:13px;color:#6e686b">Orden ${escapeHtml(orden.id)}</p>
     </div>
 
     <table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 24px;font-size:15px">
       <tr><td style="padding:8px 0;color:#6e686b">Sorteo en vivo</td><td style="padding:8px 0;text-align:right">${escapeHtml(fecha)} hs · Instagram @${escapeHtml(campaign.contacto.instagram)}</td></tr>
       <tr><td style="padding:8px 0;color:#6e686b">Bici elegida</td><td style="padding:8px 0;text-align:right">${escapeHtml(bici?.nombre || '')}</td></tr>
-      <tr><td style="padding:8px 0;color:#6e686b">${escapeHtml(unidad(campaign, 2).charAt(0).toUpperCase() + unidad(campaign, 2).slice(1))}</td><td style="padding:8px 0;text-align:right">${numeros.length}</td></tr>
+      <tr><td style="padding:8px 0;color:#6e686b">${escapeHtml(unidad(campaign, 2).charAt(0).toUpperCase() + unidad(campaign, 2).slice(1))}</td><td style="padding:8px 0;text-align:right">${fmtNumero(cantidad)}</td></tr>
     </table>
 
     ${
@@ -158,9 +180,9 @@ export function armarMailConfirmacion({ orden, numeros, campaign, baseUrl, gratu
 ${
   gratuita
     ? `${conCarta ? 'Recibimos tu carta y registramos' : 'Registramos'} tu participación sin obligación de compra.`
-    : `Confirmamos tu pago de ${producto}. Ya tenés tu producto y, como bonificación sin cargo, quedaste participando por tu ${biciNombre} ${conNumerosTexto}.`
+    : `Confirmamos tu pago de ${producto}. Ya tenés tu producto y, como bonificación sin cargo (cada $1 del producto es una participación), quedaste participando por tu ${biciNombre} ${conNumerosTexto}.`
 }
-${plural ? `Tus ${u}` : `Tu ${u}`}: ${lista}
+${plural ? `Tus ${u}` : `Tu ${u}`}: ${bloque}${plural ? ` (${cantidadTexto})` : ''}
 Bici elegida: ${bici?.nombre || ''}
 Sorteo en vivo: ${fecha} hs por Instagram @${campaign.contacto.instagram}
 ${gratuita ? '' : `${entrega.url ? `Descargar / ver ${producto}: ${entrega.url}${entrega.texto ? `\n${entrega.texto}` : ''}` : `Tu producto (${producto}) te llega en un mail aparte, apenas esté listo.`}${incluyeTexto}\n`}Orden: ${orden.id}
@@ -193,7 +215,7 @@ function marcoMail(campaign, titulo, cuerpoHtml, baseUrl) {
           <img src="${escapeHtml(logo)}" alt="Baiking · Tienda de bicis" height="40" style="height:40px;width:auto;display:block;border:0">
         </td></tr>
         <tr><td style="padding:28px 28px 8px">
-          <p style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#c40020;margin:0 0 12px;font-weight:700">${escapeHtml(campaign.edicion.nombre)} · Curso + sorteo</p>
+          <p style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#c40020;margin:0 0 12px;font-weight:700">${escapeHtml(campaign.edicion.nombre)} · Productos digitales + sorteo</p>
           <h1 style="font-size:26px;line-height:1.15;margin:0 0 16px;color:#1c1a1b">${titulo}</h1>
           ${cuerpoHtml}
         </td></tr>
@@ -402,16 +424,16 @@ ${pieLegalTexto(campaign, baseUrl)}`;
 }
 
 /**
- * Recordatorio del día del sorteo, a cada persona con órdenes pagadas (sus números de
- * todas las órdenes juntos). Botón "Ver el vivo" → Instagram.
+ * Recordatorio del día del sorteo, a cada persona con órdenes pagadas (`rangos`: el bloque
+ * { desde, hasta, cantidad } de cada una de sus órdenes, todos juntos). Botón "Ver el vivo" → Instagram.
  */
-export function armarMailRecordatorioSorteo({ persona, numeros, campaign, baseUrl }) {
+export function armarMailRecordatorioSorteo({ persona, rangos, campaign, baseUrl }) {
   const nombre = persona?.nombre || '';
   const ig = campaign.contacto?.instagram || '';
   const linkIg = `https://instagram.com/${ig}`;
   const hora = fmtHora(campaign.edicion.fecha_sorteo);
-  const lista = describirNumeros(numeros);
-  const n = (numeros || []).length;
+  const lista = describirRangos(rangos);
+  const n = cantidadDeRangos(rangos);
   const u = unidad(campaign, n);
   const plural = n !== 1;
 
@@ -421,7 +443,7 @@ export function armarMailRecordatorioSorteo({ persona, numeros, campaign, baseUr
     `¡Hoy es el sorteo${nombre ? `, ${escapeHtml(nombre)}` : ''}!`,
     `<p style="${PARRAFO}">Hoy a las <strong style="color:#1c1a1b">${escapeHtml(hora)} hs</strong> sorteamos en vivo en Instagram <strong style="color:#1c1a1b">@${escapeHtml(ig)}</strong>.</p>
     <div style="background:#fff0f2;border:1px solid #f3b5be;border-radius:14px;padding:20px;margin:0 0 20px">
-      <p style="margin:0 0 6px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#6e686b">${plural ? `Tus ${n} ${escapeHtml(u)}` : `Tu ${escapeHtml(u)}`}</p>
+      <p style="margin:0 0 6px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#6e686b">${plural ? `Tus ${fmtNumero(n)} ${escapeHtml(u)}` : `Tu ${escapeHtml(u)}`}</p>
       <p style="margin:0;font-size:24px;font-weight:700;letter-spacing:.04em;color:#c40020">${escapeHtml(lista)}</p>
     </div>
     <p style="${PARRAFO}">Si ganás, te llamamos hoy mismo.</p>
@@ -430,7 +452,7 @@ export function armarMailRecordatorioSorteo({ persona, numeros, campaign, baseUr
   );
   const text = `¡Hoy es el sorteo${nombre ? `, ${nombre}` : ''}!
 Hoy a las ${hora} hs sorteamos en vivo en Instagram @${ig}.
-${plural ? `Tus ${n} ${u}` : `Tu ${u}`}: ${lista}
+${plural ? `Tus ${fmtNumero(n)} ${u}` : `Tu ${u}`}: ${lista}
 Si ganás, te llamamos hoy mismo.
 Ver el vivo: ${linkIg}
 
@@ -537,10 +559,11 @@ const parametro = (s, max = 200) => String(s ?? '').replace(/\s+/g, ' ').trim().
 
 /**
  * Envía la plantilla aprobada en Meta Business con los parámetros:
- * {{1}} nombre · {{2}} números · {{3}} bici · {{4}} fecha del sorteo · {{5}} link de la orden
+ * {{1}} nombre · {{2}} bloque de participaciones ("del N.º 1 al N.º 10.000" / "N.º 1.587") ·
+ * {{3}} bici · {{4}} fecha del sorteo · {{5}} link de la orden
  * (ver docs/03-automatizaciones.md para el texto de la plantilla).
  */
-export async function enviarWhatsApp({ orden, numeros, campaign, baseUrl }) {
+export async function enviarWhatsApp({ orden, rango, campaign, baseUrl }) {
   const bici = campaign.bicis.find((b) => b.id === orden.bici_preferida);
   const fecha = fmtFecha(campaign.edicion.fecha_sorteo);
   const to = String(orden.whatsapp).replace(/\D/g, '');
@@ -557,7 +580,7 @@ export async function enviarWhatsApp({ orden, numeros, campaign, baseUrl }) {
           type: 'body',
           parameters: [
             { type: 'text', text: parametro(orden.nombre, 80) },
-            { type: 'text', text: parametro(describirNumeros(numeros, { sep: ', ' }), 1000) },
+            { type: 'text', text: parametro(describirRango(rango), 200) },
             { type: 'text', text: parametro(bici?.nombre || 'Polygon', 80) },
             { type: 'text', text: parametro(`${fecha} hs`, 80) },
             { type: 'text', text: `${baseUrl}/gracias?orden=${orden.id}` },

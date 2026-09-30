@@ -2043,6 +2043,51 @@ h2 em,
   letter-spacing: 0;
   padding-left: 4px;
 }
+/* Bloque "Del N.º 12.001 al N.º 22.000": un poco más chico que un número suelto para que entre en una línea */
+.numbers li.range {
+  font-size: 18px;
+  letter-spacing: 0.01em;
+}
+
+/* Hero (30/09): las tres bicis en lugar de la foto del local; la del medio un poco más chica */
+.shop-hero-bikes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 66px 22px 8px;
+}
+.shop-hero-bikes figure {
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.shop-hero-bikes img,
+.shop-hero-bikes svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 230px;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+.shop-hero-bikes figure[data-bici='tambora'] img,
+.shop-hero-bikes figure[data-bici='tambora'] svg {
+  transform: scale(0.86);
+}
+@media (max-width: 560px) {
+  .shop-hero-bikes {
+    padding: 80px 12px 6px;
+    gap: 4px;
+  }
+  .shop-hero-bikes img,
+  .shop-hero-bikes svg {
+    max-height: 120px;
+  }
+}
 
 /* Escalera de productos (29/09): nombre, descripción corta y la participación incluida */
 .ladder-item .q {

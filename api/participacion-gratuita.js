@@ -4,11 +4,12 @@
 // cualquier participación por compra.
 //
 // Dos modos, según config participacion_gratuita.requiere_carta:
-//  - true (dos pasos): el POST crea la orden `pendiente` (sin números) y manda el mail
-//    "Registramos tus datos: ahora mandá la carta". La chance se asigna cuando Baiking marca
-//    "carta recibida" en el panel (api/admin.js). Responde
-//    { ok, orden_id, estado: 'pendiente', numeros: [], requiere_carta: true }.
-//  - false: confirmación inmediata (número + mail) y { ok, orden_id, estado: 'pagada', numeros }.
+//  - true (dos pasos): el POST crea la orden `pendiente` (sin número) y manda el mail
+//    "Registramos tus datos: ahora mandá la carta". La participación se asigna cuando Baiking
+//    marca "carta recibida" en el panel (api/admin.js). Responde
+//    { ok, orden_id, estado: 'pendiente', rango: null, requiere_carta: true }.
+//  - false: confirmación inmediata (número + mail) y { ok, orden_id, estado: 'pagada', rango }
+//    con rango = { desde, hasta, cantidad: 1 }.
 //
 // Anti-abuso: honeypot, índice único por DNI y tope de registros por email.
 // Pendiente (decisión): captcha (Cloudflare Turnstile) y límite por IP; ver .env.example.
@@ -24,7 +25,7 @@ import { espejarOrdenEnSheet } from './_lib/sheets.js';
 // Cada registro dispara un mail a la dirección indicada: tope por email y edición.
 const MAX_GRATUITAS_POR_EMAIL = 5;
 
-const respuestaPendiente = (orden) => ({ ok: true, orden_id: orden?.id || null, estado: 'pendiente', numeros: [], requiere_carta: true });
+const respuestaPendiente = (orden) => ({ ok: true, orden_id: orden?.id || null, estado: 'pendiente', rango: null, requiere_carta: true });
 
 /** Mail con las instrucciones de la carta, una sola vez por orden (marca atómica instrucciones_enviado_at). */
 async function mandarInstrucciones(orden, base) {
@@ -51,8 +52,8 @@ export default async function handler(req, res) {
   const body = readJson(req);
 
   // Honeypot anti-bots: el campo "website" está oculto y debe llegar vacío. Se responde
-  // con la misma forma que un alta real (sin orden ni números) para que el sitio no rompa.
-  if (body.website) return json(res, 200, requiereCarta ? respuestaPendiente(null) : { ok: true, orden_id: null, estado: 'pendiente', numeros: [] });
+  // con la misma forma que un alta real (sin orden ni número) para que el sitio no rompa.
+  if (body.website) return json(res, 200, requiereCarta ? respuestaPendiente(null) : { ok: true, orden_id: null, estado: 'pendiente', rango: null });
 
   const { errores, datos } = validarPersona(body, campaign);
   if (Object.keys(errores).length) return json(res, 422, { error: 'Revisá los datos.', errores });
@@ -103,8 +104,8 @@ export default async function handler(req, res) {
           return json(res, 200, respuestaPendiente(previa));
         }
         console.warn(`[participacion-gratuita] completando la orden ${previa.id} que había quedado pendiente`);
-        const { numeros } = await confirmarOrden({ orden: previa, campaign, baseUrl: base, gratuita: true });
-        return json(res, 200, { ok: true, orden_id: previa.id, estado: 'pagada', numeros, recuperada: true });
+        const { rango } = await confirmarOrden({ orden: previa, campaign, baseUrl: base, gratuita: true });
+        return json(res, 200, { ok: true, orden_id: previa.id, estado: 'pagada', rango, recuperada: true });
       }
       return json(res, 409, {
         error: 'Ya registramos una participación sin cargo con ese DNI para esta edición.',
@@ -118,8 +119,8 @@ export default async function handler(req, res) {
       return json(res, 200, respuestaPendiente(orden));
     }
 
-    const { numeros } = await confirmarOrden({ orden, campaign, baseUrl: base, gratuita: true });
-    return json(res, 200, { ok: true, orden_id: orden.id, estado: 'pagada', numeros });
+    const { rango } = await confirmarOrden({ orden, campaign, baseUrl: base, gratuita: true });
+    return json(res, 200, { ok: true, orden_id: orden.id, estado: 'pagada', rango });
   } catch (err) {
     console.error('[participacion-gratuita]', err.message || err);
     return json(res, 500, { error: 'No pudimos registrar tu participación. Probá de nuevo en unos minutos.' });

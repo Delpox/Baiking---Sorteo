@@ -38,15 +38,15 @@
   // Token del panel: siempre en el header Authorization (nunca en la query string).
   const authHeaders = () => ({ Authorization: `Bearer ${state.token || ''}` });
 
-  // Números de una orden para los avisos: lista si son pocos, rango si son muchos y consecutivos
-  // (los packs grandes asignan un bloque correlativo: "del 0101 al 0200").
-  const fmtNumero = (n) => String(n).padStart(4, '0');
-  function resumirNumeros(numeros) {
-    const lista = (numeros || []).map(Number);
-    if (!lista.length) return '—';
-    const consecutivos = lista.every((v, i) => i === 0 || v === lista[i - 1] + 1);
-    if (lista.length > 12 && consecutivos) return `del ${fmtNumero(lista[0])} al ${fmtNumero(lista[lista.length - 1])} (${fmtInt(lista.length)})`;
-    return lista.map(fmtNumero).join(', ');
+  // Bloque de números de una orden ({ desde, hasta, cantidad } o null) para los avisos y la tabla:
+  // cada orden pagada recibe un bloque correlativo del tamaño de sus participaciones ($1 = 1).
+  function resumirRango(rango) {
+    if (!rango || !Number.isFinite(Number(rango.desde))) return '—';
+    const desde = Number(rango.desde);
+    const hasta = Number(rango.hasta ?? rango.desde);
+    const cantidad = Number(rango.cantidad ?? hasta - desde + 1);
+    if (cantidad <= 1) return `N.º ${fmtInt(desde)}`;
+    return `del N.º ${fmtInt(desde)} al N.º ${fmtInt(hasta)} (${fmtInt(cantidad)})`;
   }
 
   /* ---------- helpers SVG ---------- */
@@ -474,7 +474,7 @@
       });
       const out = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(out.error || `HTTP ${res.status}`);
-      toast(accion === 'carta_recibida' ? `Carta recibida. Número: ${resumirNumeros(out.numeros)}` : 'Participación rechazada.');
+      toast(accion === 'carta_recibida' ? `Carta recibida. Número: ${resumirRango(out.rango)}` : 'Participación rechazada.');
       cargar({ silencioso: true });
     } catch (err) {
       toast(err.message);
@@ -763,7 +763,7 @@
         o.pagada_at = new Date().toISOString();
         state.data.participaciones_total += o.cantidad_participaciones;
       }
-      toast(valor === true ? (aprueba ? `Acreditada y aprobada: ${o.nombre} recibe sus ${o.cantidad_participaciones} participaciones por mail.` : 'Marcada: la plata llegó.') : valor === false ? 'Marcada: la plata no llegó (queda para reclamar).' : 'Vuelve a "sin revisar".');
+      toast(valor === true ? (aprueba ? `Acreditada y aprobada: ${o.nombre} recibe sus ${fmtInt(o.cantidad_participaciones)} participaciones por mail.` : 'Marcada: la plata llegó.') : valor === false ? 'Marcada: la plata no llegó (queda para reclamar).' : 'Vuelve a "sin revisar".');
       render();
       return;
     }
@@ -775,7 +775,7 @@
       });
       const out = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(out.error || `HTTP ${res.status}`);
-      const numeros = out.numeros?.length ? resumirNumeros(out.numeros) : '';
+      const numeros = out.rango ? resumirRango(out.rango) : '';
       toast(
         valor === true
           ? numeros ? `Acreditada y aprobada. Números: ${numeros}` : out.nota || 'Marcada: la plata llegó.'
@@ -794,7 +794,7 @@
         o.pagada_at = new Date().toISOString();
         state.data.participaciones_total += o.cantidad_participaciones;
       }
-      toast(accion === 'aprobar' ? `Aprobada: ${o.nombre} recibe ${o.cantidad_participaciones} participaciones por mail.` : 'Orden rechazada.');
+      toast(accion === 'aprobar' ? `Aprobada: ${o.nombre} recibe ${fmtInt(o.cantidad_participaciones)} participaciones por mail.` : 'Orden rechazada.');
       render();
       return;
     }
@@ -806,7 +806,7 @@
       });
       const out = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(out.error || `HTTP ${res.status}`);
-      toast(accion === 'aprobar' ? `Aprobada. Números: ${resumirNumeros(out.numeros)}` : 'Orden rechazada.');
+      toast(accion === 'aprobar' ? `Aprobada. Números: ${resumirRango(out.rango)}` : 'Orden rechazada.');
       cargar({ silencioso: true });
     } catch (err) {
       toast(err.message);

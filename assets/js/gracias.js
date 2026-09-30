@@ -6,7 +6,7 @@
   'use strict';
   const $ = (s) => document.querySelector(s);
   const TZ = 'America/Argentina/Buenos_Aires';
-  const fmtNum = (n) => String(n).padStart(4, '0');
+  const fmtNum = (n) => new Intl.NumberFormat('es-AR').format(Number(n));
   const fmtFecha = (iso) =>
     new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: TZ }).format(new Date(iso));
   const fmtFechaHora = (iso) =>
@@ -30,24 +30,34 @@
     return res.json();
   }
 
-  function pillsNumeros(nums, unidad) {
-    const consecutivos = nums.length > 12 && nums.every((n, i) => i === 0 || n === nums[i - 1] + 1);
-    if (consecutivos) return `<li>${fmtNum(nums[0])} al ${fmtNum(nums[nums.length - 1])}</li><li class="count">${nums.length} ${unidad}</li>`;
-    return nums.map((n) => `<li>${fmtNum(n)}</li>`).join('');
+  /* Bloque de números ({ desde, hasta, cantidad }) como píldoras: "Del N.º 12.001 al N.º 22.000"
+     + la cantidad; un solo número (vía gratuita): "N.º 1.587". */
+  function pillsRango(rango, unidad) {
+    if (!rango || !Number.isFinite(Number(rango.desde))) return '';
+    const desde = Number(rango.desde);
+    const hasta = Number(rango.hasta ?? rango.desde);
+    const cantidad = Number(rango.cantidad ?? hasta - desde + 1);
+    if (cantidad <= 1) return `<li>N.º ${fmtNum(desde)}</li>`;
+    return `<li class="range">Del N.º ${fmtNum(desde)} al N.º ${fmtNum(hasta)}</li><li class="count">${fmtNum(cantidad)} ${esc(unidad?.plural || 'participaciones')}</li>`;
   }
 
   function renderOk(orden, campaign) {
     clearInterval(state.poll);
+    const rango = orden.rango || null;
     $('#ok-nombre').textContent = orden.nombre;
-    $('#ok-numeros').innerHTML = pillsNumeros(orden.numeros, campaign.unidad?.plural || 'participaciones');
-    $('#ok-titulo').textContent = orden.numeros.length > 1 ? 'Tus participaciones' : 'Tu participación';
+    $('#ok-numeros').innerHTML = pillsRango(rango, campaign.unidad);
+    $('#ok-titulo').textContent = Number(rango?.cantidad || 1) > 1 ? 'Tus participaciones' : 'Tu participación';
     $('#ok-bici').textContent = orden.bici?.nombre || '—';
     $('#ok-pack').textContent = orden.pack ? orden.pack.nombre : 'Participación sin cargo';
     $('#ok-sorteo').textContent = `${fmtFecha(campaign.edicion.fecha_sorteo)} hs`;
     $('#ok-orden').textContent = orden.id;
+    // Link de entrega del producto (packs[].entrega_url; el curso cae a curso.url_acceso). Sin link: llega por mail.
     const curso = $('#ok-curso');
-    if (orden.pack && campaign.curso.url_acceso) curso.href = campaign.curso.url_acceso;
-    else curso.hidden = true; // sin cargo, o el acceso al curso todavía no tiene URL: llega por mail
+    const entrega = orden.pack?.entrega_url || (orden.pack?.id === 'curso' ? campaign.curso.url_acceso : '');
+    if (orden.pack && entrega) {
+      curso.href = entrega;
+      curso.textContent = orden.pack.id === 'curso' ? 'Entrar al curso' : 'Descargar mi producto';
+    } else curso.hidden = true;
     const texto = `¡Ya estoy participando por una ${orden.bici?.nombre || 'Polygon'} con Baiking! 🚵 Mirá: ${location.origin}${location.pathname.replace(/gracias(\.html)?$/, '')}`;
     $('#ok-share').href = `https://wa.me/?text=${encodeURIComponent(texto)}`;
     show('ok');
@@ -58,6 +68,8 @@
     const t = { ...(orden.transferencia || campaign.checkout.transferencia || {}), monto: orden.monto, codigo: orden.codigo };
     $('#tr-nombre').textContent = orden.nombre;
     $('#tr-plazo').textContent = String(t.plazo_horas || 48);
+    const cant = $('#tr-cantidad');
+    if (cant) cant.textContent = orden.cantidad ? fmtNum(orden.cantidad) : '';
     $('#tr-data').innerHTML = window.BaikingUI.renderTransferData(t);
     $('#tr-note').textContent = `El monto tiene que ser exacto: ${window.BaikingUI.fmtARS(t.monto)}. Si tu banco pide un concepto, poné tu nombre y apellido.`;
     $('#tr-email').textContent = t.email_comprobantes || '';
@@ -156,7 +168,7 @@
         progress.hidden = true;
         if (out.estado === 'pagada') {
           const orden = state.demo ? null : await obtener(state.ordenId);
-          if (orden && orden.numeros?.length) return renderOk(orden, campaign);
+          if (orden && orden.rango) return renderOk(orden, campaign);
         }
         $('#tr-recibido').hidden = false;
         $('#tr-recibido-fecha').textContent = fmtFechaHora(new Date().toISOString());
@@ -179,7 +191,7 @@
     state.poll = setInterval(async () => {
       intentos += 1;
       const r = await obtener(state.ordenId).catch(() => null);
-      if (r && r.estado === 'pagada' && r.numeros?.length) renderOk(r, campaign);
+      if (r && r.estado === 'pagada' && r.rango) renderOk(r, campaign);
       if (intentos >= maximo) clearInterval(state.poll);
     }, cada);
   }
@@ -201,11 +213,14 @@
       if (q.get('transferencia') === '1') {
         const tr = campaign.checkout.transferencia || {};
         return renderTransferencia(
-          { nombre: 'Delfina', estado: 'pendiente', medio_pago: 'transferencia', codigo: 'BK-7Q4M2', monto: Math.round(pack.precio * (1 - (tr.descuento_pct || 0) / 100)), transferencia: tr },
+          { nombre: 'Delfina', estado: 'pendiente', medio_pago: 'transferencia', codigo: 'BK-7Q4M2', monto: Math.round(pack.precio * (1 - (tr.descuento_pct || 0) / 100)), cantidad: pack.participaciones, transferencia: tr },
           campaign,
         );
       }
-      return renderOk({ id: 'demo-0000-0000', nombre: 'Delfina', numeros: [142, 143, 144, 145, 146], bici: campaign.bicis[0], pack }, campaign);
+      return renderOk(
+        { id: 'demo-0000-0000', nombre: 'Delfina', rango: { desde: 12001, hasta: 12000 + pack.participaciones, cantidad: pack.participaciones }, bici: campaign.bicis[0], pack },
+        campaign,
+      );
     }
 
     const id = q.get('orden');
@@ -215,7 +230,7 @@
     try {
       const orden = await obtener(id);
       if (!orden) return show('error');
-      if (orden.estado === 'pagada' && orden.numeros.length) return renderOk(orden, campaign);
+      if (orden.estado === 'pagada' && orden.rango) return renderOk(orden, campaign);
       if (orden.medio_pago === 'transferencia' && ['pendiente', 'en_revision'].includes(orden.estado)) {
         renderTransferencia(orden, campaign);
         iniciarPolling(campaign, 30000, 120);

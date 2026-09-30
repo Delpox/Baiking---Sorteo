@@ -12,7 +12,8 @@
 
   const fmtARS = (n) =>
     new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
-  const fmtNum = (n) => String(n).padStart(4, '0');
+  // Números de participación con separador de miles ("12.001"); sin ceros a la izquierda.
+  const fmtNum = (n) => new Intl.NumberFormat('es-AR').format(Number(n));
   const fmtFechaLarga = (iso) =>
     new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TZ }).format(new Date(iso));
   const fmtHora = (iso) =>
@@ -118,7 +119,7 @@
     state.pack = pack.id;
     $$('.ladder input[type="radio"]').forEach((r) => (r.checked = r.value === pack.id));
     const mb = $('#mobile-bar-info');
-    if (mb) mb.innerHTML = `${esc(nombrePack(pack))} · ${fmtARS(pack.precio)}<b>Incluye ${pack.participaciones} ${esc(unidad(pack.participaciones))} en el sorteo</b>`;
+    if (mb) mb.innerHTML = `${esc(nombrePack(pack))} · ${fmtARS(pack.precio)}<b>Incluye ${fmtNum(pack.participaciones)} ${esc(unidad(pack.participaciones))} en el sorteo</b>`;
     if (state.onPackChange) state.onPackChange(pack.id);
   }
 
@@ -131,7 +132,7 @@
         (p) => `
         <label class="ladder-item" data-pack="${esc(p.id)}">
           <input type="radio" name="${esc(name)}" value="${esc(p.id)}" ${p.id === state.pack ? 'checked' : ''}>
-          <span class="q"><b>${esc(nombrePack(p))}</b>${p.descripcion ? `<small>${esc(p.descripcion)}</small>` : ''}<em>Incluye ${p.participaciones} ${esc(unidad(p.participaciones))} en el sorteo</em>${p.etiqueta ? `<span class="tag">${esc(p.etiqueta)}</span>` : ''}</span>
+          <span class="q"><b>${esc(nombrePack(p))}</b>${p.descripcion ? `<small>${esc(p.descripcion)}</small>` : ''}<em>Incluye ${fmtNum(p.participaciones)} ${esc(unidad(p.participaciones))} en el sorteo</em>${p.etiqueta ? `<span class="tag">${esc(p.etiqueta)}</span>` : ''}</span>
           <span class="p">${fmtARS(p.precio)}</span>
         </label>`,
       )
@@ -145,17 +146,22 @@
   function renderShopHero(cfg) {
     const media = $('#shop-photo-media');
     if (media) {
-      // Sin foto del local todavía: se muestran las bicis (foto real si la hay, si no la ilustración).
+      // Decisión de Baiking (30/09): en el hero van las tres bicis (foto real si la hay, si no la
+      // ilustración), sin foto del local. `marca.foto_hero` queda por si algún día se usa una foto.
       const arte = (b) =>
         b.imagen
           ? `<img src="${esc(b.imagen)}" alt="${esc(b.imagen_alt || b.nombre)}" loading="eager">`
           : `<svg viewBox="0 0 400 240" role="img" aria-label="${esc(b.nombre)}"><use href="#art-${esc(b.ilustracion)}"></use></svg>`;
       media.innerHTML = cfg.marca.foto_hero
         ? `<img src="${esc(cfg.marca.foto_hero)}" alt="${esc(cfg.marca.foto_hero_alt || '')}">`
-        : `<div class="shop-placeholder">
-            <div class="shop-placeholder-art">${cfg.bicis.map(arte).join('')}</div>
-            <p><b>Acá va la foto del local</b>Gastón con las Polygon en la puerta de Baiking, Del Viso</p>
-          </div>`;
+        : `<div class="shop-hero-bikes" role="img" aria-label="${esc(cfg.bicis.map((b) => b.nombre).join(', '))}">${cfg.bicis
+            .map((b) => `<figure data-bici="${esc(b.id)}">${arte(b)}</figure>`)
+            .join('')}</div>`;
+    }
+    // Ejemplo de la regla "$1 = 1 participación" con el producto más barato (claim y paso 1).
+    const masBarato = [...cfg.packs].sort((a, b) => a.precio - b.precio)[0];
+    if (masBarato) {
+      $$('[data-claim-ejemplo]').forEach((el) => (el.textContent = `${fmtARS(masBarato.precio)} son ${fmtNum(masBarato.participaciones)} números en el sorteo`));
     }
     const thumbs = $('#shop-thumbs');
     if (thumbs) {
@@ -516,7 +522,7 @@
       const medio = medioElegido();
       const total = totalPack(pack, medio);
       $('#sum-pack').textContent = nombrePack(pack);
-      $('#sum-part').textContent = `${pack.participaciones} ${unidad(pack.participaciones)} en el sorteo`;
+      $('#sum-part').textContent = `${fmtNum(pack.participaciones)} ${unidad(pack.participaciones)} en el sorteo`;
       $('#sum-bici').textContent = bici ? bici.nombre : '—';
       $('#sum-total').textContent = total === pack.precio ? fmtARS(total) : `${fmtARS(total)} (antes ${fmtARS(pack.precio)})`;
       // Transferencia: los datos bancarios y el comprobante van dentro del mismo formulario.
@@ -629,16 +635,16 @@
           showSuccess({
             nombre: data.nombre,
             pack,
-            numeros: [],
+            rango: null,
             bici,
             transferencia: { ...tr, monto: totalPack(pack, 'transferencia'), codigo: '' },
             comprobante: Boolean(comprobante),
           });
           return;
         }
-        const desde = 128 + Math.floor(Math.random() * 40);
-        const numeros = Array.from({ length: pack.participaciones }, (_, i) => desde + i);
-        showSuccess({ nombre: data.nombre, pack, numeros, bici });
+        // Bloque de números de ejemplo (en producción lo asigna la base: correlativo y único).
+        const desde = 12001 + Math.floor(Math.random() * 40) * 1000;
+        showSuccess({ nombre: data.nombre, pack, rango: { desde, hasta: desde + pack.participaciones - 1, cantidad: pack.participaciones }, bici });
       } catch (err) {
         errorBox.textContent = err.message || 'Algo salió mal. Probá de nuevo.';
         errorBox.classList.add('is-visible');
@@ -648,11 +654,14 @@
       }
     });
 
-    function showSuccess({ nombre, pack, numeros, bici, transferencia = null, comprobante = false }) {
+    function showSuccess({ nombre, pack, rango = null, bici, transferencia = null, comprobante = false }) {
       formView.hidden = true;
       successView.hidden = false;
       $('#ok-nombre').textContent = nombre;
-      $('#ok-numeros').innerHTML = pillsNumeros(numeros);
+      $('#ok-numeros').innerHTML = pillsRango(rango);
+      const okTitulo = $('#modal-success #ok-titulo');
+      if (okTitulo) okTitulo.textContent = Number(rango?.cantidad || pack.participaciones) > 1 ? 'Tus participaciones' : 'Tu participación';
+      const cuantas = `${fmtNum(pack.participaciones)} ${unidad(pack.participaciones)}`;
       $('#ok-bici').textContent = bici?.nombre || '';
       $('#ok-pack').textContent = nombrePack(pack);
       const texto = `¡Ya estoy participando por una ${bici?.nombre || 'Polygon'} con Baiking! 🚵 Mirá: ${location.href.split('#')[0]}`;
@@ -667,19 +676,19 @@
       if (transferencia && comprobante) {
         // Flujo principal: transfirió y adjuntó el comprobante en el mismo formulario.
         titulo.innerHTML = `¡Gracias, <span id="ok-nombre">${esc(nombre)}</span>!`;
-        sub.textContent = `Recibimos tu comprobante. Validamos la transferencia y te mandamos por mail tu producto y tu ${unidad(1)}, en menos de ${plazo} hs.`;
+        sub.textContent = `Recibimos tu comprobante. Validamos la transferencia y te mandamos por mail tu producto y tus ${cuantas}, en menos de ${plazo} hs.`;
         transferBox.hidden = true;
         $('#ok-ticket').hidden = true;
       } else if (transferencia) {
         titulo.innerHTML = `¡Reservamos tu lugar, <span id="ok-nombre">${esc(nombre)}</span>!`;
-        sub.textContent = 'Te mandamos por mail los datos para transferir. Cuando subas el comprobante te asignamos tu participación.';
+        sub.textContent = `Te mandamos por mail los datos para transferir. Cuando subas el comprobante te asignamos tus ${cuantas}.`;
         $('#ok-transfer-data').innerHTML = renderTransferData(transferencia);
         $('#ok-transfer-note').textContent = `Transferí el monto exacto y subí el comprobante desde el link del mail o mandalo a ${transferencia.email_comprobantes}. Lo confirmamos en menos de ${plazo} hs.`;
         transferBox.hidden = false;
         $('#ok-ticket').hidden = true;
       } else {
         titulo.innerHTML = `¡Ya estás adentro, <span id="ok-nombre">${esc(nombre)}</span>!`;
-        sub.textContent = 'Te mandamos por mail tu producto y tu participación.';
+        sub.textContent = `Te mandamos por mail tu producto y tus ${cuantas}.`;
         transferBox.hidden = true;
         $('#ok-ticket').hidden = false;
       }
@@ -688,11 +697,15 @@
   }
 
 
-  /* Números como píldoras; con muchos consecutivos, un solo rango ("0101 al 0200"). */
-  function pillsNumeros(nums) {
-    const consecutivos = nums.length > 12 && nums.every((n, i) => i === 0 || n === nums[i - 1] + 1);
-    if (consecutivos) return `<li>${fmtNum(nums[0])} al ${fmtNum(nums[nums.length - 1])}</li><li class="count">${nums.length} ${unidad(nums.length)}</li>`;
-    return nums.map((n) => `<li>${fmtNum(n)}</li>`).join('');
+  /* Bloque de números como píldoras: "Del N.º 12.001 al N.º 22.000" + la cantidad;
+     un solo número (vía gratuita): "N.º 1.587". Sin bloque todavía → nada. */
+  function pillsRango(rango) {
+    if (!rango || !Number.isFinite(Number(rango.desde))) return '';
+    const desde = Number(rango.desde);
+    const hasta = Number(rango.hasta ?? rango.desde);
+    const cantidad = Number(rango.cantidad ?? hasta - desde + 1);
+    if (cantidad <= 1) return `<li>N.º ${fmtNum(desde)}</li>`;
+    return `<li class="range">Del N.º ${fmtNum(desde)} al N.º ${fmtNum(hasta)}</li><li class="count">${fmtNum(cantidad)} ${esc(unidad(cantidad))}</li>`;
   }
 
   /* Datos de transferencia (dl) con botones de copiar. Se usa en el modal y en /gracias. */
@@ -837,9 +850,9 @@
       const btn = $('button[type="submit"]', form);
       btn.disabled = true;
       try {
-        // Con requiere_carta, la chance se asigna cuando llega la carta: acá solo se registran los datos.
+        // Con requiere_carta, el número se asigna cuando llega la carta: acá solo se registran los datos.
         const requiereCarta = cfg.participacion_gratuita?.requiere_carta === true;
-        let numeros = [];
+        let rango = null;
         if (cfg.checkout.modo === 'api') {
           const res = await fetch('api/participacion-gratuita', {
             method: 'POST',
@@ -851,17 +864,18 @@
             if (out.errores) paintErrors(form, out.errores);
             throw new Error(out.error || 'No pudimos registrar tu participación.');
           }
-          numeros = out.numeros || [];
+          rango = out.rango || null;
         } else {
           await new Promise((r) => setTimeout(r, 600));
-          numeros = requiereCarta ? [] : [301 + Math.floor(Math.random() * 60)];
+          const n = 38771 + Math.floor(Math.random() * 60);
+          rango = requiereCarta ? null : { desde: n, hasta: n, cantidad: 1 };
         }
         form.hidden = true;
         ok.hidden = false;
         $('#ok-nombre').textContent = data.nombre;
-        $('#ok-numeros').innerHTML = pillsNumeros(numeros);
+        $('#ok-numeros').innerHTML = pillsRango(rango);
         const carta = $('#ok-carta');
-        if (carta) carta.hidden = numeros.length > 0;
+        if (carta) carta.hidden = Boolean(rango);
         $('#ok-bici').textContent = cfg.bicis.find((b) => b.id === data.bici_preferida)?.nombre || '';
         ok.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch (err) {
@@ -928,9 +942,9 @@
       packs.innerHTML = cfg.packs
         .map(
           (p) =>
-            `<li><b>${esc(nombrePack(p))}</b> (${fmtARS(p.precio)}): ${esc((p.incluye || ['Curso online completo']).join('; '))}. Bonificación: ${p.participaciones} ${
+            `<li><b>${esc(nombrePack(p))}</b> (${fmtARS(p.precio)}): ${esc((p.incluye || []).join('; '))}. Otorga ${fmtNum(p.participaciones)} ${
               p.participaciones === 1 ? 'participación' : 'participaciones'
-            }.</li>`,
+            } (una por cada peso del precio).</li>`,
         )
         .join('');
     }

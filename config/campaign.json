@@ -292,11 +292,11 @@
     "horarios": "Lun a vie de 9:30 a 13:30 y de 15:30 a 19:30 · Sáb de 9:00 a 14:00"
   },
   "sorteo": {
-    "metodo": "El número ganador se obtiene en vivo con un generador de números aleatorios auditable, sobre el padrón de participaciones cerrado antes del sorteo.",
+    "metodo": "El número ganador se obtiene en vivo con un generador de números aleatorios auditable: se elige al azar un entero entre 1 y la cantidad total de participaciones del padrón cerrado antes del sorteo, y gana la orden cuyo bloque de números contiene ese entero.",
     "reglas": [
       {
         "titulo": "Números correlativos",
-        "texto": "Cada participación recibe un número único y correlativo cuando se confirma el pago o llega la carta. Lo ves en pantalla y te llega por mail."
+        "texto": "Cada compra recibe un bloque de números correlativos y únicos, uno por cada peso del precio, cuando se confirma el pago; la participación sin cargo recibe un número cuando llega la carta. Lo ves en pantalla y te llega por mail."
       },
       {
         "titulo": "En vivo y grabado",
@@ -317,11 +317,11 @@
   "faq": [
     {
       "p": "¿Qué estoy comprando exactamente?",
-      "r": "Un producto digital de Baiking: el pack de fondos de pantalla, el checklist pre-salida en PDF o el curso completo en video. Cada compra incluye, como bonificación, una participación en el sorteo de la Polygon. El producto es tuyo gane quien gane."
+      "r": "Un producto digital de Baiking: el pack de fondos de pantalla, el checklist pre-salida en PDF o el curso completo en video. Cada compra incluye, como bonificación, participaciones en el sorteo de la Polygon: una por cada peso del precio. El producto es tuyo gane quien gane."
     },
     {
-      "p": "¿Comprar el producto más caro me da más chances?",
-      "r": "No. Cada compra da una (1) participación, sea cual sea el producto, y la participación sin cargo vale exactamente lo mismo. El precio corresponde al contenido que te llevás, no al sorteo."
+      "p": "¿El producto más caro me da más participaciones?",
+      "r": "Sí: cada $1 del precio es una participación. Con el pack de fondos ($10.000) entrás con 10.000 números; con el curso completo ($25.000), con 25.000. Todos los números salen del mismo padrón y cada número tiene la misma probabilidad de salir. Cada producto se compra una sola vez por persona."
     },
     {
       "p": "¿Se sortean tres bicis?",
@@ -329,11 +329,11 @@
     },
     {
       "p": "¿Puedo participar sin comprar?",
-      "r": "Sí. Completás el formulario de participación sin cargo y nos mandás una carta a Las Camelias 3327, Del Viso (Pilar), contándonos por qué deberías ganar la bici. Cuando la recibimos te confirmamos por mail tu participación, con la misma probabilidad que cualquier otra."
+      "r": "Sí. Completás el formulario de participación sin cargo y nos mandás una carta a Las Camelias 3327, Del Viso (Pilar), contándonos por qué deberías ganar la bici. Cuando la recibimos te confirmamos por mail tu participación, con su número en el mismo padrón que todos los demás."
     },
     {
       "p": "¿Cómo se paga?",
-      "r": "Por transferencia bancaria: al completar el formulario te damos el alias, el CBU y el monto; transferís, subís el comprobante y en menos de 48 hs te confirmamos por mail tu producto y tu participación. Todo con factura."
+      "r": "Por transferencia bancaria: al completar el formulario te damos el alias, el CBU y el monto; transferís, subís el comprobante y en menos de 48 hs te confirmamos por mail tu producto y tus números. Todo con factura."
     },
     {
       "p": "¿Qué pasa si no vivo cerca de Baiking?",
@@ -346,7 +346,7 @@
     "domicilio": "Las Camelias 3327, Del Viso (1669), Pilar, Provincia de Buenos Aires",
     "vigencia_desde": "2026-10-15",
     "leyenda": "SIN OBLIGACIÓN DE COMPRA. Consultá las bases y condiciones en participa.baiking.com.ar/bases-y-condiciones.",
-    "aviso_corto": "Promoción organizada por Baiking. La compra de cualquiera de los productos digitales incluye, como bonificación sin cargo, una participación en el sorteo descripto en las bases. Sin obligación de compra: participación gratuita disponible en el sitio, con la misma probabilidad. Válida para mayores de 18 años residentes en Argentina, del 15/10/2026 al 3/12/2026; sorteo el 4/12/2026. Las imágenes son ilustrativas. No está patrocinada, avalada, administrada ni asociada a Instagram ni Meta.",
+    "aviso_corto": "Promoción organizada por Baiking. La compra de cualquiera de los productos digitales incluye, como bonificación sin cargo, participaciones en el sorteo descripto en las bases (una por cada peso del precio). Sin obligación de compra: participación gratuita disponible en el sitio (una por persona). Válida para mayores de 18 años residentes en Argentina, del 15/10/2026 al 3/12/2026; sorteo el 4/12/2026. Las imágenes son ilustrativas. No está patrocinada, avalada, administrada ni asociada a Instagram ni Meta.",
     "_nota": "leyenda y aviso_corto se muestran en el footer, las bases y los mails. Las fechas y la URL están escritas a mano: scripts/check.mjs avisa si no coinciden con edicion.* y marca.sitio_url.",
     "_organizador_nota": "Razón social y CUIT tomados de los datos bancarios que pasó Gastón (28/09). Confirmar que la promoción la organiza esa sociedad."
   },

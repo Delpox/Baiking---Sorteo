@@ -279,13 +279,13 @@ export async function procesarComprobante({ orden, buffer, tipo, nombre, texto, 
   }
 
   if (actual.estado !== 'pagada' && process.env.TRANSFERENCIAS_AUTO_APROBAR === 'true' && checks?.aprobable) {
-    const { numeros } = await confirmarOrden({
+    const { rango } = await confirmarOrden({
       orden: actual,
       campaign,
       baseUrl,
       cambios: { revisado_por: 'auto', revisado_at: new Date().toISOString() },
     });
-    return { estado: 'pagada', checks, numeros };
+    return { estado: 'pagada', checks, rango };
   }
 
   if (actual.estado !== 'pagada') {

@@ -3,9 +3,10 @@
 //  - transferencia (flujo principal): el participante ve los datos bancarios y ADJUNTA el
 //    comprobante en el mismo formulario. El body trae `comprobante: { tipo, nombre,
 //    contenido_base64 }`; se guarda, se lee con Claude y se evalúa igual que en
-//    api/comprobante.js. Responde { orden_id, medio_pago, estado, numeros }:
-//    estado 'pagada' (auto-aprobada, con números), 'en_revision' (lo revisa el panel) o
-//    'pendiente' (el adjunto no se pudo procesar; puede volver a subirlo en /gracias).
+//    api/comprobante.js. Responde { orden_id, medio_pago, estado, rango }:
+//    estado 'pagada' (auto-aprobada, con su bloque de números en `rango` = { desde, hasta,
+//    cantidad }), 'en_revision' (lo revisa el panel; rango null) o 'pendiente' (el adjunto no
+//    se pudo procesar; puede volver a subirlo en /gracias).
 //    Sin `comprobante` (fallback) manda el mail con los datos para transferir.
 //  - mercadopago (si checkout.mercadopago.habilitada): crea la preferencia y responde
 //    { orden_id, init_point } para redirigir al usuario a pagar.
@@ -111,7 +112,7 @@ export default async function handler(req, res) {
     }
 
     // Cada producto se compra UNA sola vez por persona (DNI), como dicen las bases; productos
-    // distintos sí (cada compra otorga una participación). Las rechazadas/anuladas no cuentan.
+    // distintos sí (cada compra otorga tantas participaciones como pesos tiene el precio). Las rechazadas/anuladas no cuentan.
     const repetida = await contarOrdenes({
       edicionId: campaign.edicion.id,
       dni: datos.dni,
@@ -194,13 +195,13 @@ export default async function handler(req, res) {
         // Espejo en la planilla con el estado real de la orden (si Sheets no está configurado, no hace nada).
         if (out.estado !== 'pagada') {
           const fresca = await obtenerOrden(orden.id).catch(() => null);
-          await espejarOrdenEnSheet(fresca || { ...orden, estado: out.estado }, { numeros: out.numeros || [] });
+          await espejarOrdenEnSheet(fresca || { ...orden, estado: out.estado });
         }
         return json(res, 200, {
           orden_id: orden.id,
           medio_pago: 'transferencia',
           estado: out.estado,
-          numeros: out.numeros || [],
+          rango: out.rango || null,
           checks: out.checks || null,
           ...(out.nota ? { nota: out.nota } : {}),
         });
@@ -214,7 +215,7 @@ export default async function handler(req, res) {
         console.error(`[checkout] mail transferencia de la orden ${orden.id}:`, err.message || err);
       }
       await espejarOrdenEnSheet(orden);
-      return json(res, 200, { orden_id: orden.id, medio_pago: 'transferencia', estado: 'pendiente', numeros: [] });
+      return json(res, 200, { orden_id: orden.id, medio_pago: 'transferencia', estado: 'pendiente', rango: null });
     }
 
     const orden = await crearOrden(base);

@@ -104,11 +104,6 @@ export async function listarOrdenes(edicionId, { estados, columnas = '*' } = {})
   });
 }
 
-/** Todos los números asignados en una edición: [{ orden_id, numero }]. */
-export async function listarParticipaciones(edicionId) {
-  return paginar(() => db().from('participaciones').select('orden_id,numero').eq('edicion_id', edicionId).order('numero', { ascending: true }));
-}
-
 /** Orden de la vía gratuita de un DNI en una edición (la más reciente), o null. */
 export async function obtenerOrdenGratuita(edicionId, dni) {
   const { data, error } = await db()
@@ -152,27 +147,49 @@ export async function obtenerOrdenPorPago(mpPaymentId) {
   return data;
 }
 
-// Devuelve los números de participación de la orden (los crea si aún no existen).
+// ------------------------------------------------------------------ bloques de números
+// Cada orden pagada tiene UN bloque correlativo de números de participación
+// (ordenes.numero_desde .. numero_hasta; cada $1 del producto = 1 participación). En la
+// API viaja como `rango`: { desde, hasta, cantidad } o null si todavía no se asignó.
+
+/** Bloque de una fila de `ordenes` ({ desde, hasta, cantidad }) o null si aún no tiene números. */
+export function rangoDeOrden(orden) {
+  const desde = Number(orden?.numero_desde);
+  const hasta = Number(orden?.numero_hasta);
+  if (!Number.isInteger(desde) || !Number.isInteger(hasta) || desde < 1 || hasta < desde) return null;
+  return { desde, hasta, cantidad: hasta - desde + 1 };
+}
+
+// Asigna a la orden su bloque correlativo (RPC atómico e idempotente: si ya lo tiene, lo
+// devuelve tal cual) y lo devuelve como { desde, hasta, cantidad }.
 export async function asignarParticipaciones(ordenId) {
   const rows = unwrap(await db().rpc('asignar_participaciones', { p_orden_id: ordenId }));
-  return (rows || []).map((r) => r.numero).sort((a, b) => a - b);
+  const rango = rangoDeOrden(Array.isArray(rows) ? rows[0] : rows);
+  if (!rango) throw new Error(`[db] asignar_participaciones(${ordenId}) no devolvió un bloque válido`);
+  return rango;
 }
 
-export async function obtenerParticipaciones(ordenId) {
-  const rows = unwrap(
-    await db().from('participaciones').select('numero').eq('orden_id', ordenId).order('numero'),
-  );
-  return (rows || []).map((r) => r.numero);
+/** Bloque de números de una orden ({ desde, hasta, cantidad }) o null si todavía no tiene. */
+export async function obtenerRango(ordenId) {
+  const { data, error } = await db().from('ordenes').select('numero_desde,numero_hasta').eq('id', ordenId).maybeSingle();
+  if (error) throw new Error(`[db] ${error.message}`);
+  return rangoDeOrden(data);
 }
 
+/**
+ * Padrón del sorteo (vista padron_sorteo): una fila por orden pagada con bloque
+ * (numero_desde, numero_hasta, cantidad + datos de la persona), ordenadas por numero_desde.
+ */
 export async function obtenerPadron(edicionId) {
-  let query = db().from('padron_sorteo').select('*').order('numero');
-  if (edicionId) query = query.eq('edicion_id', edicionId);
-  return unwrap(await query) || [];
+  return paginar(() => {
+    let q = db().from('padron_sorteo').select('*').order('numero_desde', { ascending: true });
+    if (edicionId) q = q.eq('edicion_id', edicionId);
+    return q;
+  });
 }
 
-// Números EMITIDOS en la edición (contador correlativo; incluye órdenes luego
-// reembolsadas o rechazadas). Es lo que se usa para el cupo y la barra de progreso.
+// Números EMITIDOS en la edición (contador correlativo = máximo numero_hasta; incluye
+// órdenes luego reembolsadas o rechazadas). Es lo que se usa para el cupo y la barra de progreso.
 export async function contarParticipaciones(edicionId) {
   const { data, error } = await db()
     .from('ediciones')
@@ -183,13 +200,12 @@ export async function contarParticipaciones(edicionId) {
   return data?.ultimo_numero ?? 0;
 }
 
-// Participaciones EN EL PADRÓN (solo órdenes pagadas): coincide con el CSV que
-// certifica el escribano. Es lo que muestra el panel.
+// Participaciones EN EL PADRÓN: suma de las cantidades de las órdenes pagadas con bloque
+// (vista padron_sorteo, paginada). Coincide con el CSV de /api/export que se publica antes
+// del sorteo. Es lo que muestra el panel.
 export async function contarPadron(edicionId) {
-  const { count, error } = await db()
-    .from('padron_sorteo')
-    .select('*', { count: 'exact', head: true })
-    .eq('edicion_id', edicionId);
-  if (error) throw new Error(`[db] ${error.message}`);
-  return count ?? 0;
+  const filas = await paginar(() =>
+    db().from('padron_sorteo').select('cantidad').eq('edicion_id', edicionId).order('numero_desde', { ascending: true }),
+  );
+  return filas.reduce((total, f) => total + (Number(f.cantidad) || 0), 0);
 }
