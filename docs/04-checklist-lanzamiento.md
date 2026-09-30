@@ -1,10 +1,10 @@
 # 04 · Checklist de lanzamiento
 
-Estado al 29/09: las decisiones de la reunión del 28/09 con Gastón y Belén y el modelo de tres productos del 29/09 están aplicados en `config/campaign.json` (detalle en `docs/02` §4). Lo marcado con `[x]` ya está hecho.
+Estado al 30/09: las decisiones de la reunión del 28/09 con Gastón y Belén, el modelo de tres productos del 29/09, la regla de participaciones proporcionales al precio ($1 = 1) del 29/09 por la tarde y el hero del 30/09 están aplicados en `config/campaign.json` (detalle en `docs/02` §4). Lo marcado con `[x]` ya está hecho.
 
 ## A. Legal y administrativo (antes de publicar nada)
 
-- [ ] Abogado revisa `bases-y-condiciones.html` con el texto nuevo: tres productos digitales con una (1) participación por compra, cada producto una sola vez por persona (cláusulas 3 y 5.1; `docs/02` §2), vía gratuita con carta (cláusula 5.3), sin escribano (cláusulas 5.5 y 7: sorteo en vivo por Instagram, grabado, cantidad total de participaciones publicada antes de sortear), pago únicamente por transferencia con comprobante y confirmación al acreditarse (cláusula 5.2), revocación del contenido digital (cláusula 10), alcance territorial (cláusula 2), aviso antifraude (`docs/05` §5). Lo que la revisión interna dejó abierto está en `docs/08` §3 y §5.
+- [ ] Abogado revisa `bases-y-condiciones.html` con el texto nuevo: tres productos digitales con participaciones proporcionales al precio (cada $1 = 1 participación; es el tipo de esquema que `docs/08` calificó de riesgo alto: Baiking decidió mantenerlo con la vía gratuita de 1 participación y hay que validarlo antes de publicar), cada producto una sola vez por persona (cláusulas 3 y 5.1; `docs/02` §2 y §4.3), vía gratuita con carta y 1 participación (cláusula 5.3), sin escribano (cláusulas 5.5 y 7: sorteo en vivo por Instagram, grabado, cantidad total de participaciones publicada antes de sortear), pago únicamente por transferencia con comprobante y confirmación al acreditarse (cláusula 5.2), revocación del contenido digital (cláusula 10), alcance territorial (cláusula 2), aviso antifraude (`docs/05` §5). Lo que la revisión interna dejó abierto está en `docs/08` §3 y §5.
 - [x] Razón social, CUIT y domicilio cargados en `config/campaign.json` → `legal` (X Centro Pilar SRL, CUIT 30-71025912-3, Las Camelias 3327, Del Viso).
 - [ ] Confirmar con Gastón que la promoción la organiza esa sociedad (los datos salieron de la cuenta bancaria).
 - [ ] Nota de consulta al IPLyC (Lotería de la Provincia de Buenos Aires) y a la OMIC de Pilar sobre registro de sorteos promocionales; guardar respuesta.
@@ -19,17 +19,17 @@ Estado al 29/09: las decisiones de la reunión del 28/09 con Gastón y Belén y 
 
 ## B. Producto y contenido
 
-- [ ] Confirmar con Gastón los precios de los tres productos (`packs[].precio`: $5.000 fondos · $12.000 checklist · $25.000 curso; hoy `[A CONFIRMAR]`).
+- [ ] Confirmar con Gastón los precios de los tres productos (`packs[].precio`: $10.000 fondos · $12.000 checklist · $25.000 curso; hoy `[A CONFIRMAR]`). Si cambian, `packs[].participaciones` tiene que quedar igual al precio (`npm run check` da error si no coinciden).
 - [ ] Producir el pack de fondos de pantalla (alta resolución, celular y computadora) y cargar su link de entrega en `packs[].entrega_url` del producto `fondos`.
 - [ ] Producir el checklist pre-salida en PDF y cargar su link en `packs[].entrega_url` del producto `checklist` (incluye también los fondos: un solo link o una carpeta).
 - [ ] Grabar los 4 módulos del curso en video (lista en `config/campaign.json` → `curso.modulos`): preparar la bici ante una carrera o salida · lavado y lubricación sin herramientas específicas · ajuste general · errores comunes y cómo evitarlos. No se promete "acceso de por vida" ni consultas por WhatsApp: no agregarlo en ninguna pieza.
-- [ ] Subir el curso a YouTube como no listado y cargar el link en `curso.url_acceso` (o en `packs[].entrega_url` del producto `curso` si se arma una carpeta con todo: el curso incluye además el checklist y los fondos). Mientras los tres links estén vacíos, el mail de confirmación avisa que el producto llega aparte y hay que mandarlo a mano.
-- [ ] Foto vertical del local con Gastón y las bicis (hero) → `assets/img/local.jpg` y `marca.foto_hero`.
+- [ ] Subir el curso a YouTube como no listado y cargar el link en `curso.url_acceso` (o en `packs[].entrega_url` del producto `curso` si se arma una carpeta con todo: el curso incluye además el checklist, los fondos y el tutorial de lavado). Mientras los tres links estén vacíos, el mail de confirmación avisa que el producto llega aparte y hay que mandarlo a mano.
+- [ ] (Opcional) Foto vertical del local con Gastón y las bicis → `assets/img/local.jpg` y `marca.foto_hero`. Desde el 30/09 el hero muestra las tres bicis; la foto queda por si algún día vuelve.
 - [ ] Foto de Gastón en bici (sección del curso) → `assets/img/gaston.jpg` y `marca.foto_gaston`.
-- [x] Fotos de las tres Polygon cargadas (`assets/img/siskiu-t7.webp`, `tambora.webp`, `strattos.webp` → `bicis[].imagen`). Con `null` se usan las ilustraciones.
+- [x] Fotos de las tres Polygon cargadas (`assets/img/siskiu-t7.webp`, `tambora.webp`, `strattos.webp` → `bicis[].imagen`; son las del hero). Con `null` se usan las ilustraciones.
 - [x] Logo real cargado: `assets/img/logo-baiking-rojo.png` (header, footer, OG), `logo-baiking-blanco.png` y `logo-baiking-circulo.png` (favicons, redes, mails); `marca.logo` en la config.
 - [x] Identidad definida: fondo blanco con acentos rojo Baiking `#eb0627`, header rojo con el logo centrado (variables en `:root` de `assets/css/styles.css`).
-- [ ] Imagen para redes `assets/img/og.png` (1200×630): regenerar con `node scripts/og-image.mjs` cuando estén la foto del local y los colores finales; leyenda "Sin obligación de compra".
+- [ ] Imagen para redes `assets/img/og.png` (1200×630): regenerar con `node scripts/og-image.mjs` cuando estén las fotos y los colores finales; leyenda "Sin obligación de compra".
 - [ ] Video de Gastón (60-90 s) explicando la promo, para Instagram.
 - [ ] Revisar con Gastón los 6 textos de `faq[]`, las descripciones de los tres productos (`packs[].descripcion`, `incluye`), la del curso y el texto del premio (service a los 30 días y garantía oficial siguen `[A CONFIRMAR]`).
 
@@ -41,27 +41,27 @@ Estado al 29/09: las decisiones de la reunión del 28/09 con Gastón y Belén y 
 - [ ] Deploy en **Vercel**: importar el repositorio, cargar las variables de `.env.example` (sin las de Mercado Pago mientras siga desactivado; con `CRON_SECRET` para los dos crons de `vercel.json` y las `GOOGLE_*` de la planilla, `docs/06`), dominio `participa.baiking.com.ar` (a confirmar con Gastón; si cambia, actualizar `marca.sitio_url`, `legal.leyenda`, `legal.aviso_corto` y `BASE_URL`).
 - [ ] `ADMIN_TOKEN` largo y aleatorio; abrir `admin.html`, ingresar el token (viaja en `Authorization: Bearer`; `?token=` queda solo como fallback) y probar "Exportar CSV".
 - [ ] Cambiar `checkout.modo` a `api` en `config/campaign.json` y desplegar.
-- [ ] Prueba de punta a punta con una transferencia real de $1 entre cuentas propias: formulario con el comprobante adjunto → mail "Recibimos tu comprobante" → `/gracias` con los chequeos → panel "Transferencias por revisar" → Aprobar (o "Llegó") → mail de confirmación con el número y el link del producto.
+- [ ] Prueba de punta a punta con una transferencia real de $1 entre cuentas propias: formulario con el comprobante adjunto → mail "Recibimos tu comprobante" → `/gracias` con los chequeos → panel "Transferencias por revisar" → Aprobar (o "Llegó") → mail de confirmación con el bloque de números ("del N.º X al N.º Y") y el link del producto.
 - [ ] Probar el camino malo: comprobante ilegible o de otro monto → Rechazar desde el panel → volver a subir desde `/gracias`.
 - [ ] Probar que el mismo DNI no puede comprar dos veces el mismo producto (la API responde `409`) y sí puede comprar otro producto.
 - [ ] Prueba de la vía gratuita: formulario → mail "ahora mandá la carta" → "Carta recibida" en el panel → mail de confirmación con el número; y el bloqueo por DNI repetido.
 - [ ] Probar los recordatorios sin marcar nada: `GET /api/recordatorios?tipo=semana&test=mail@propio` y `?tipo=sorteo&test=mail@propio` con el token de admin.
-- [ ] `npm run check` sin errores (avisa si las fechas y la URL de `legal.leyenda` / `aviso_corto` no coinciden con `edicion.*` y `marca.sitio_url`, y si los productos no dan todos la misma participación).
+- [ ] `npm run check` sin errores (da error si `packs[].participaciones` no es `precio × regla_participaciones.por_peso`; avisa si las fechas y la URL de `legal.leyenda` / `aviso_corto` no coinciden con `edicion.*` y `marca.sitio_url`, si los precios no van de menor a mayor y si la vía gratuita deja de dar 1 participación).
 - [ ] Analítica: agregar Meta Pixel / GA4 si se va a hacer pauta (respetar consentimiento).
 - [ ] Protección anti-bots en los formularios (Cloudflare Turnstile o Vercel WAF) si aparece abuso.
 
 ## D. Comunicación
 
 - [ ] Calendario de contenidos (ver `docs/03-automatizaciones.md` §4) cargado en Metricool.
-- [ ] Todas las piezas con "Sin obligación de compra · Bases en participa.baiking.com.ar/bases-y-condiciones" (dominio a confirmar). "Participación/participaciones" en todas las piezas. Nunca "chances", "rifa", "números" como producto, "sumá participaciones" ni "ante escribano".
+- [ ] Todas las piezas con "Sin obligación de compra · Bases en participa.baiking.com.ar/bases-y-condiciones" (dominio a confirmar). "Participación/participaciones" en todas las piezas; "números" solo para el bloque, como en el claim del hero ("$10.000 son 10.000 números en el sorteo"). Nunca "chances", "rifa", "comprá tu número", "quedan pocos números", "cuantas más sumás, menos pagás" ni "ante escribano".
 - [ ] Pauta en Meta configurada como venta de productos digitales (fondos, checklist, curso), no como sorteo, para evitar rechazos.
 - [ ] Highlights de Instagram: "Cómo participar" (transferencia + comprobante en el formulario), "Los productos", "Las bicis", "Sorteo".
 
 ## E. Día del sorteo
 
-- [ ] Cierre de inscripciones automático (fecha en la config) y exportación del padrón desde el panel; antes del vivo publicar la cantidad total de participaciones (story + sitio), como dice la cláusula 5.5 de las bases, y guardar el CSV.
-- [ ] Ensayar `sorteo.html` (o `node scripts/sorteo.mjs padron.csv`) con el padrón de prueba; el día del sorteo cargar el CSV real y usar "Pantalla completa" para el vivo.
-- [ ] Transmisión en vivo por Instagram, grabada; descargar el acta JSON al terminar y publicar el video.
+- [ ] Cierre de inscripciones automático (fecha en la config) y exportación del padrón desde el panel (una fila por orden pagada con su bloque); antes del vivo publicar la cantidad total de participaciones y el hash SHA-256 del CSV (story + sitio), como dice la cláusula 5.5 de las bases, y guardar el CSV.
+- [ ] Ensayar `sorteo.html` (o `node scripts/sorteo.mjs padron.csv`) con un padrón de prueba: chequeos de integridad (bloques contiguos, total = último `numero_hasta`, hash), número sorteado entre 1 y el total, orden ganadora por bloque, suplentes sin el DNI ganador; el día del sorteo cargar el CSV real y usar "Pantalla completa" para el vivo.
+- [ ] Transmisión en vivo por Instagram, grabada; descargar el acta JSON al terminar (número sorteado, bloque ganador, valor crudo del RNG, hash del padrón) y publicar el video.
 - [ ] Contactar a la persona ganadora (llamada + mail + WhatsApp) y publicar el resultado.
 - [ ] Cargar el ganador en `config/campaign.json` → `ganadores` para que aparezca en el sitio.
 
@@ -94,5 +94,5 @@ Estado al 29/09: las decisiones de la reunión del 28/09 con Gastón y Belén y 
 - Solo si se reactiva Mercado Pago (`checkout.mercadopago.habilitada: true`; pasos en `docs/03` §8):
   - [ ] Crear la aplicación (Checkout Pro), cargar `MP_ACCESS_TOKEN` y `MP_WEBHOOK_SECRET` y configurar el webhook `https://<dominio>/api/webhooks/mercadopago` (evento "Pagos").
   - [ ] Elegir en "Costos y cuotas" la liberación a 14-18 días (3,39 % + IVA) y confirmar que no hay cuotas sin interés absorbidas por Baiking. Ver docs/05 §2 y §8.
-  - [ ] Prueba de punta a punta con credenciales de prueba: compra → webhook → número → mail → `/gracias`.
+  - [ ] Prueba de punta a punta con credenciales de prueba: compra → webhook → bloque de números → mail → `/gracias`.
   - [ ] Contador: SIRTAC/SIRCUPA y percepción de IVA del 3 % sobre comisiones. Ver docs/05 §4.

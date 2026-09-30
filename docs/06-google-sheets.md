@@ -1,6 +1,6 @@
 # 06 · Planilla de Google Sheets para Gastón
 
-La planilla de órdenes / transferencias del panel, espejada en un Google Sheets que Gastón puede abrir desde el celular. Él marca en una columna si la plata llegó y el sistema hace el resto (números, mail, WhatsApp). Sin dependencias nuevas: `api/_lib/sheets.js` firma el JWT de la service account con `node:crypto` y habla con la API REST de Sheets v4 por `fetch`.
+La planilla de órdenes / transferencias del panel, espejada en un Google Sheets que Gastón puede abrir desde el celular. Él marca en una columna si la plata llegó y el sistema hace el resto (bloque de números, mail, WhatsApp). Sin dependencias nuevas: `api/_lib/sheets.js` firma el JWT de la service account con `node:crypto` y habla con la API REST de Sheets v4 por `fetch`.
 
 ## 1. Qué hace
 
@@ -8,7 +8,7 @@ La planilla de órdenes / transferencias del panel, espejada en un Google Sheets
 
 **Planilla → base.** En la misma corrida lee la columna **"Llegó la plata"**. Donde Gastón puso `SI` o `NO` y la base todavía no lo tiene (o tiene lo contrario), aplica la misma lógica que la acción `acreditar` del panel:
 
-- `SI` sobre una transferencia `pendiente` o `en_revision` → guarda `acreditada = true`, `acreditada_at`, `acreditada_nota`, `revisado_por = 'planilla'`, `revisado_at`, y **confirma la orden** (`confirmarOrden`: número correlativo, mail de confirmación con el link del producto y WhatsApp si está configurado).
+- `SI` sobre una transferencia `pendiente` o `en_revision` → guarda `acreditada = true`, `acreditada_at`, `acreditada_nota`, `revisado_por = 'planilla'`, `revisado_at`, y **confirma la orden** (`confirmarOrden`: bloque correlativo de números, mail de confirmación con el link del producto y WhatsApp si está configurado).
 - `NO` → solo guarda `acreditada = false` (+ fecha, nota y revisor). Rechazar la orden sigue siendo una decisión del panel.
 - `SI` sobre una transferencia `rechazada` o `reembolsada` → solo marca; nunca la reabre (igual que el panel, que avisa "se marcó acreditada pero no se aprueba").
 - `SI`/`NO` en una fila que no es transferencia (vía gratuita, o Mercado Pago si se reactivara) → no hace nada y lo informa en `errores` (el panel responde 409 en ese caso).
@@ -25,12 +25,12 @@ Columnas, en este orden:
 | C–H | `nombre` `apellido` `dni` `email` `whatsapp` `provincia` | sistema | datos del participante |
 | I | `bici` | sistema | nombre de la bici elegida (`campaign.bicis`) |
 | J | `pack` | sistema | nombre del producto comprado (`campaign.packs`); `Sin cargo` para la vía gratuita |
-| K | `participaciones` | sistema | `cantidad_participaciones` (en el modelo vigente, siempre 1) |
+| K | `participaciones` | sistema | `cantidad_participaciones`: tantas como pesos tiene el precio del producto (10.000 · 12.000 · 25.000); 1 en la vía gratuita |
 | L | `monto` | sistema | número (sin formato) |
 | M | `estado` | sistema | `pendiente` · `en_revision` · `pagada` · `rechazada` · … |
 | N | `comprobante` | sistema | fecha en que subió el comprobante |
 | O | `IA: monto ok / destino ok` | sistema | `OK / OK`, `NO / OK`…, `sin lectura` si hay comprobante pero no se leyó |
-| P | `números` | sistema | `0142, 0143, …` (los mismos que van en el mail) |
+| P | `números` | sistema | el bloque correlativo de la orden como texto: `del 1 al 10.000` (vía gratuita, un solo número: `N.º 1.587`); con separador de miles y sin ceros a la izquierda, vacío hasta que la orden se confirma (`textoRango()`; el mismo bloque que va en el mail) |
 | Q | **`Llegó la plata`** | **Gastón** | vacío / `SI` / `NO` (lista desplegable) |
 | R | `acreditada_at` | sistema | cuándo se marcó |
 | S | `nota` | **Gastón** (o el panel) | texto libre, se guarda en `acreditada_nota` |
@@ -77,7 +77,7 @@ CRON_SECRET=un-token-largo-y-aleatorio
 - `CRON_SECRET`: Vercel lo manda en `Authorization: Bearer <CRON_SECRET>` en cada invocación del cron; sin él, el endpoint responde 401 y el cron no hace nada. Generarlo con `openssl rand -hex 24`. El endpoint también acepta `Bearer <ADMIN_TOKEN>` (para llamarlo a mano o desde el panel).
 - Sin las variables `GOOGLE_*` no pasa nada: `/api/sheets-sync` responde `200 { ok: false, motivo: 'sheets no configurado' }` y el hook no hace nada.
 
-Pendiente (archivo que edita otro equipo): agregar estas cinco líneas, con sus comentarios, a `.env.example`.
+Las cuatro `GOOGLE_*` ya están en `.env.example`, con sus comentarios.
 
 ## 5. Cron en `vercel.json`
 
@@ -121,14 +121,14 @@ function alEditar(e) {
 
 Luego: **Configuración del proyecto → Propiedades del script** → agregar `CRON_SECRET` con el mismo valor que en Vercel. **Activadores → Añadir activador**: función `alEditar`, evento "De hoja de cálculo · Al editar"; y otro: función `sincronizar`, "Según tiempo · cada 10 minutos". Google pide autorizar el script la primera vez (con la cuenta de Baiking, no con la de Gastón).
 
-## 6. Líneas de integración pendientes (archivos que edita otro equipo)
+## 6. Líneas de integración (ya aplicadas en `api/`)
 
-`espejarOrdenEnSheet(orden, { numeros })` está en `api/_lib/sheets.js`: **nunca lanza** (si Sheets no está configurado o falla, loguea y devuelve `false`), hace 2 llamadas a la API (≈ 1 s) y no hace nada mientras corre una sincronización (esa ya escribe todo al final). Hay que `await`-earla antes de responder: Vercel puede congelar la función después de `res.end()`.
+`espejarOrdenEnSheet(orden, { rango })` está en `api/_lib/sheets.js`: **nunca lanza** (si Sheets no está configurado o falla, loguea y devuelve `false`), hace 2 llamadas a la API (≈ 1 s) y no hace nada mientras corre una sincronización (esa ya escribe todo al final). Se `await`-ea antes de responder: Vercel puede congelar la función después de `res.end()`. `rango` es el bloque de la orden (`{ desde, hasta, cantidad }`); si no se pasa, se toma de `numero_desde` / `numero_hasta` de la orden. Estas son las líneas, ya presentes en el código (sirven de referencia si se agrega otro camino que cambie el estado de una orden):
 
-| # | Archivo | Dónde | Línea a agregar |
+| # | Archivo | Dónde | Línea |
 |---|---|---|---|
 | 1 | `api/_lib/confirmar.js` | arriba, con los imports | `import { espejarOrdenEnSheet } from './sheets.js';` |
-| 2 | `api/_lib/confirmar.js` | `confirmarOrden()`, justo antes de `return { orden: actual, numeros };` | `await espejarOrdenEnSheet(actual, { numeros });` |
+| 2 | `api/_lib/confirmar.js` | `confirmarOrden()`, justo antes de `return { orden: actual, rango };` | `await espejarOrdenEnSheet(actual, { rango });` |
 | 3 | `api/checkout.js` | arriba, con los imports | `import { espejarOrdenEnSheet } from './_lib/sheets.js';` |
 | 4 | `api/checkout.js` | rama `if (esTransferencia)`, después del `try/catch` del mail y antes de `return json(res, 200, { orden_id: orden.id, medio_pago: 'transferencia', … })` | `await espejarOrdenEnSheet(orden);` |
 | 5 | `api/admin.js` | arriba, con los imports | `import { espejarOrdenEnSheet } from './_lib/sheets.js';` |
@@ -152,7 +152,7 @@ curl -sS -X POST https://participa.baiking.com.ar/api/sheets-sync -H "Authorizat
 # → {"ok":true,"filas_escritas":12,"marcadas_si":0,"marcadas_no":0,"pendientes":0,"errores":[]}
 ```
 
-Después poner `SI` en la fila de una orden de prueba y volver a llamar: `marcadas_si: 1`, la fila pasa a `pagada` con números y a la persona le llega el mail. Con `?edicion=edicion-2` se sincroniza otra edición (usar otra pestaña).
+Después poner `SI` en la fila de una orden de prueba y volver a llamar: `marcadas_si: 1`, la fila pasa a `pagada` con su bloque en la columna `números` ("del 1 al 10.000") y a la persona le llega el mail. Con `?edicion=edicion-2` se sincroniza otra edición (usar otra pestaña).
 
 Errores típicos (vienen en `detalle` de la respuesta 500 y en los logs de Vercel):
 
@@ -168,6 +168,6 @@ Errores típicos (vienen en `detalle` de la respuesta 500 y en los logs de Verce
 
 - La API de Sheets es gratuita. Cuotas: 300 lecturas y 300 escrituras por minuto por proyecto; una corrida usa 1 lectura y 1 o 2 escrituras (más 1 token OAuth por hora, cacheado en memoria).
 - Todo se escribe en modo `RAW`: ninguna celda se interpreta como fórmula, aunque un participante ponga `=…` en su nombre.
-- Si dos sincronizaciones corren a la vez (cron + botón) y agregan la misma orden dos veces, la siguiente corrida borra la fila repetida y conserva la primera. Confirmar dos veces es inofensivo: los números son idempotentes en la base y el mail se marca como enviado.
-- Hasta 5.000 órdenes por edición sin problema (la base se lee en páginas de 1.000). La planilla no reemplaza al padrón oficial del sorteo: eso sigue siendo `/api/export` (el CSV que se publica antes de sortear).
+- Si dos sincronizaciones corren a la vez (cron + botón) y agregan la misma orden dos veces, la siguiente corrida borra la fila repetida y conserva la primera. Confirmar dos veces es inofensivo: el bloque es idempotente en la base (`asignar_participaciones` devuelve el mismo) y el mail se marca como enviado.
+- Hasta 5 mil órdenes por edición sin problema (la base se lee en páginas de 1.000); la cantidad de números no importa, porque cada orden ocupa una sola fila con su bloque. La planilla no reemplaza al padrón oficial del sorteo: eso sigue siendo `/api/export` (el CSV que se publica antes de sortear).
 - El archivo JSON de la service account es una llave a la planilla (y a cualquier otra que se le comparta): si se filtra, borrar la clave en Google Cloud (Cuenta de servicio → Claves) y crear otra.
