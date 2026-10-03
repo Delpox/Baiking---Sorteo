@@ -1,6 +1,6 @@
 // Notificaciones al participante: mail (Resend) y WhatsApp (Meta Cloud API).
 // Regla de copy: lo que se cobra es SIEMPRE un producto digital (fondos, checklist, curso);
-// cada $1 del producto es una participación en el sorteo (cada orden pagada recibe UN bloque
+// cada $1.000 del producto es una participación en el sorteo (cada orden pagada recibe UN bloque
 // correlativo de números, `rango` = { desde, hasta, cantidad }) y la participación nunca se
 // presenta como lo comprado.
 import { env } from './http.js';
@@ -34,7 +34,7 @@ export function cantidadDeRango(rango) {
 
 /**
  * Cómo se muestra el bloque correlativo de una orden: un solo número → "N.º 1.587"; un
- * bloque → "del N.º 1 al N.º 10.000". Cada orden pagada tiene UN bloque (cada $1 del
+ * bloque → "del N.º 121 al N.º 130". Cada orden pagada tiene UN bloque (cada $1.000 del
  * producto = 1 participación), así que el mail y el parámetro de la plantilla de WhatsApp
  * nunca llevan miles de números. Sin bloque (null) → ''.
  */
@@ -133,7 +133,7 @@ export function armarMailConfirmacion({ orden, rango, campaign, baseUrl, gratuit
   const conNumerosTexto = `con ${cantidadTexto}: ${bloque}`;
   const intro = gratuita
     ? `${conCarta ? 'Recibimos tu carta y registramos' : 'Registramos'} tu participación <strong style="color:#1c1a1b">sin obligación de compra</strong>. Quedaste participando por tu <strong style="color:#1c1a1b">${escapeHtml(biciNombre)}</strong> con la misma probabilidad que cualquier otra participación.`
-    : `Confirmamos tu pago de <strong style="color:#1c1a1b">${escapeHtml(producto)}</strong>. Ya tenés tu producto y, como bonificación sin cargo (cada $1 del producto es una participación), quedaste participando por tu <strong style="color:#1c1a1b">${escapeHtml(biciNombre)}</strong> ${conNumeros}.`;
+    : `Confirmamos tu pago de <strong style="color:#1c1a1b">${escapeHtml(producto)}</strong>. Ya tenés tu producto y, como bonificación sin cargo (cada $1.000 del producto es una participación), quedaste participando por tu <strong style="color:#1c1a1b">${escapeHtml(biciNombre)}</strong> ${conNumeros}.`;
   const incluyeHtml = incluye.length
     ? `<p style="font-size:13px;line-height:1.6;color:#6e686b;margin:14px 0 4px">Incluye:</p>
     <ul style="margin:0;padding-left:20px;font-size:14px;line-height:1.7;color:#4a4649">${incluye.map((i) => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`
@@ -180,7 +180,7 @@ export function armarMailConfirmacion({ orden, rango, campaign, baseUrl, gratuit
 ${
   gratuita
     ? `${conCarta ? 'Recibimos tu carta y registramos' : 'Registramos'} tu participación sin obligación de compra.`
-    : `Confirmamos tu pago de ${producto}. Ya tenés tu producto y, como bonificación sin cargo (cada $1 del producto es una participación), quedaste participando por tu ${biciNombre} ${conNumerosTexto}.`
+    : `Confirmamos tu pago de ${producto}. Ya tenés tu producto y, como bonificación sin cargo (cada $1.000 del producto es una participación), quedaste participando por tu ${biciNombre} ${conNumerosTexto}.`
 }
 ${plural ? `Tus ${u}` : `Tu ${u}`}: ${bloque}${plural ? ` (${cantidadTexto})` : ''}
 Bici elegida: ${bici?.nombre || ''}

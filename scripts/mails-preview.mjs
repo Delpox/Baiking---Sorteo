@@ -27,10 +27,10 @@ const orden = {
   medio_pago: 'transferencia',
   created_at: ahora.toISOString(),
 };
-// Cada orden pagada tiene un bloque correlativo de números (cada $1 del producto = 1 participación).
-const rango = { desde: 12001, hasta: 12000 + pack.participaciones, cantidad: pack.participaciones };
+// Cada orden pagada tiene un bloque correlativo de números (cada $1.000 del producto = 1 participación).
+const rango = { desde: 1201, hasta: 1200 + pack.participaciones, cantidad: pack.participaciones };
 const gratuita = { ...orden, id: 'a9b8c7d6-1e2f-4a3b-8c9d-0e1f2a3b4c5d', pack_id: 'gratuita', medio_pago: 'gratuita', origen: 'gratuita', monto: 0, cantidad_participaciones: 1 };
-const rangoGratuita = { desde: 38771, hasta: 38771, cantidad: 1 };
+const rangoGratuita = { desde: 3877, hasta: 3877, cantidad: 1 };
 
 const mails = [
   {

@@ -7,7 +7,7 @@
 | La persona completa el formulario con el comprobante adjunto | Valida los datos, rechaza con `409` si esa persona (DNI) ya compró ese producto, crea la orden en estado `pendiente` (con un código interno `BK-XXXXX` que no se muestra), guarda el comprobante en Storage y lo manda a leer | `api/checkout.js`, `api/_lib/validar.js`, `api/_lib/comprobante.js` |
 | Claude lee el comprobante | Extrae monto, fecha, cuenta destino, titular, referencia y señales de edición; los chequeos quedan en `comprobante_datos`; la orden pasa a `en_revision` y sale el mail "Recibimos tu comprobante" | `api/_lib/comprobante.js` (`leerComprobante`, `evaluarComprobante`, `procesarComprobante`), `api/_lib/notificaciones.js` |
 | Aprobación | Desde el panel ("Aprobar" / "Rechazar", o "Llegó" / "No llegó" en la conciliación), desde la planilla de Google Sheets (columna "Llegó la plata", `docs/06`) o automática si `TRANSFERENCIAS_AUTO_APROBAR=true` y todos los chequeos dan bien | `admin.html`, `api/admin.js`, `api/_lib/sheets.js`, `api/_lib/comprobante.js` |
-| Orden aprobada | Marca la orden `pagada`, **asigna un bloque correlativo de números de forma atómica** (tantos como pesos tiene el precio: `numero_desde`–`numero_hasta`, con el contador `ediciones.ultimo_numero`) y dispara las notificaciones | `api/_lib/confirmar.js`, `supabase/schema.sql` (`asignar_participaciones`) |
+| Orden aprobada | Marca la orden `pagada`, **asigna un bloque correlativo de números de forma atómica** (uno por cada $1.000 del precio, 10, 19 o 29: `numero_desde`–`numero_hasta`, con el contador `ediciones.ultimo_numero`) y dispara las notificaciones | `api/_lib/confirmar.js`, `supabase/schema.sql` (`asignar_participaciones`) |
 | Mail de confirmación | Resend: "¡Listo, {nombre}! {producto} y tus participaciones": el bloque ("Tus participaciones: del N.º X al N.º Y (N participaciones)"), bici elegida, fecha del sorteo, botón "Descargar / Ver {producto}" con el link de entrega (`packs[].entrega_url`; el curso, `curso.url_acceso`; vacío = "te llega en un mail aparte"), lo que incluye y link a las bases | `api/_lib/notificaciones.js` (`armarMailConfirmacion`, `describirRango`) |
 | WhatsApp | Envía la plantilla aprobada por la API oficial de Meta (si está configurada), con el bloque en `{{2}}` | `api/_lib/notificaciones.js` |
 | Vuelve al sitio | `/gracias?orden=...` muestra "comprobante en revisión" con los chequeos o, ya aprobada, el bloque de números (`rango: { desde, hasta, cantidad }`); permite volver a subir el comprobante | `gracias.html`, `assets/js/gracias.js`, `api/orden.js`, `api/comprobante.js` |
@@ -34,14 +34,14 @@ Son siete (el orden es el de `docs/07` §2):
 4. **Carta confirmada** (`armarMailConfirmacion` con `gratuita: true`): cuando Baiking marca "Carta recibida" en el panel. Asunto "¡Listo, {nombre}! Registramos tu participación sin cargo · Baiking"; "Recibimos tu carta y registramos tu participación sin obligación de compra", "Tu participación: N.º X" (un solo número, en el mismo padrón que las demás); sin botón de producto.
 5. **"Reservamos tu lugar · datos para transferir"** (`armarMailTransferencia`): solo si una orden entra sin comprobante o el adjunto no se pudo procesar (fallback): monto, alias, CBU, titular, CUIT, banco y botón "Subir el comprobante"; las respuestas van a `email_comprobantes`. En el flujo normal no sale: la persona transfiere antes de enviar el formulario.
 6. **"Falta una semana para el sorteo"** (`armarMailRecordatorioSemana`): lo manda `api/recordatorios` 7 días antes de `edicion.fecha_sorteo` a todas las personas con alguna orden (pagada, en revisión o pendiente), una por mail. Tres variantes: general (fecha del sorteo, cierre de inscripciones, botón "Ver los productos": "si todavía no tenés alguno de los productos, estás a tiempo; cada uno se compra una sola vez por persona"), comprobante (su última orden por transferencia sigue pendiente: botón "Subir el comprobante") y carta (su participación sin cargo espera la carta: fecha límite y dirección).
-7. **"¡Hoy es el sorteo! 21:00 en vivo"** (`armarMailRecordatorioSorteo`): el día del sorteo, a cada persona con órdenes pagadas, con los bloques de todas sus órdenes juntos ("del N.º 1 al N.º 10.000 y del N.º 38.771 al N.º 50.770", `describirRangos`) y el botón "Ver el vivo" (Instagram).
+7. **"¡Hoy es el sorteo! 21:00 en vivo"** (`armarMailRecordatorioSorteo`): el día del sorteo, a cada persona con órdenes pagadas, con los bloques de todas sus órdenes juntos ("del N.º 121 al N.º 130 y del N.º 2.412 al N.º 2.440", `describirRangos`) y el botón "Ver el vivo" (Instagram).
 
 Texto de referencia del mail de confirmación (el HTML está en `api/_lib/notificaciones.js`; kicker "Productos digitales + sorteo"):
 
 ```
 ¡Ya estás adentro, Delfina!
-Confirmamos tu pago de Curso Baiking de Mantenimiento. Ya tenés tu producto y, como bonificación sin cargo, quedaste participando por tu Polygon Siskiu T7 con 25.000 participaciones: del N.º 38.771 al N.º 63.770.
-Tus participaciones: del N.º 38.771 al N.º 63.770 (25.000 participaciones)
+Confirmamos tu pago de Curso Baiking de Mantenimiento. Ya tenés tu producto y, como bonificación sin cargo, quedaste participando por tu Polygon Siskiu T7 con 29 participaciones: del N.º 2.412 al N.º 2.440.
+Tus participaciones: del N.º 2.412 al N.º 2.440 (29 participaciones)
 Bici elegida: Polygon Siskiu T7
 Sorteo en vivo: viernes, 4 de diciembre, 21:00 hs por Instagram @baikingtiendadebicis
 Descargar / ver Curso Baiking de Mantenimiento: <link>   (mientras el link esté vacío: "Tu producto te llega en un mail aparte, apenas esté listo.")
@@ -74,7 +74,7 @@ Ver el detalle de tu orden: {{5}}
 Sin obligación de compra. Bases: participa.baiking.com.ar/bases-y-condiciones
 ```
 
-`{{2}}` es el bloque de la orden como texto: "del N.º 1 al N.º 10.000" (vía gratuita: "N.º 1.587"), el mismo que va en el mail (`describirRango`). (Dominio a confirmar; ver `docs/04` sección C.)
+`{{2}}` es el bloque de la orden como texto: "del N.º 121 al N.º 130" (vía gratuita: "N.º 1.587"), el mismo que va en el mail (`describirRango`). (Dominio a confirmar; ver `docs/04` sección C.)
 
 3. Cargar `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN` (token permanente de un usuario del sistema), `WHATSAPP_TEMPLATE_NAME` y `WHATSAPP_TEMPLATE_LANG` en Vercel. Sin estas variables, el sistema manda solo el mail (no falla).
 4. Costo aproximado: una conversación "utility" en Argentina cuesta centavos de dólar; para 1.000 órdenes es despreciable.
@@ -84,7 +84,7 @@ Cuidado con la política de comercio de WhatsApp: el mensaje habla de una promoc
 ### Opción B · Manual con WhatsApp Business (sin API)
 
 - Exportar el padrón desde el panel (`admin.html` → "Exportar CSV"; el token viaja en el header `Authorization: Bearer`, `?token=` queda solo como fallback). El CSV trae nombre, WhatsApp y el bloque de cada orden (`numero_desde`, `numero_hasta`, `cantidad`).
-- Usar "Respuestas rápidas" de WhatsApp Business con el texto de arriba y pegar el bloque ("del N.º 1 al N.º 10.000"). Viable hasta ~50 órdenes por día.
+- Usar "Respuestas rápidas" de WhatsApp Business con el texto de arriba y pegar el bloque ("del N.º 121 al N.º 130"). Viable hasta ~50 órdenes por día.
 - Alternativa intermedia: una automatización en Make/Zapier que lea la tabla `ordenes` de Supabase y dispare mensajes por un proveedor.
 
 ## 4. Recordatorios y comunicación durante la campaña
@@ -98,7 +98,7 @@ Cuidado con la política de comercio de WhatsApp: el mensaje habla de una promoc
 | Día del sorteo | Mail automático (`api/recordatorios`) + stories | "¡Hoy es el sorteo! 21:00 en vivo" con los bloques de cada persona; en stories, la cantidad total de participaciones del padrón, el hash del CSV y el link al vivo |
 | Post-sorteo | Todos | Video del sorteo, número sorteado, nombre y localidad del ganador (con su consentimiento), entrega de la bici |
 
-Los posts y stories se pueden programar desde Metricool; los broadcasts extra, desde Resend. La base de contactos se saca de Supabase (`ordenes`) con un filtro por estado `pagada`. Las piezas comunican el producto y su precio, con el claim "Cada $1 es una participación" tal como está en el sitio; ninguna dice "quedan pocos números", "comprá más para ganar" ni "cuantas más sumás, menos pagás" (no hay descuento por volumen), y cada producto se compra una sola vez por persona.
+Los posts y stories se pueden programar desde Metricool; los broadcasts extra, desde Resend. La base de contactos se saca de Supabase (`ordenes`) con un filtro por estado `pagada`. Las piezas comunican el producto y su precio, con el claim "Cada $1.000 es una participación" tal como está en el sitio (sin ejemplo numérico); ninguna dice "quedan pocos números", "comprá más para ganar" ni "cuantas más sumás, menos pagás" (no hay descuento por volumen), y cada producto se compra una sola vez por persona.
 
 ## 5. Contacto con la persona ganadora
 

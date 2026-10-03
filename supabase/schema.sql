@@ -3,7 +3,7 @@
 -- Postgres (Supabase). Ejecutar completo en SQL Editor: es idempotente
 -- (sirve para instalar de cero y para actualizar una instalación anterior).
 --
--- Modelo: cada $1 del precio del producto = 1 participación (la vía gratuita,
+-- Modelo: cada $1.000 del precio del producto = 1 participación (la vía gratuita,
 -- 1 por persona). Cada orden pagada recibe UN bloque correlativo de números
 -- (`ordenes.numero_desde` .. `ordenes.numero_hasta`); no hay una fila por número.
 -- ============================================================
@@ -28,7 +28,7 @@ create table if not exists ediciones (
 
 -- Una orden = una compra de un producto digital (fondos, checklist o curso; cada producto
 -- una sola vez por DNI) o una participación sin cargo (carta). `cantidad_participaciones`
--- es el precio en pesos (cada $1 = 1 participación; la vía gratuita, 1). Cuando la orden
+-- es el precio dividido 1.000 (cada $1.000 = 1 participación; la vía gratuita, 1). Cuando la orden
 -- queda pagada, asignar_participaciones() le asigna el bloque numero_desde..numero_hasta.
 create table if not exists ordenes (
   id                        uuid primary key default gen_random_uuid(),

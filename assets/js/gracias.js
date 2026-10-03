@@ -218,7 +218,7 @@
         );
       }
       return renderOk(
-        { id: 'demo-0000-0000', nombre: 'Delfina', rango: { desde: 12001, hasta: 12000 + pack.participaciones, cantidad: pack.participaciones }, bici: campaign.bicis[0], pack },
+        { id: 'demo-0000-0000', nombre: 'Delfina', rango: { desde: 1201, hasta: 1200 + pack.participaciones, cantidad: pack.participaciones }, bici: campaign.bicis[0], pack },
         campaign,
       );
     }

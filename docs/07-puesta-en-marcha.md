@@ -20,7 +20,7 @@ Resend (mails) ──► casilla de la persona      Respuestas ──► belen.b
 
 - **Sitio**: páginas estáticas (HTML, CSS, JS). Vive en Vercel, en el subdominio `participa.baiking.com.ar`.
 - **API**: funciones en Vercel (`api/checkout`, `api/admin`, `api/recordatorios`, etc.). Es el único lugar con permisos sobre la base y con las claves de los servicios.
-- **Base de datos y archivos**: Supabase (Postgres + Storage). Guarda las órdenes (cada orden pagada con su bloque de números correlativos, `numero_desde`–`numero_hasta`: tantos como pesos tiene el precio; no hay filas por número), los comprobantes y las marcas de conciliación.
+- **Base de datos y archivos**: Supabase (Postgres + Storage). Guarda las órdenes (cada orden pagada con su bloque de números correlativos, `numero_desde`–`numero_hasta`: uno por cada $1.000 del precio, 10, 19 o 29; no hay filas por número), los comprobantes y las marcas de conciliación.
 - **Lectura de comprobantes**: la API de Claude (Anthropic). Lee la imagen o el PDF y devuelve monto, cuenta destino, fecha y número de operación; la API compara con la orden.
 - **Mails**: Resend, por API. Cada mail sale desde `api/_lib/notificaciones.js` con el diseño de la marca. La casilla de respuestas es `belen.baiking@gmail.com`.
 - **Planilla**: Google Sheets por API (cuenta de servicio). Espejo de todas las órdenes y columna "Llegó la plata" editable desde el celular.
@@ -77,14 +77,14 @@ Estimación: la demo sale USD 0 más el crédito de Claude. La campaña, con pla
 | DNS | Baiking (quien administre baiking.com.ar) | 1 registro para el subdominio del sitio (Vercel lo indica) + 2 registros de Resend. |
 | Variables de entorno en Vercel | Delfina | Todas las de `.env.example`: Supabase, Resend, `MAIL_FROM`, `ADMIN_TOKEN`, `BASE_URL`, `ANTHROPIC_API_KEY`, `TRANSFERENCIAS_AUTO_APROBAR=false`, `INBOUND_SECRET`, `CRON_SECRET`, Google Sheets. |
 | Google Sheets | Delfina + Gastón | Crear la planilla, compartirla con la cuenta de servicio y con Gastón (guía en docs/06). |
-| Config final | Delfina | `checkout.modo: "api"`, precios confirmados y links de entrega de los tres productos (`packs[].precio`, `packs[].entrega_url`, `curso.url_acceso`), valor de la Strattos, dominio. |
+| Config final | Delfina | `checkout.modo: "api"`, links de entrega de los tres productos (`packs[].entrega_url`, `curso.url_acceso`; los precios ya están fijados: $10.000 / $19.000 / $29.000), versión y valor de la Tambora, dominio. |
 
 ## 6. Plan de la demo en vivo
 
 1. **Día 1**: cuentas y DNS (paso 5). Con eso, Delfina despliega el sitio en modo real y corre el esquema en Supabase.
 2. **Día 2**: pruebas internas con el token de administración: una orden con un comprobante de prueba (una captura cualquiera) para ver la lectura de la IA y los mails; una participación sin cargo; "Carta recibida"; el panel y la planilla.
-3. **Día 3**: prueba real: una transferencia de $10.000 (el pack de fondos de pantalla: 10.000 participaciones) desde una cuenta propia a la de X Centro Pilar SRL, comprobante real, "Llegó" desde el panel, mail con el bloque ("del N.º X al N.º Y"). Revisar que el mail no caiga en spam (Gmail, Outlook, Hotmail).
-4. **Antes de abrir (15/10)**: bases validadas por el abogado, fotos del local y de Gastón, precio de la Strattos, `TRANSFERENCIAS_AUTO_APROBAR` decidido, planes Pro contratados si hace falta, y una prueba de los recordatorios con `?tipo=semana&test=mail` a una casilla propia.
+3. **Día 3**: prueba real: una transferencia de $10.000 (el pack de fondos de pantalla: 10 participaciones) desde una cuenta propia a la de X Centro Pilar SRL, comprobante real, "Llegó" desde el panel, mail con el bloque ("del N.º X al N.º Y"). Revisar que el mail no caiga en spam (Gmail, Outlook, Hotmail).
+4. **Antes de abrir (15/10)**: bases validadas por el abogado, foto de Gastón (la del local es opcional), versión de la Tambora, `TRANSFERENCIAS_AUTO_APROBAR` decidido, planes Pro contratados si hace falta, y una prueba de los recordatorios con `?tipo=semana&test=mail` a una casilla propia.
 
 Mientras la demo esté en vivo antes del lanzamiento, el sitio puede llevar un aviso "versión de prueba" y un precio de prueba, para que nadie compre de verdad por error.
 
@@ -93,4 +93,4 @@ Mientras la demo esté en vivo antes del lanzamiento, el sitio puede llevar un a
 - Aprobación automática de comprobantes (recomendación: apagada al principio).
 - Sorteo: generador aleatorio en vivo o Quiniela nocturna de la Provincia como fuente del número.
 - Cartas que llegan después del cierre y registros rechazados (hoy bloquean el DNI).
-- Participaciones proporcionales al precio ($1 = 1; hasta 47.000 pagas por persona, una compra por producto) frente a una gratuita: es el esquema que `docs/08` calificó de riesgo alto y Baiking decidió mantenerlo con la vía gratuita de 1 participación; validar con el abogado antes de publicar (`docs/08` §3, filas 1 a 5; `docs/02` §4.3).
+- Participaciones proporcionales al precio (cada $1.000 = 1: 10 / 19 / 29; hasta 58 pagas por persona, una compra por producto) frente a una gratuita, que desde el 30/09 ya no tiene pregunta propia en la FAQ: es el esquema que `docs/08` calificó de riesgo alto y Baiking decidió mantenerlo con la vía gratuita de 1 participación; validar con el abogado antes de publicar (`docs/08` §3, filas 1 a 5; `docs/02` §4.3 y §4.4).

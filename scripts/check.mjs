@@ -21,9 +21,9 @@ for (const p of cfg.packs) {
   if (!(Number.isFinite(p.precio) && p.precio > 0)) errores.push(`pack ${p.id}: precio inválido`);
   if (!(Number.isInteger(p.participaciones) && p.participaciones > 0)) errores.push(`pack ${p.id}: participaciones inválidas`);
 }
-// Regla de participaciones (29/09): cada $1 del precio = `regla_participaciones.por_peso` participaciones
-// (hoy 1). packs[].participaciones tiene que ser exactamente precio × por_peso: el sitio, los mails
-// y las bases muestran esa cantidad y el sorteo asigna un bloque de números de ese tamaño.
+// Regla de participaciones (30/09): cada peso del precio × `regla_participaciones.por_peso` (hoy 0,001:
+// $1.000 = 1 participación). packs[].participaciones tiene que ser exactamente precio × por_peso: el
+// sitio, los mails y las bases muestran esa cantidad y el sorteo asigna un bloque de ese tamaño.
 const porPeso = Number(cfg.regla_participaciones?.por_peso ?? 1);
 if (!(porPeso > 0)) errores.push('regla_participaciones.por_peso debe ser un número mayor que 0');
 for (const p of cfg.packs) {

@@ -158,11 +158,6 @@
             .map((b) => `<figure data-bici="${esc(b.id)}">${arte(b)}</figure>`)
             .join('')}</div>`;
     }
-    // Ejemplo de la regla "$1 = 1 participación" con el producto más barato (claim y paso 1).
-    const masBarato = [...cfg.packs].sort((a, b) => a.precio - b.precio)[0];
-    if (masBarato) {
-      $$('[data-claim-ejemplo]').forEach((el) => (el.textContent = `${fmtARS(masBarato.precio)} son ${fmtNum(masBarato.participaciones)} números en el sorteo`));
-    }
     const thumbs = $('#shop-thumbs');
     if (thumbs) {
       thumbs.innerHTML = cfg.bicis
@@ -643,7 +638,7 @@
           return;
         }
         // Bloque de números de ejemplo (en producción lo asigna la base: correlativo y único).
-        const desde = 12001 + Math.floor(Math.random() * 40) * 1000;
+        const desde = 121 + Math.floor(Math.random() * 40) * 10;
         showSuccess({ nombre: data.nombre, pack, rango: { desde, hasta: desde + pack.participaciones - 1, cantidad: pack.participaciones }, bici });
       } catch (err) {
         errorBox.textContent = err.message || 'Algo salió mal. Probá de nuevo.';
@@ -867,7 +862,7 @@
           rango = out.rango || null;
         } else {
           await new Promise((r) => setTimeout(r, 600));
-          const n = 38771 + Math.floor(Math.random() * 60);
+          const n = 3877 + Math.floor(Math.random() * 60);
           rango = requiereCarta ? null : { desde: n, hasta: n, cantidad: 1 };
         }
         form.hidden = true;
@@ -944,7 +939,7 @@
           (p) =>
             `<li><b>${esc(nombrePack(p))}</b> (${fmtARS(p.precio)}): ${esc((p.incluye || []).join('; '))}. Otorga ${fmtNum(p.participaciones)} ${
               p.participaciones === 1 ? 'participación' : 'participaciones'
-            } (una por cada peso del precio).</li>`,
+            } (una por cada $1.000 del precio).</li>`,
         )
         .join('');
     }

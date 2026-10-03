@@ -39,7 +39,7 @@
   const authHeaders = () => ({ Authorization: `Bearer ${state.token || ''}` });
 
   // Bloque de números de una orden ({ desde, hasta, cantidad } o null) para los avisos y la tabla:
-  // cada orden pagada recibe un bloque correlativo del tamaño de sus participaciones ($1 = 1).
+  // cada orden pagada recibe un bloque correlativo del tamaño de sus participaciones ($1.000 = 1).
   function resumirRango(rango) {
     if (!rango || !Number.isFinite(Number(rango.desde))) return '—';
     const desde = Number(rango.desde);

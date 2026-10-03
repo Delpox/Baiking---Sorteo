@@ -1,10 +1,10 @@
 # 04 · Checklist de lanzamiento
 
-Estado al 30/09: las decisiones de la reunión del 28/09 con Gastón y Belén, el modelo de tres productos del 29/09, la regla de participaciones proporcionales al precio ($1 = 1) del 29/09 por la tarde y el hero del 30/09 están aplicados en `config/campaign.json` (detalle en `docs/02` §4). Lo marcado con `[x]` ya está hecho.
+Estado al 30/09: las decisiones de la reunión del 28/09 con Gastón y Belén, el modelo de tres productos del 29/09, la regla de participaciones proporcionales al precio del 29/09 por la tarde (ajustada el 30/09: cada $1.000 = 1 participación, precios $10.000 / $19.000 / $29.000, Strattos S7 valuada en $3.862.320, FAQ de 4 preguntas y claim sin ejemplo numérico) y el hero del 30/09 están aplicados en `config/campaign.json` (detalle en `docs/02` §4). Lo marcado con `[x]` ya está hecho.
 
 ## A. Legal y administrativo (antes de publicar nada)
 
-- [ ] Abogado revisa `bases-y-condiciones.html` con el texto nuevo: tres productos digitales con participaciones proporcionales al precio (cada $1 = 1 participación; es el tipo de esquema que `docs/08` calificó de riesgo alto: Baiking decidió mantenerlo con la vía gratuita de 1 participación y hay que validarlo antes de publicar), cada producto una sola vez por persona (cláusulas 3 y 5.1; `docs/02` §2 y §4.3), vía gratuita con carta y 1 participación (cláusula 5.3), sin escribano (cláusulas 5.5 y 7: sorteo en vivo por Instagram, grabado, cantidad total de participaciones publicada antes de sortear), pago únicamente por transferencia con comprobante y confirmación al acreditarse (cláusula 5.2), revocación del contenido digital (cláusula 10), alcance territorial (cláusula 2), aviso antifraude (`docs/05` §5). Lo que la revisión interna dejó abierto está en `docs/08` §3 y §5.
+- [ ] Abogado revisa `bases-y-condiciones.html` con el texto nuevo: tres productos digitales con participaciones proporcionales al precio (cada $1.000 = 1 participación: 10 / 19 / 29, hasta 58 pagas por persona; es el tipo de esquema que `docs/08` calificó de riesgo alto: Baiking decidió mantenerlo con la vía gratuita de 1 participación y hay que validarlo antes de publicar), cada producto una sola vez por persona (cláusulas 3 y 5.1; `docs/02` §2 y §4.3), vía gratuita con carta y 1 participación (cláusula 5.3; desde el 30/09 sin pregunta propia en la FAQ: confirmar que el link del final de la página, la cláusula y la leyenda alcanzan como visibilidad), sin escribano (cláusulas 5.5 y 7: sorteo en vivo por Instagram, grabado, cantidad total de participaciones publicada antes de sortear), pago únicamente por transferencia con comprobante y confirmación al acreditarse (cláusula 5.2), revocación del contenido digital (cláusula 10), alcance territorial (cláusula 2), aviso antifraude (`docs/05` §5). Lo que la revisión interna dejó abierto está en `docs/08` §3 y §5.
 - [x] Razón social, CUIT y domicilio cargados en `config/campaign.json` → `legal` (X Centro Pilar SRL, CUIT 30-71025912-3, Las Camelias 3327, Del Viso).
 - [ ] Confirmar con Gastón que la promoción la organiza esa sociedad (los datos salieron de la cuenta bancaria).
 - [ ] Nota de consulta al IPLyC (Lotería de la Provincia de Buenos Aires) y a la OMIC de Pilar sobre registro de sorteos promocionales; guardar respuesta.
@@ -13,13 +13,13 @@ Estado al 30/09: las decisiones de la reunión del 28/09 con Gastón y Belén, e
 - [ ] Factura por cada compra (a nombre de quien paga, concepto = el producto comprado: "Fondos de pantalla Baiking", "Checklist pre-salida" o "Curso Baiking de Mantenimiento", sin mencionar el sorteo): definir cómo se emite (facturador con API o carga manual desde la planilla exportada del panel) y en qué momento (al aprobar la transferencia).
 - [ ] Registrar la base de datos de participantes ante la AAIP (Ley 25.326) y publicar la política de privacidad.
 - [ ] (Opcional) Escribano para el acta del sorteo: no se comunica; solo si el abogado lo pide. Cotizar en el Colegio de Escribanos PBA, delegación Pilar.
-- [ ] Reservar con el importador (Polygon Bikes Argentina) la disponibilidad de los tres modelos en la fecha de entrega: se entrega una sola bici, la que elija quien gana (Siskiu T7, Tambora o Strattos).
+- [ ] Reservar con el importador (Polygon Bikes Argentina) la disponibilidad de los tres modelos en la fecha de entrega: se entrega una sola bici, la que elija quien gana (Siskiu T7, Tambora o Strattos S7).
 - [x] Botón de arrepentimiento visible en el sitio (link en el footer a la cláusula 15 de las bases).
 - [ ] Confirmar el mail de contacto de la cláusula 15 y del footer (`belen.baiking@gmail.com`).
 
 ## B. Producto y contenido
 
-- [ ] Confirmar con Gastón los precios de los tres productos (`packs[].precio`: $10.000 fondos · $12.000 checklist · $25.000 curso; hoy `[A CONFIRMAR]`). Si cambian, `packs[].participaciones` tiene que quedar igual al precio (`npm run check` da error si no coinciden).
+- [x] Precios de los tres productos fijados el 30/09 (`packs[].precio`: $10.000 fondos · $19.000 checklist · $29.000 curso; `packs[].participaciones`: 10 · 19 · 29). Si cambian, `packs[].participaciones` tiene que quedar en `precio / 1.000` (`npm run check` da error si no coinciden).
 - [ ] Producir el pack de fondos de pantalla (alta resolución, celular y computadora) y cargar su link de entrega en `packs[].entrega_url` del producto `fondos`.
 - [ ] Producir el checklist pre-salida en PDF y cargar su link en `packs[].entrega_url` del producto `checklist` (incluye también los fondos: un solo link o una carpeta).
 - [ ] Grabar los 4 módulos del curso en video (lista en `config/campaign.json` → `curso.modulos`): preparar la bici ante una carrera o salida · lavado y lubricación sin herramientas específicas · ajuste general · errores comunes y cómo evitarlos. No se promete "acceso de por vida" ni consultas por WhatsApp: no agregarlo en ninguna pieza.
@@ -31,7 +31,7 @@ Estado al 30/09: las decisiones de la reunión del 28/09 con Gastón y Belén, e
 - [x] Identidad definida: fondo blanco con acentos rojo Baiking `#eb0627`, header rojo con el logo centrado (variables en `:root` de `assets/css/styles.css`).
 - [ ] Imagen para redes `assets/img/og.png` (1200×630): regenerar con `node scripts/og-image.mjs` cuando estén las fotos y los colores finales; leyenda "Sin obligación de compra".
 - [ ] Video de Gastón (60-90 s) explicando la promo, para Instagram.
-- [ ] Revisar con Gastón los 6 textos de `faq[]`, las descripciones de los tres productos (`packs[].descripcion`, `incluye`), la del curso y el texto del premio (service a los 30 días y garantía oficial siguen `[A CONFIRMAR]`).
+- [ ] Revisar con Gastón los 4 textos de `faq[]` (desde el 30/09 sin las preguntas sobre participar sin comprar y sobre la forma de pago), las descripciones de los tres productos (`packs[].descripcion`, `incluye`), la del curso y el texto del premio (service a los 30 días y garantía oficial siguen `[A CONFIRMAR]`).
 
 ## C. Técnico
 
@@ -46,14 +46,14 @@ Estado al 30/09: las decisiones de la reunión del 28/09 con Gastón y Belén, e
 - [ ] Probar que el mismo DNI no puede comprar dos veces el mismo producto (la API responde `409`) y sí puede comprar otro producto.
 - [ ] Prueba de la vía gratuita: formulario → mail "ahora mandá la carta" → "Carta recibida" en el panel → mail de confirmación con el número; y el bloqueo por DNI repetido.
 - [ ] Probar los recordatorios sin marcar nada: `GET /api/recordatorios?tipo=semana&test=mail@propio` y `?tipo=sorteo&test=mail@propio` con el token de admin.
-- [ ] `npm run check` sin errores (da error si `packs[].participaciones` no es `precio × regla_participaciones.por_peso`; avisa si las fechas y la URL de `legal.leyenda` / `aviso_corto` no coinciden con `edicion.*` y `marca.sitio_url`, si los precios no van de menor a mayor y si la vía gratuita deja de dar 1 participación).
+- [ ] `npm run check` sin errores (da error si `packs[].participaciones` no es `Math.round(precio × regla_participaciones.por_peso)`, hoy `por_peso: 0.001`; avisa si las fechas y la URL de `legal.leyenda` / `aviso_corto` no coinciden con `edicion.*` y `marca.sitio_url`, si los precios no van de menor a mayor y si la vía gratuita deja de dar 1 participación).
 - [ ] Analítica: agregar Meta Pixel / GA4 si se va a hacer pauta (respetar consentimiento).
 - [ ] Protección anti-bots en los formularios (Cloudflare Turnstile o Vercel WAF) si aparece abuso.
 
 ## D. Comunicación
 
 - [ ] Calendario de contenidos (ver `docs/03-automatizaciones.md` §4) cargado en Metricool.
-- [ ] Todas las piezas con "Sin obligación de compra · Bases en participa.baiking.com.ar/bases-y-condiciones" (dominio a confirmar). "Participación/participaciones" en todas las piezas; "números" solo para el bloque, como en el claim del hero ("$10.000 son 10.000 números en el sorteo"). Nunca "chances", "rifa", "comprá tu número", "quedan pocos números", "cuantas más sumás, menos pagás" ni "ante escribano".
+- [ ] Todas las piezas con "Sin obligación de compra · Bases en participa.baiking.com.ar/bases-y-condiciones" (dominio a confirmar). "Participación/participaciones" en todas las piezas; "números" solo para el bloque ("del N.º 121 al N.º 130"); el claim del hero es "Cada $1.000 es una participación", sin ejemplo numérico. Nunca "chances", "rifa", "comprá tu número", "quedan pocos números", "cuantas más sumás, menos pagás" ni "ante escribano".
 - [ ] Pauta en Meta configurada como venta de productos digitales (fondos, checklist, curso), no como sorteo, para evitar rechazos.
 - [ ] Highlights de Instagram: "Cómo participar" (transferencia + comprobante en el formulario), "Los productos", "Las bicis", "Sorteo".
 

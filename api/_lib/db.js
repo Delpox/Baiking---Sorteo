@@ -149,7 +149,7 @@ export async function obtenerOrdenPorPago(mpPaymentId) {
 
 // ------------------------------------------------------------------ bloques de números
 // Cada orden pagada tiene UN bloque correlativo de números de participación
-// (ordenes.numero_desde .. numero_hasta; cada $1 del producto = 1 participación). En la
+// (ordenes.numero_desde .. numero_hasta; cada $1.000 del producto = 1 participación). En la
 // API viaja como `rango`: { desde, hasta, cantidad } o null si todavía no se asignó.
 
 /** Bloque de una fila de `ordenes` ({ desde, hasta, cantidad }) o null si aún no tiene números. */

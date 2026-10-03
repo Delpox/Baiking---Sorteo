@@ -8,7 +8,7 @@
 //   --out          archivo JSON de salida (por defecto registro-sorteo-<edicion>-<fecha>.json).
 //
 // Padrón (CSV de /api/export, separador ";"): UNA fila por orden pagada con su bloque correlativo de
-// números `numero_desde`–`numero_hasta` (cada $1 del precio = 1 participación), ordenadas por
+// números `numero_desde`–`numero_hasta` (cada $1.000 del precio = 1 participación), ordenadas por
 // numero_desde y sin huecos entre bloques. Total de participaciones = suma de `cantidad` = último número.
 //
 // Mecánica (en vivo y verificable por cualquiera): se elige con crypto un entero uniforme r entre 1 y

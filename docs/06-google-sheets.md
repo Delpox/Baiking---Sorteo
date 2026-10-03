@@ -25,12 +25,12 @@ Columnas, en este orden:
 | C–H | `nombre` `apellido` `dni` `email` `whatsapp` `provincia` | sistema | datos del participante |
 | I | `bici` | sistema | nombre de la bici elegida (`campaign.bicis`) |
 | J | `pack` | sistema | nombre del producto comprado (`campaign.packs`); `Sin cargo` para la vía gratuita |
-| K | `participaciones` | sistema | `cantidad_participaciones`: tantas como pesos tiene el precio del producto (10.000 · 12.000 · 25.000); 1 en la vía gratuita |
+| K | `participaciones` | sistema | `cantidad_participaciones`: una por cada $1.000 del precio del producto (10 · 19 · 29); 1 en la vía gratuita |
 | L | `monto` | sistema | número (sin formato) |
 | M | `estado` | sistema | `pendiente` · `en_revision` · `pagada` · `rechazada` · … |
 | N | `comprobante` | sistema | fecha en que subió el comprobante |
 | O | `IA: monto ok / destino ok` | sistema | `OK / OK`, `NO / OK`…, `sin lectura` si hay comprobante pero no se leyó |
-| P | `números` | sistema | el bloque correlativo de la orden como texto: `del 1 al 10.000` (vía gratuita, un solo número: `N.º 1.587`); con separador de miles y sin ceros a la izquierda, vacío hasta que la orden se confirma (`textoRango()`; el mismo bloque que va en el mail) |
+| P | `números` | sistema | el bloque correlativo de la orden como texto: `del 121 al 130` (vía gratuita, un solo número: `N.º 1.587`); con separador de miles y sin ceros a la izquierda, vacío hasta que la orden se confirma (`textoRango()`; el mismo bloque que va en el mail) |
 | Q | **`Llegó la plata`** | **Gastón** | vacío / `SI` / `NO` (lista desplegable) |
 | R | `acreditada_at` | sistema | cuándo se marcó |
 | S | `nota` | **Gastón** (o el panel) | texto libre, se guarda en `acreditada_nota` |
@@ -152,7 +152,7 @@ curl -sS -X POST https://participa.baiking.com.ar/api/sheets-sync -H "Authorizat
 # → {"ok":true,"filas_escritas":12,"marcadas_si":0,"marcadas_no":0,"pendientes":0,"errores":[]}
 ```
 
-Después poner `SI` en la fila de una orden de prueba y volver a llamar: `marcadas_si: 1`, la fila pasa a `pagada` con su bloque en la columna `números` ("del 1 al 10.000") y a la persona le llega el mail. Con `?edicion=edicion-2` se sincroniza otra edición (usar otra pestaña).
+Después poner `SI` en la fila de una orden de prueba y volver a llamar: `marcadas_si: 1`, la fila pasa a `pagada` con su bloque en la columna `números` ("del 121 al 130") y a la persona le llega el mail. Con `?edicion=edicion-2` se sincroniza otra edición (usar otra pestaña).
 
 Errores típicos (vienen en `detalle` de la respuesta 500 y en los logs de Vercel):
 
